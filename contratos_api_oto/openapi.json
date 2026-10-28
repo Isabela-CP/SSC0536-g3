@@ -880,7 +880,7 @@
             }
           },
           "409": {
-            "description": "Conflito com dados existentes ou estado atual.",
+            "description": "O estabelecimento já está inativo.",
             "content": {
               "application/json": {
                 "schema": {
@@ -888,37 +888,54 @@
                 },
                 "example": {
                   "error": {
-                    "code": "CONFLICT",
-                    "message": "Já existe um estabelecimento cadastrado com esse CNPJ."
+                    "code": "ESTABELECIMENTO_JA_INATIVO",
+                    "message": "O estabelecimento já está inativo."
                   }
                 }
               }
             }
           },
           "422": {
-            "description": "Falha em uma ou mais validações de campo.",
+            "description": "Motivo de inativação ausente, curto demais ou longo demais.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
                 },
-                "example": {
-                  "error": {
-                    "code": "VALIDATION_ERROR",
-                    "message": "Verifique os campos informados.",
-                    "details": [
-                      {
-                        "field": "cnpj",
-                        "issue": "CNPJ inválido."
+                "examples": {
+                  "motivoAusente": {
+                    "value": {
+                      "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "Verifique os campos informados.",
+                        "details": [{"field": "motivo_inativacao", "issue": "O motivo de inativação é obrigatório."}]
                       }
-                    ]
+                    }
+                  },
+                  "motivoCurto": {
+                    "value": {
+                      "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "Verifique os campos informados.",
+                        "details": [{"field": "motivo_inativacao", "issue": "O motivo de inativação deve ter no mínimo 3 caracteres."}]
+                      }
+                    }
+                  },
+                  "motivoLongo": {
+                    "value": {
+                      "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "Verifique os campos informados.",
+                        "details": [{"field": "motivo_inativacao", "issue": "O motivo de inativação deve ter no máximo 500 caracteres."}]
+                      }
+                    }
                   }
                 }
               }
             }
           }
         },
-        "description": "Inativação lógica reservada ao ADMINISTRADOR. Não apaga o registro; salva motivo e registra a operação em AUDIT_LOG.",
+        "description": "Inativação lógica reservada ao ADMINISTRADOR. A transição permitida é ATIVO para INATIVO; não apaga o registro, salva motivo e registra a operação em AUDIT_LOG.",
         "requestBody": {
           "required": true,
           "content": {
@@ -1023,7 +1040,7 @@
             }
           },
           "409": {
-            "description": "Conflito com dados existentes ou estado atual.",
+            "description": "O estabelecimento já está ativo.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1031,15 +1048,15 @@
                 },
                 "example": {
                   "error": {
-                    "code": "CONFLICT",
-                    "message": "Já existe um estabelecimento cadastrado com esse CNPJ."
+                    "code": "ESTABELECIMENTO_JA_ATIVO",
+                    "message": "O estabelecimento já está ativo."
                   }
                 }
               }
             }
           }
         },
-        "description": "Reativação reservada ao ADMINISTRADOR. Define status=ATIVO, limpa motivo_inativacao e registra a alteração no log de auditoria.",
+        "description": "Reativação reservada ao ADMINISTRADOR. A transição permitida é INATIVO para ATIVO; define status=ATIVO, limpa motivo_inativacao e registra a alteração no log de auditoria.",
         "x-allowed-roles": [
           "ADMINISTRADOR"
         ]
