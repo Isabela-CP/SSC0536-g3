@@ -30,8 +30,8 @@ Além das consultas de estabelecimentos, a base de demonstração inclui:
 
 - `POST /auth/login`, `POST /auth/logout` e `POST /auth/recuperacao-senha`
 - `GET|PATCH /perfil`, `GET|POST /usuarios` e fluxos de `POST /convites`
-- `GET|POST /pesquisas-ocupacao`, pendências e respostas de ocupação
-- `POST /relatorios`, `GET /auditoria` e `GET /dashboard`
+- `GET|POST /pesquisas-ocupacao`, `PATCH /pesquisas-ocupacao/{id_pesquisa}`, encerramento, pendências e respostas de ocupação
+- `POST /relatorios`, `GET /relatorios/{id_relatorio}`, `GET /relatorios/{id_relatorio}/arquivo`, `GET /auditoria` e `GET /dashboard`
 
 Os dados desses novos módulos são mantidos apenas em memória para demonstrar
 os contratos e seus fluxos. As credenciais locais são

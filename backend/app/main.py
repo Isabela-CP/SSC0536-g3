@@ -47,6 +47,7 @@ INVITES: list[dict[str, Any]] = []
 SURVEYS: list[dict[str, Any]] = []
 OCCUPANCY_RESPONSES: list[dict[str, Any]] = []
 AUDIT_LOG: list[dict[str, Any]] = []
+REPORTS: list[dict[str, Any]] = []
 
 
 def error_response(status_code: int, code: str, message: str, details: list[dict] | None = None) -> JSONResponse:
@@ -273,6 +274,38 @@ def create_survey(payload: dict = Body(...), user: dict = Depends(current_user))
     return survey
 
 
+@app.patch("/pesquisas-ocupacao/{id_pesquisa}", tags=["Pesquisas de ocupação"])
+def update_survey(id_pesquisa: str, payload: dict = Body(...), user: dict = Depends(current_user)) -> dict | JSONResponse:
+    ensure_role(user, "ADMINISTRADOR", "EDITOR")
+    survey = next((item for item in SURVEYS if item["id_pesquisa"] == id_pesquisa), None)
+    if not survey:
+        return error_response(404, "SURVEY_NOT_FOUND", "Pesquisa não encontrada.")
+    if survey["status"] != "ABERTA":
+        return error_response(409, "SURVEY_CLOSED", "A pesquisa encerrada não pode ser alterada.")
+    allowed = {"titulo", "tipo", "periodo_inicio", "periodo_fim", "estabelecimentos"}
+    invalid = set(payload) - allowed
+    if invalid:
+        return error_response(422, "VALIDATION_ERROR", "Verifique os campos informados.", [{"field": sorted(invalid)[0], "issue": "Campo não permitido."}])
+    before = survey.copy()
+    survey.update(payload)
+    audit(user, "PESQUISA_ATUALIZADA", "PESQUISA_OCUPACAO", id_pesquisa, before, survey)
+    return survey
+
+
+@app.post("/pesquisas-ocupacao/{id_pesquisa}/encerramento", tags=["Pesquisas de ocupação"])
+def close_survey(id_pesquisa: str, user: dict = Depends(current_user)) -> dict | JSONResponse:
+    ensure_role(user, "ADMINISTRADOR", "EDITOR")
+    survey = next((item for item in SURVEYS if item["id_pesquisa"] == id_pesquisa), None)
+    if not survey:
+        return error_response(404, "SURVEY_NOT_FOUND", "Pesquisa não encontrada.")
+    if survey["status"] == "ENCERRADA":
+        return error_response(409, "SURVEY_ALREADY_CLOSED", "A pesquisa já está encerrada.")
+    before = survey.copy()
+    survey["status"] = "ENCERRADA"
+    audit(user, "PESQUISA_ENCERRADA", "PESQUISA_OCUPACAO", id_pesquisa, before, survey)
+    return survey
+
+
 @app.get("/pesquisas-ocupacao/pendentes", tags=["Respostas de ocupação"])
 def pending_surveys(user: dict = Depends(current_user)) -> dict:
     establishment_id = user.get("id_estabelecimento")
@@ -304,13 +337,17 @@ def occupancy_history(user: dict = Depends(current_user)) -> dict:
 
 
 @app.get("/auditoria", tags=["Auditoria"])
-def list_audit_log(acao: str | None = None, id_usuario: int | None = None, user: dict = Depends(current_user)) -> dict:
+def list_audit_log(acao: str | None = None, id_usuario: int | None = None, data_inicio: str | None = None, data_fim: str | None = None, user: dict = Depends(current_user)) -> dict:
     ensure_role(user, "ADMINISTRADOR")
     records = AUDIT_LOG
     if acao:
         records = [item for item in records if item["acao"] == acao]
     if id_usuario:
         records = [item for item in records if item["id_usuario"] == id_usuario]
+    if data_inicio:
+        records = [item for item in records if item["criado_em"] >= data_inicio]
+    if data_fim:
+        records = [item for item in records if item["criado_em"] <= data_fim]
     return {"data": records}
 
 
@@ -328,6 +365,26 @@ def generate_report(payload: dict = Body(...), user: dict = Depends(current_user
     if not report_type or report_format not in {"PDF", "CSV"}:
         return error_response(422, "VALIDATION_ERROR", "Tipo e formato PDF ou CSV são obrigatórios.")
     report_id = str(uuid4())
-    return {"id_relatorio": report_id, "tipo": report_type, "formato": report_format, "status": "CONCLUIDO", "download_url": f"/relatorios/{report_id}/arquivo"}
+    report = {"id_relatorio": report_id, "tipo": report_type, "formato": report_format, "status": "CONCLUIDO", "criado_em": datetime.now(timezone.utc).isoformat(), "download_url": f"/relatorios/{report_id}/arquivo"}
+    REPORTS.append(report)
+    audit(user, "RELATORIO_GERADO", "RELATORIO", report_id, after=report)
+    return report
+
+
+@app.get("/relatorios/{id_relatorio}", tags=["Relatórios"])
+def get_report(id_relatorio: str, user: dict = Depends(current_user)) -> dict | JSONResponse:
+    ensure_role(user, "ADMINISTRADOR", "GESTOR")
+    report = next((item for item in REPORTS if item["id_relatorio"] == id_relatorio), None)
+    if not report:
+        return error_response(404, "REPORT_NOT_FOUND", "Relatório não encontrado.")
+    return report
+
+
+@app.get("/relatorios/{id_relatorio}/arquivo", tags=["Relatórios"])
+def download_report(id_relatorio: str, user: dict = Depends(current_user)) -> dict | JSONResponse:
+    report = get_report(id_relatorio, user)
+    if isinstance(report, JSONResponse):
+        return report
+    return {"id_relatorio": id_relatorio, "formato": report["formato"], "content": "Arquivo de demonstração; use storage na implementação de produção."}
 
 

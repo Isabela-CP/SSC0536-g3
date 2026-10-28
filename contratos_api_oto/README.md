@@ -34,5 +34,5 @@ usam o formato `Estabelecimento`; os erros usam `ErrorResponse` do OpenAPI.
 | `estabelecimentos/cadastro/`, `estabelecimentos/edicao/` | Validação de CNPJ e perfil | Unicidade do CNPJ e permissões de edição. |
 | `autenticacao/login/` | Login | Credenciais de demonstração ou credenciais inválidas. |
 | `usuarios/criacao/`, `convites/criacao/`, `perfil/consulta/` | Acesso e perfil | Conta pendente, convite e usuário autenticado. |
-| `pesquisas-ocupacao/criacao/`, `respostas-ocupacao/envio/` | Coleta de ocupação | Pesquisa aberta e resposta submetida. |
-| `relatorios/geracao/`, `auditoria/consulta/`, `dashboard/consulta/` | Saídas consolidadas | Relatório concluído, evento auditado e indicadores. |
+| `pesquisas-ocupacao/criacao/`, `pesquisas-ocupacao/encerramento/`, `respostas-ocupacao/envio/` | Coleta de ocupação | Pesquisa aberta, encerramento e resposta submetida. |
+| `relatorios/geracao/`, `relatorios/download/`, `auditoria/consulta/`, `dashboard/consulta/` | Saídas consolidadas | Relatório concluído/baixado, evento auditado e indicadores. |

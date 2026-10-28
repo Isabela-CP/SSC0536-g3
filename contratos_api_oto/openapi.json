@@ -1757,6 +1757,12 @@
     "/pesquisas-ocupacao/pendentes": {
       "get": {"tags": ["Respostas de ocupação"], "operationId": "listarPesquisasPendentes", "summary": "Consultar pendências", "responses": {"200": {"description": "Pesquisas pendentes."}, "401": {"$ref": "#/components/responses/Unauthorized"}}}
     },
+    "/pesquisas-ocupacao/{id_pesquisa}": {
+      "patch": {"tags": ["Pesquisas de ocupação"], "operationId": "atualizarPesquisaOcupacao", "summary": "Editar pesquisa aberta", "responses": {"200": {"description": "Pesquisa atualizada."}, "401": {"$ref": "#/components/responses/Unauthorized"}, "403": {"$ref": "#/components/responses/Forbidden"}, "404": {"$ref": "#/components/responses/NotFound"}, "409": {"$ref": "#/components/responses/Conflict"}, "422": {"$ref": "#/components/responses/ValidationError"}}}
+    },
+    "/pesquisas-ocupacao/{id_pesquisa}/encerramento": {
+      "post": {"tags": ["Pesquisas de ocupação"], "operationId": "encerrarPesquisaOcupacao", "summary": "Encerrar pesquisa", "responses": {"200": {"description": "Pesquisa encerrada."}, "401": {"$ref": "#/components/responses/Unauthorized"}, "403": {"$ref": "#/components/responses/Forbidden"}, "404": {"$ref": "#/components/responses/NotFound"}, "409": {"$ref": "#/components/responses/Conflict"}}}
+    },
     "/pesquisas-ocupacao/{id_pesquisa}/respostas": {
       "post": {"tags": ["Respostas de ocupação"], "operationId": "enviarRespostaOcupacao", "summary": "Enviar resposta de ocupação", "responses": {"201": {"description": "Resposta enviada."}, "401": {"$ref": "#/components/responses/Unauthorized"}, "404": {"$ref": "#/components/responses/NotFound"}, "409": {"$ref": "#/components/responses/Conflict"}}}
     },
@@ -1766,8 +1772,14 @@
     "/relatorios": {
       "post": {"tags": ["Relatórios"], "operationId": "gerarRelatorio", "summary": "Gerar relatório PDF ou CSV", "responses": {"202": {"description": "Geração aceita."}, "401": {"$ref": "#/components/responses/Unauthorized"}, "403": {"$ref": "#/components/responses/Forbidden"}, "422": {"$ref": "#/components/responses/ValidationError"}}}
     },
+    "/relatorios/{id_relatorio}": {
+      "get": {"tags": ["Relatórios"], "operationId": "obterRelatorio", "summary": "Consultar estado de relatório", "responses": {"200": {"description": "Relatório."}, "401": {"$ref": "#/components/responses/Unauthorized"}, "403": {"$ref": "#/components/responses/Forbidden"}, "404": {"$ref": "#/components/responses/NotFound"}}}
+    },
+    "/relatorios/{id_relatorio}/arquivo": {
+      "get": {"tags": ["Relatórios"], "operationId": "baixarRelatorio", "summary": "Baixar relatório gerado", "responses": {"200": {"description": "Arquivo do relatório."}, "401": {"$ref": "#/components/responses/Unauthorized"}, "403": {"$ref": "#/components/responses/Forbidden"}, "404": {"$ref": "#/components/responses/NotFound"}}}
+    },
     "/auditoria": {
-      "get": {"tags": ["Auditoria"], "operationId": "listarAuditoria", "summary": "Consultar logs e alterações", "parameters": [{"name": "acao", "in": "query", "schema": {"type": "string"}}, {"name": "id_usuario", "in": "query", "schema": {"type": "integer"}}], "responses": {"200": {"description": "Eventos de auditoria."}, "401": {"$ref": "#/components/responses/Unauthorized"}, "403": {"$ref": "#/components/responses/Forbidden"}}}
+      "get": {"tags": ["Auditoria"], "operationId": "listarAuditoria", "summary": "Consultar logs e alterações", "parameters": [{"name": "acao", "in": "query", "schema": {"type": "string"}}, {"name": "id_usuario", "in": "query", "schema": {"type": "integer"}}, {"name": "data_inicio", "in": "query", "schema": {"type": "string", "format": "date-time"}}, {"name": "data_fim", "in": "query", "schema": {"type": "string", "format": "date-time"}}], "responses": {"200": {"description": "Eventos de auditoria."}, "401": {"$ref": "#/components/responses/Unauthorized"}, "403": {"$ref": "#/components/responses/Forbidden"}}}
     },
     "/dashboard": {
       "get": {"tags": ["Dashboard"], "operationId": "obterDashboard", "summary": "Consultar indicadores e alertas", "responses": {"200": {"description": "Indicadores e alertas."}, "401": {"$ref": "#/components/responses/Unauthorized"}}}
