@@ -1,0 +1,12 @@
+{
+  "id_estabelecimento": "11111111-1111-4111-8111-111111111111",
+  "id_categoria": 1,
+  "nome_fantasia": "Hotel Serra Azul",
+  "cnpj": "54.839.271/0001-64",
+  "status": "INATIVO",
+  "motivo_inativacao": "Cadastro duplicado confirmado pela equipe.",
+  "endereco": "Av. das Palmeiras, 120, Cidade Exemplo - SP",
+  "aceita_pesquisas": true,
+  "criado_em": "2026-01-12T13:15:00Z",
+  "atualizado_em": "2026-10-27T12:00:00Z"
+}
