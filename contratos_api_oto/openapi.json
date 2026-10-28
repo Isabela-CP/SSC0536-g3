@@ -1,0 +1,2860 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Inventário OTO — API de Gestão de Estabelecimentos",
+    "version": "0.1.0",
+    "description": "Contrato inicial da API REST do Inventário OTO. O escopo principal é a gestão de meios de hospedagem: listagem, pesquisa, cadastro, consulta, edição, inativação lógica e gestão de documentos com upload de arquivo.\n\nPerfis definidos para o MVP: ADMINISTRADOR (acesso total); GESTOR (consulta); EDITOR (edição de cadastros); CONTA_EMPRESARIO mapeado para o perfil de aplicação HOTEL (acesso apenas à hospedagem vinculada). Somente ADMINISTRADOR pode alterar CNPJ e razão social.\n\nO cadastro inicial pode ficar incompleto nos dados operacionais e de infraestrutura, mas exige categoria de meios de hospedagem, nome fantasia, razão social, CNPJ e endereço. As categorias fora de meios de hospedagem não são expostas pelo contrato deste MVP. Uploads são enviados como multipart/form-data; limites de tamanho e lista final de tipos MIME devem ser definidos pela equipe antes da implementação em produção."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8000/api/v1",
+      "description": "Desenvolvimento local"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Categorias",
+      "description": "Categoria permitida neste MVP: Meios de hospedagem."
+    },
+    {
+      "name": "Estabelecimentos",
+      "description": "Cadastro, consulta e manutenção do inventário de meios de hospedagem."
+    },
+    {
+      "name": "Documentos",
+      "description": "Metadados, upload, substituição e download de documentos de controle."
+    }
+  ],
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ],
+  "paths": {
+    "/categorias-estabelecimento": {
+      "get": {
+        "tags": [
+          "Categorias"
+        ],
+        "summary": "Listar categorias de estabelecimento",
+        "operationId": "listarCategoriasEstabelecimento",
+        "responses": {
+          "200": {
+            "description": "Categorias disponíveis.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CategoriaEstabelecimento"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                },
+                "example": {
+                  "data": [
+                    {
+                      "id_categoria": 1,
+                      "nome_categoria": "Meios de hospedagem",
+                      "descricao": "Hotéis, pousadas, resorts e outros meios de hospedagem."
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Autenticação ausente ou inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "É necessário autenticar-se."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "description": "Retorna somente a categoria Meios de hospedagem no escopo atual do MVP.",
+        "x-allowed-roles": [
+          "ADMINISTRADOR",
+          "GESTOR",
+          "EDITOR",
+          "HOTEL"
+        ]
+      }
+    },
+    "/estabelecimentos": {
+      "get": {
+        "tags": [
+          "Estabelecimentos"
+        ],
+        "summary": "Buscar e listar estabelecimentos",
+        "operationId": "listarEstabelecimentos",
+        "responses": {
+          "200": {
+            "description": "Página de estabelecimentos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EstabelecimentoListResponse"
+                },
+                "example": {
+                  "data": [
+                    {
+                      "id_estabelecimento": "11111111-1111-4111-8111-111111111111",
+                      "id_categoria": 1,
+                      "nome_fantasia": "Hotel Serra Azul",
+                      "razao_social": "Serra Azul Hospedagem Ltda.",
+                      "cnpj": "54.839.271/0001-64",
+                      "bairro": "Centro",
+                      "status": "ATIVO",
+                      "cadastur_status": "OBRIGATORIO",
+                      "possui_cadastur": true,
+                      "aceita_pesquisas": true,
+                      "latitude": -22.0174,
+                      "longitude": -47.8908
+                    },
+                    {
+                      "id_estabelecimento": "22222222-2222-4222-8222-222222222222",
+                      "id_categoria": 1,
+                      "nome_fantasia": "Pousada Ipê Amarelo",
+                      "razao_social": "Ipê Amarelo Hospedagem Ltda.",
+                      "cnpj": "67.294.153/0001-60",
+                      "bairro": "Jardim das Flores",
+                      "status": "ATIVO",
+                      "cadastur_status": "OBRIGATORIO",
+                      "possui_cadastur": false,
+                      "aceita_pesquisas": true,
+                      "latitude": -22.0111,
+                      "longitude": -47.9012
+                    }
+                  ],
+                  "pagination": {
+                    "page": 1,
+                    "page_size": 20,
+                    "total": 2,
+                    "total_pages": 1
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requisição malformada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "BAD_REQUEST",
+                    "message": "A requisição não pôde ser interpretada."
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Autenticação ausente ou inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "É necessário autenticar-se."
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Usuário sem permissão para a operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "FORBIDDEN",
+                    "message": "Seu perfil não pode executar esta operação."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "description": "Busca por nome fantasia, razão social ou CNPJ; permite filtros e paginação. ADMINISTRADOR, GESTOR e EDITOR consultam o inventário; HOTEL deve receber somente a ficha vinculada à própria conta (recomenda-se filtrar por estabelecimento no serviço, não confiar em filtro enviado pelo cliente).",
+        "parameters": [
+          {
+            "name": "busca",
+            "in": "query",
+            "description": "Texto para busca por nome, razão social ou CNPJ.",
+            "schema": {
+              "type": "string",
+              "maxLength": 120
+            }
+          },
+          {
+            "name": "id_categoria",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/StatusEstabelecimento"
+            }
+          },
+          {
+            "name": "cadastur_status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/CadasturStatus"
+            }
+          },
+          {
+            "name": "aceita_pesquisas",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "ordenar_por",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "nome_fantasia",
+                "criado_em",
+                "atualizado_em"
+              ],
+              "default": "nome_fantasia"
+            }
+          },
+          {
+            "name": "ordem",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "asc"
+            }
+          }
+        ],
+        "x-role-permissions": {
+          "roles": [
+            "ADMINISTRADOR",
+            "GESTOR",
+            "EDITOR",
+            "HOTEL"
+          ],
+          "restriction": "HOTEL só pode acessar o estabelecimento vinculado à própria conta."
+        }
+      },
+      "post": {
+        "tags": [
+          "Estabelecimentos"
+        ],
+        "summary": "Cadastrar estabelecimento",
+        "operationId": "criarEstabelecimento",
+        "responses": {
+          "201": {
+            "description": "Estabelecimento criado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Estabelecimento"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requisição malformada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "BAD_REQUEST",
+                    "message": "A requisição não pôde ser interpretada."
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Autenticação ausente ou inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "É necessário autenticar-se."
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Usuário sem permissão para a operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "FORBIDDEN",
+                    "message": "Seu perfil não pode executar esta operação."
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito com dados existentes ou estado atual.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "CONFLICT",
+                    "message": "Já existe um estabelecimento cadastrado com esse CNPJ."
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Falha em uma ou mais validações de campo.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": "Verifique os campos informados.",
+                    "details": [
+                      {
+                        "field": "cnpj",
+                        "issue": "CNPJ inválido."
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "description": "Cria a ficha inicial do estabelecimento. São obrigatórios categoria de meios de hospedagem, nome fantasia, razão social, CNPJ e endereço. Dados de capacidade, infraestrutura e documentos podem ser preenchidos depois. No contrato atual, a criação está reservada ao ADMINISTRADOR; confirmar se EDITOR também poderá criar.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EstabelecimentoCreate"
+              },
+              "examples": {
+                "novoHotel": {
+                  "value": {
+                    "id_categoria": 1,
+                    "nome_fantasia": "Hotel Serra Azul",
+                    "razao_social": "Serra Azul Hospedagem Ltda.",
+                    "cnpj": "54.839.271/0001-64",
+                    "cnae": "5510801",
+                    "endereco": "Av. das Palmeiras, 120, Cidade Exemplo - SP",
+                    "bairro": "Centro",
+                    "latitude": -22.0174,
+                    "longitude": -47.8908,
+                    "telefone_comercial": "+55 16 3333-1000",
+                    "email_comercial": "contato@serra-azul.example",
+                    "telefone_pesquisas": "+55 16 99999-1000",
+                    "email_pesquisas": "pesquisas@serra-azul.example",
+                    "aceita_pesquisas": true,
+                    "cadastur_status": "OBRIGATORIO",
+                    "possui_cadastur": true,
+                    "numero_cadastur": "CAD-OTO-000123",
+                    "vencimento_cadastur": "2027-08-31",
+                    "meio_hospedagem": {
+                      "tipo_hospedagem": "HOTEL",
+                      "total_uh": 48,
+                      "total_leitos": 96,
+                      "uh_pcd": 3,
+                      "func_fixos": 18,
+                      "func_temporarios": 4,
+                      "funcionamento_24h": true,
+                      "checkin_horario": "14:00:00",
+                      "checkout_horario": "12:00:00",
+                      "formas_pagamento": [
+                        "PIX",
+                        "CREDITO",
+                        "DEBITO",
+                        "DINHEIRO"
+                      ]
+                    },
+                    "infraestrutura": {
+                      "estacionamento": true,
+                      "manobrista": false,
+                      "pet_friendly": true,
+                      "wifi": true,
+                      "ar_condicionado_uh": true,
+                      "tv_uh": true,
+                      "frigobar_uh": true,
+                      "cafe_da_manha": true,
+                      "restaurante": true,
+                      "bar_molhado": false,
+                      "piscina_adulto": true,
+                      "piscina_infantil": false,
+                      "academia": true,
+                      "sala_jogos": false,
+                      "area_eventos": true,
+                      "pcd_rampa": true,
+                      "pcd_elevador": true,
+                      "pcd_sanitario_adaptado": true,
+                      "pcd_piso_tatil": false,
+                      "pcd_equipe_capacitada": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-allowed-roles": [
+          "ADMINISTRADOR"
+        ]
+      }
+    },
+    "/estabelecimentos/{id_estabelecimento}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/EstabelecimentoId"
+        }
+      ],
+      "get": {
+        "tags": [
+          "Estabelecimentos"
+        ],
+        "summary": "Consultar estabelecimento por ID",
+        "operationId": "obterEstabelecimento",
+        "responses": {
+          "200": {
+            "description": "Ficha completa do estabelecimento.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Estabelecimento"
+                },
+                "example": {
+                  "id_estabelecimento": "11111111-1111-4111-8111-111111111111",
+                  "id_categoria": 1,
+                  "nome_fantasia": "Hotel Serra Azul",
+                  "razao_social": "Serra Azul Hospedagem Ltda.",
+                  "cnpj": "54.839.271/0001-64",
+                  "cnae": "5510801",
+                  "status": "ATIVO",
+                  "motivo_inativacao": null,
+                  "data_abertura": "2018-03-15",
+                  "endereco": "Av. das Palmeiras, 120, Cidade Exemplo - SP",
+                  "bairro": "Centro",
+                  "latitude": -22.0174,
+                  "longitude": -47.8908,
+                  "telefone_comercial": "+55 16 3333-1000",
+                  "email_comercial": "contato@serra-azul.example",
+                  "telefone_pesquisas": "+55 16 99999-1000",
+                  "email_pesquisas": "pesquisas@serra-azul.example",
+                  "aceita_pesquisas": true,
+                  "cadastur_status": "OBRIGATORIO",
+                  "possui_cadastur": true,
+                  "numero_cadastur": "CAD-OTO-000123",
+                  "vencimento_cadastur": "2027-08-31",
+                  "criado_em": "2026-01-12T13:15:00Z",
+                  "atualizado_em": "2026-10-20T17:20:00Z",
+                  "categoria": {
+                    "id_categoria": 1,
+                    "nome_categoria": "Meios de hospedagem",
+                    "descricao": "Hotéis, pousadas, resorts e outros meios de hospedagem."
+                  },
+                  "meio_hospedagem": {
+                    "tipo_hospedagem": "HOTEL",
+                    "total_uh": 48,
+                    "total_leitos": 96,
+                    "uh_pcd": 3,
+                    "func_fixos": 18,
+                    "func_temporarios": 4,
+                    "funcionamento_24h": true,
+                    "checkin_horario": "14:00:00",
+                    "checkout_horario": "12:00:00",
+                    "formas_pagamento": [
+                      "PIX",
+                      "CREDITO",
+                      "DEBITO",
+                      "DINHEIRO"
+                    ]
+                  },
+                  "infraestrutura": {
+                    "estacionamento": true,
+                    "manobrista": false,
+                    "pet_friendly": true,
+                    "wifi": true,
+                    "ar_condicionado_uh": true,
+                    "tv_uh": true,
+                    "frigobar_uh": true,
+                    "cafe_da_manha": true,
+                    "restaurante": true,
+                    "bar_molhado": false,
+                    "piscina_adulto": true,
+                    "piscina_infantil": false,
+                    "academia": true,
+                    "sala_jogos": false,
+                    "area_eventos": true,
+                    "pcd_rampa": true,
+                    "pcd_elevador": true,
+                    "pcd_sanitario_adaptado": true,
+                    "pcd_piso_tatil": false,
+                    "pcd_equipe_capacitada": true
+                  },
+                  "documentos": [
+                    {
+                      "id_documento": 1001,
+                      "id_estabelecimento": "11111111-1111-4111-8111-111111111111",
+                      "tipo_documento": "ALVARA",
+                      "numero": "ALV-2026-0042",
+                      "data_emissao": "2026-01-10",
+                      "data_vencimento": "2027-01-10",
+                      "status": "REGULAR"
+                    },
+                    {
+                      "id_documento": 1002,
+                      "id_estabelecimento": "11111111-1111-4111-8111-111111111111",
+                      "tipo_documento": "AVCB",
+                      "numero": "AVCB-2025-0781",
+                      "data_emissao": "2025-12-01",
+                      "data_vencimento": "2026-11-30",
+                      "status": "A_VENCER"
+                    },
+                    {
+                      "id_documento": 1003,
+                      "id_estabelecimento": "11111111-1111-4111-8111-111111111111",
+                      "tipo_documento": "VIGILANCIA_SANITARIA",
+                      "numero": "VS-2026-0118",
+                      "data_emissao": "2026-02-01",
+                      "data_vencimento": "2027-02-01",
+                      "status": "REGULAR"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Autenticação ausente ou inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "É necessário autenticar-se."
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Usuário sem permissão para a operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "FORBIDDEN",
+                    "message": "Seu perfil não pode executar esta operação."
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Registro não encontrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "NOT_FOUND",
+                    "message": "Estabelecimento ou documento não encontrado."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "description": "Retorna a ficha do estabelecimento. HOTEL só pode consultar o estabelecimento associado à sua própria conta.",
+        "x-role-permissions": {
+          "roles": [
+            "ADMINISTRADOR",
+            "GESTOR",
+            "EDITOR",
+            "HOTEL"
+          ],
+          "restriction": "HOTEL só pode acessar o estabelecimento vinculado à própria conta."
+        }
+      },
+      "patch": {
+        "tags": [
+          "Estabelecimentos"
+        ],
+        "summary": "Editar dados do estabelecimento",
+        "operationId": "atualizarEstabelecimento",
+        "responses": {
+          "200": {
+            "description": "Estabelecimento atualizado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Estabelecimento"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requisição malformada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "BAD_REQUEST",
+                    "message": "A requisição não pôde ser interpretada."
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Autenticação ausente ou inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "É necessário autenticar-se."
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Usuário sem permissão para a operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "FORBIDDEN",
+                    "message": "Seu perfil não pode executar esta operação."
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Registro não encontrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "NOT_FOUND",
+                    "message": "Estabelecimento ou documento não encontrado."
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito com dados existentes ou estado atual.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "CONFLICT",
+                    "message": "Já existe um estabelecimento cadastrado com esse CNPJ."
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Falha em uma ou mais validações de campo.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": "Verifique os campos informados.",
+                    "details": [
+                      {
+                        "field": "cnpj",
+                        "issue": "CNPJ inválido."
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "description": "Atualização parcial. ADMINISTRADOR pode editar todos os campos. EDITOR pode editar dados da ficha, exceto CNPJ e razão social. HOTEL pode editar os dados básicos e operacionais do próprio estabelecimento, exceto CNPJ e razão social. GESTOR tem acesso somente de consulta. O backend deve validar o perfil e a propriedade do registro campo a campo; tentativas não autorizadas retornam 403.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EstabelecimentoUpdate"
+              },
+              "examples": {
+                "editarContatos": {
+                  "value": {
+                    "telefone_pesquisas": "+55 16 98888-1000",
+                    "email_pesquisas": "reservas@serra-azul.example",
+                    "aceita_pesquisas": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-role-permissions": {
+          "ADMINISTRADOR": "Pode editar todos os campos.",
+          "GESTOR": "Somente leitura.",
+          "EDITOR": "Pode editar campos do estabelecimento, exceto cnpj e razao_social.",
+          "HOTEL": "Pode editar a própria ficha, exceto cnpj e razao_social."
+        }
+      }
+    },
+    "/estabelecimentos/{id_estabelecimento}/inativacao": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/EstabelecimentoId"
+        }
+      ],
+      "post": {
+        "tags": [
+          "Estabelecimentos"
+        ],
+        "summary": "Inativar estabelecimento logicamente",
+        "operationId": "inativarEstabelecimento",
+        "responses": {
+          "200": {
+            "description": "Estabelecimento inativado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Estabelecimento"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Autenticação ausente ou inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "É necessário autenticar-se."
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Usuário sem permissão para a operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "FORBIDDEN",
+                    "message": "Seu perfil não pode executar esta operação."
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Registro não encontrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "NOT_FOUND",
+                    "message": "Estabelecimento ou documento não encontrado."
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito com dados existentes ou estado atual.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "CONFLICT",
+                    "message": "Já existe um estabelecimento cadastrado com esse CNPJ."
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Falha em uma ou mais validações de campo.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": "Verifique os campos informados.",
+                    "details": [
+                      {
+                        "field": "cnpj",
+                        "issue": "CNPJ inválido."
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "description": "Inativação lógica reservada ao ADMINISTRADOR. Não apaga o registro; salva motivo e registra a operação em AUDIT_LOG.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "motivo_inativacao": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "motivo_inativacao"
+                ]
+              },
+              "examples": {
+                "motivo": {
+                  "value": {
+                    "motivo_inativacao": "Cadastro duplicado confirmado pela equipe."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-allowed-roles": [
+          "ADMINISTRADOR"
+        ]
+      }
+    },
+    "/estabelecimentos/{id_estabelecimento}/reativacao": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/EstabelecimentoId"
+        }
+      ],
+      "post": {
+        "tags": [
+          "Estabelecimentos"
+        ],
+        "summary": "Reativar estabelecimento",
+        "operationId": "reativarEstabelecimento",
+        "responses": {
+          "200": {
+            "description": "Estabelecimento reativado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Estabelecimento"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Autenticação ausente ou inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "É necessário autenticar-se."
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Usuário sem permissão para a operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "FORBIDDEN",
+                    "message": "Seu perfil não pode executar esta operação."
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Registro não encontrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "NOT_FOUND",
+                    "message": "Estabelecimento ou documento não encontrado."
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito com dados existentes ou estado atual.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "CONFLICT",
+                    "message": "Já existe um estabelecimento cadastrado com esse CNPJ."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "description": "Reativação reservada ao ADMINISTRADOR. Define status=ATIVO, limpa motivo_inativacao e registra a alteração no log de auditoria.",
+        "x-allowed-roles": [
+          "ADMINISTRADOR"
+        ]
+      }
+    },
+    "/estabelecimentos/{id_estabelecimento}/documentos": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/EstabelecimentoId"
+        }
+      ],
+      "get": {
+        "tags": [
+          "Documentos"
+        ],
+        "summary": "Listar documentos de controle",
+        "operationId": "listarDocumentosEstabelecimento",
+        "responses": {
+          "200": {
+            "description": "Documentos vinculados ao estabelecimento.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/DocumentoControle"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                },
+                "example": {
+                  "data": [
+                    {
+                      "id_documento": 1001,
+                      "id_estabelecimento": "11111111-1111-4111-8111-111111111111",
+                      "tipo_documento": "ALVARA",
+                      "numero": "ALV-2026-0042",
+                      "data_emissao": "2026-01-10",
+                      "data_vencimento": "2027-01-10",
+                      "status": "REGULAR",
+                      "arquivo": {
+                        "nome_arquivo": "alvara-funcionamento.pdf",
+                        "content_type": "application/pdf",
+                        "tamanho_bytes": 245760,
+                        "enviado_em": "2026-10-20T14:30:00Z"
+                      }
+                    },
+                    {
+                      "id_documento": 1002,
+                      "id_estabelecimento": "11111111-1111-4111-8111-111111111111",
+                      "tipo_documento": "AVCB",
+                      "numero": "AVCB-2025-0781",
+                      "data_emissao": "2025-12-01",
+                      "data_vencimento": "2026-11-30",
+                      "status": "A_VENCER",
+                      "arquivo": {
+                        "nome_arquivo": "avcb.pdf",
+                        "content_type": "application/pdf",
+                        "tamanho_bytes": 245760,
+                        "enviado_em": "2026-10-20T14:30:00Z"
+                      }
+                    },
+                    {
+                      "id_documento": 1003,
+                      "id_estabelecimento": "11111111-1111-4111-8111-111111111111",
+                      "tipo_documento": "VIGILANCIA_SANITARIA",
+                      "numero": "VS-2026-0118",
+                      "data_emissao": "2026-02-01",
+                      "data_vencimento": "2027-02-01",
+                      "status": "REGULAR",
+                      "arquivo": {
+                        "nome_arquivo": "licenca-sanitaria.pdf",
+                        "content_type": "application/pdf",
+                        "tamanho_bytes": 245760,
+                        "enviado_em": "2026-10-20T14:30:00Z"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Autenticação ausente ou inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "É necessário autenticar-se."
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Usuário sem permissão para a operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "FORBIDDEN",
+                    "message": "Seu perfil não pode executar esta operação."
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Registro não encontrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "NOT_FOUND",
+                    "message": "Estabelecimento ou documento não encontrado."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "description": "Lista documentos de controle, incluindo metadados do arquivo armazenado. HOTEL só pode consultar documentos da hospedagem vinculada à própria conta.",
+        "x-role-permissions": {
+          "roles": [
+            "ADMINISTRADOR",
+            "GESTOR",
+            "EDITOR",
+            "HOTEL"
+          ],
+          "restriction": "HOTEL só pode acessar o estabelecimento vinculado à própria conta."
+        }
+      },
+      "post": {
+        "tags": [
+          "Documentos"
+        ],
+        "summary": "Adicionar documento de controle",
+        "operationId": "criarDocumentoControle",
+        "responses": {
+          "201": {
+            "description": "Documento e arquivo armazenados; status calculado pelo backend.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentoControle"
+                },
+                "example": {
+                  "id_documento": 1006,
+                  "id_estabelecimento": "11111111-1111-4111-8111-111111111111",
+                  "tipo_documento": "ALVARA",
+                  "numero": "ALV-2026-0042",
+                  "data_emissao": "2026-01-10",
+                  "data_vencimento": "2027-01-10",
+                  "status": "REGULAR",
+                  "arquivo": {
+                    "nome_arquivo": "alvara-funcionamento.pdf",
+                    "content_type": "application/pdf",
+                    "tamanho_bytes": 245760,
+                    "enviado_em": "2026-10-20T14:30:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Autenticação ausente ou inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "É necessário autenticar-se."
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Usuário sem permissão para a operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "FORBIDDEN",
+                    "message": "Seu perfil não pode executar esta operação."
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Registro não encontrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "NOT_FOUND",
+                    "message": "Estabelecimento ou documento não encontrado."
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Falha em uma ou mais validações de campo.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": "Verifique os campos informados.",
+                    "details": [
+                      {
+                        "field": "cnpj",
+                        "issue": "CNPJ inválido."
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Arquivo excede o limite configurado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "PAYLOAD_TOO_LARGE",
+                    "message": "O arquivo excede o tamanho máximo permitido."
+                  }
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Tipo de arquivo não permitido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNSUPPORTED_MEDIA_TYPE",
+                    "message": "Tipo de arquivo não permitido."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/DocumentoControleUpload"
+              },
+              "encoding": {
+                "arquivo": {
+                  "contentType": "application/pdf, image/jpeg, image/png"
+                }
+              },
+              "examples": {
+                "alvaraComArquivo": {
+                  "summary": "Upload de alvará em PDF",
+                  "value": {
+                    "tipo_documento": "ALVARA",
+                    "numero": "ALV-2026-0042",
+                    "data_emissao": "2026-01-10",
+                    "data_vencimento": "2027-01-10",
+                    "arquivo": "<arquivo binário omitido no exemplo>"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "description": "Cria o registro de documento e envia o arquivo em uma única requisição multipart/form-data. O backend armazena o arquivo e calcula o status a partir da data de vencimento.",
+        "x-role-permissions": {
+          "roles": [
+            "ADMINISTRADOR",
+            "EDITOR",
+            "HOTEL"
+          ],
+          "restriction": "HOTEL só pode gerenciar documentos do estabelecimento vinculado à própria conta."
+        }
+      }
+    },
+    "/estabelecimentos/{id_estabelecimento}/documentos/{id_documento}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/EstabelecimentoId"
+        },
+        {
+          "name": "id_documento",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      ],
+      "patch": {
+        "tags": [
+          "Documentos"
+        ],
+        "summary": "Atualizar documento de controle",
+        "operationId": "atualizarDocumentoControle",
+        "responses": {
+          "200": {
+            "description": "Documento atualizado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentoControle"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Autenticação ausente ou inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "É necessário autenticar-se."
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Usuário sem permissão para a operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "FORBIDDEN",
+                    "message": "Seu perfil não pode executar esta operação."
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Registro não encontrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "NOT_FOUND",
+                    "message": "Estabelecimento ou documento não encontrado."
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Falha em uma ou mais validações de campo.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": "Verifique os campos informados.",
+                    "details": [
+                      {
+                        "field": "cnpj",
+                        "issue": "CNPJ inválido."
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DocumentoControleUpdate"
+              }
+            }
+          }
+        },
+        "description": "Atualiza os metadados do documento. Para trocar o arquivo, use PUT .../{id_documento}/arquivo. HOTEL só pode atualizar documentos da própria hospedagem.",
+        "x-role-permissions": {
+          "roles": [
+            "ADMINISTRADOR",
+            "EDITOR",
+            "HOTEL"
+          ],
+          "restriction": "HOTEL só pode gerenciar documentos do estabelecimento vinculado à própria conta."
+        }
+      }
+    },
+    "/estabelecimentos/{id_estabelecimento}/documentos/{id_documento}/arquivo": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/EstabelecimentoId"
+        },
+        {
+          "name": "id_documento",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "Documentos"
+        ],
+        "summary": "Baixar arquivo do documento",
+        "operationId": "baixarArquivoDocumento",
+        "description": "Retorna o arquivo armazenado. HOTEL só pode baixar arquivos de documentos da hospedagem vinculada à própria conta.",
+        "x-role-permissions": {
+          "roles": [
+            "ADMINISTRADOR",
+            "GESTOR",
+            "EDITOR",
+            "HOTEL"
+          ],
+          "restriction": "HOTEL só pode acessar o estabelecimento vinculado à própria conta."
+        },
+        "responses": {
+          "200": {
+            "description": "Conteúdo binário do arquivo.",
+            "headers": {
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Nome sugerido para download."
+              }
+            },
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Autenticação ausente ou inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "É necessário autenticar-se."
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Usuário sem permissão para a operação ou fora do escopo do estabelecimento.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "FORBIDDEN",
+                    "message": "Seu perfil não pode executar esta operação."
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Estabelecimento, documento ou arquivo não encontrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "NOT_FOUND",
+                    "message": "Arquivo não encontrado."
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Documentos"
+        ],
+        "summary": "Substituir arquivo do documento",
+        "operationId": "substituirArquivoDocumento",
+        "description": "Substitui o arquivo digital mantendo o mesmo registro de documento. O backend deve validar extensão/MIME, tamanho máximo e registrar a operação em AUDIT_LOG.",
+        "x-role-permissions": {
+          "roles": [
+            "ADMINISTRADOR",
+            "EDITOR",
+            "HOTEL"
+          ],
+          "restriction": "HOTEL só pode gerenciar documentos do estabelecimento vinculado à própria conta."
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/DocumentoArquivoUpload"
+              },
+              "encoding": {
+                "arquivo": {
+                  "contentType": "application/pdf, image/jpeg, image/png"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Arquivo substituído.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentoControle"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Autenticação ausente ou inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "É necessário autenticar-se."
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Usuário sem permissão para a operação ou fora do escopo do estabelecimento.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "FORBIDDEN",
+                    "message": "Seu perfil não pode executar esta operação."
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Estabelecimento, documento ou arquivo não encontrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "NOT_FOUND",
+                    "message": "Arquivo não encontrado."
+                  }
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Arquivo excede o limite configurado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "PAYLOAD_TOO_LARGE",
+                    "message": "O arquivo excede o tamanho máximo permitido."
+                  }
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Tipo de arquivo não permitido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNSUPPORTED_MEDIA_TYPE",
+                    "message": "Tipo de arquivo não permitido."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "parameters": {
+      "EstabelecimentoId": {
+        "name": "id_estabelecimento",
+        "in": "path",
+        "required": true,
+        "description": "UUID do estabelecimento.",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Requisição malformada.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "error": {
+                "code": "BAD_REQUEST",
+                "message": "A requisição não pôde ser interpretada."
+              }
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Autenticação ausente ou inválida.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "error": {
+                "code": "UNAUTHORIZED",
+                "message": "É necessário autenticar-se."
+              }
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "Usuário sem permissão para a operação.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "error": {
+                "code": "FORBIDDEN",
+                "message": "Seu perfil não pode executar esta operação."
+              }
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Registro não encontrado.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "error": {
+                "code": "NOT_FOUND",
+                "message": "Estabelecimento ou documento não encontrado."
+              }
+            }
+          }
+        }
+      },
+      "Conflict": {
+        "description": "Conflito com dados existentes ou estado atual.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "error": {
+                "code": "CONFLICT",
+                "message": "Já existe um estabelecimento cadastrado com esse CNPJ."
+              }
+            }
+          }
+        }
+      },
+      "ValidationError": {
+        "description": "Falha em uma ou mais validações de campo.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "error": {
+                "code": "VALIDATION_ERROR",
+                "message": "Verifique os campos informados.",
+                "details": [
+                  {
+                    "field": "cnpj",
+                    "issue": "CNPJ inválido."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "StatusEstabelecimento": {
+        "type": "string",
+        "enum": [
+          "ATIVO",
+          "INATIVO"
+        ]
+      },
+      "CadasturStatus": {
+        "type": "string",
+        "enum": [
+          "OBRIGATORIO",
+          "OPCIONAL",
+          "NAO_CONSTA"
+        ]
+      },
+      "TipoHospedagem": {
+        "type": "string",
+        "enum": [
+          "HOTEL",
+          "POUSADA",
+          "RESORT",
+          "FLAT",
+          "HOSTEL",
+          "HOTEL_FAZENDA"
+        ]
+      },
+      "TipoDocumento": {
+        "type": "string",
+        "enum": [
+          "ALVARA",
+          "AVCB",
+          "VIGILANCIA_SANITARIA"
+        ]
+      },
+      "StatusDocumento": {
+        "type": "string",
+        "enum": [
+          "REGULAR",
+          "A_VENCER",
+          "VENCIDO"
+        ]
+      },
+      "CategoriaEstabelecimento": {
+        "type": "object",
+        "properties": {
+          "id_categoria": {
+            "type": "integer"
+          },
+          "nome_categoria": {
+            "type": "string"
+          },
+          "descricao": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id_categoria",
+          "nome_categoria"
+        ]
+      },
+      "MeioHospedagem": {
+        "type": "object",
+        "description": "Campos específicos de hospedagem; podem estar incompletos no cadastro inicial.",
+        "properties": {
+          "tipo_hospedagem": {
+            "$ref": "#/components/schemas/TipoHospedagem"
+          },
+          "total_uh": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "total_leitos": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "uh_pcd": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "func_fixos": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "func_temporarios": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "funcionamento_24h": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "checkin_horario": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "time"
+          },
+          "checkout_horario": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "time"
+          },
+          "formas_pagamento": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "PIX",
+                "CREDITO",
+                "DEBITO",
+                "DINHEIRO"
+              ]
+            },
+            "uniqueItems": true,
+            "description": "Lista de formas de pagamento aceitas pelo estabelecimento."
+          }
+        }
+      },
+      "InfraestruturaHospedagem": {
+        "type": "object",
+        "properties": {
+          "estacionamento": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "manobrista": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "pet_friendly": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "wifi": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "ar_condicionado_uh": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "tv_uh": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "frigobar_uh": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "cafe_da_manha": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "restaurante": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "bar_molhado": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "piscina_adulto": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "piscina_infantil": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "academia": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "sala_jogos": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "area_eventos": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "pcd_rampa": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "pcd_elevador": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "pcd_sanitario_adaptado": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "pcd_piso_tatil": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "pcd_equipe_capacitada": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          }
+        }
+      },
+      "DocumentoControle": {
+        "type": "object",
+        "properties": {
+          "id_documento": {
+            "type": "integer"
+          },
+          "id_estabelecimento": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tipo_documento": {
+            "$ref": "#/components/schemas/TipoDocumento"
+          },
+          "numero": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "data_emissao": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "data_vencimento": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "status": {
+            "$ref": "#/components/schemas/StatusDocumento"
+          },
+          "arquivo": {
+            "$ref": "#/components/schemas/ArquivoDocumento"
+          }
+        },
+        "required": [
+          "id_documento",
+          "tipo_documento",
+          "status",
+          "arquivo"
+        ],
+        "description": "Documento de controle e metadados do arquivo digital armazenado."
+      },
+      "DocumentoControleCreate": {
+        "type": "object",
+        "properties": {
+          "tipo_documento": {
+            "$ref": "#/components/schemas/TipoDocumento"
+          },
+          "numero": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 120
+          },
+          "data_emissao": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "data_vencimento": {
+            "type": "string",
+            "format": "date"
+          }
+        },
+        "required": [
+          "tipo_documento",
+          "data_vencimento"
+        ],
+        "additionalProperties": false
+      },
+      "DocumentoControleUpdate": {
+        "type": "object",
+        "properties": {
+          "tipo_documento": {
+            "$ref": "#/components/schemas/TipoDocumento"
+          },
+          "numero": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 120
+          },
+          "data_emissao": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "data_vencimento": {
+            "type": "string",
+            "format": "date"
+          }
+        },
+        "additionalProperties": false,
+        "minProperties": 1
+      },
+      "EstabelecimentoResumo": {
+        "type": "object",
+        "properties": {
+          "id_estabelecimento": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "id_categoria": {
+            "type": "integer"
+          },
+          "nome_fantasia": {
+            "type": "string"
+          },
+          "razao_social": {
+            "type": "string"
+          },
+          "cnpj": {
+            "type": "string"
+          },
+          "bairro": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/StatusEstabelecimento"
+          },
+          "cadastur_status": {
+            "$ref": "#/components/schemas/CadasturStatus"
+          },
+          "possui_cadastur": {
+            "type": "boolean"
+          },
+          "aceita_pesquisas": {
+            "type": "boolean"
+          },
+          "latitude": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": -90,
+            "maximum": 90
+          },
+          "longitude": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": -180,
+            "maximum": 180
+          }
+        },
+        "required": [
+          "id_estabelecimento",
+          "id_categoria",
+          "nome_fantasia",
+          "cnpj",
+          "status",
+          "aceita_pesquisas"
+        ]
+      },
+      "Estabelecimento": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/EstabelecimentoResumo"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "cnae": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "motivo_inativacao": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "data_abertura": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date"
+              },
+              "endereco": {
+                "type": "string"
+              },
+              "telefone_comercial": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "email_comercial": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "email"
+              },
+              "telefone_pesquisas": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "email_pesquisas": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "email"
+              },
+              "numero_cadastur": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "vencimento_cadastur": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date"
+              },
+              "criado_em": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "atualizado_em": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "categoria": {
+                "$ref": "#/components/schemas/CategoriaEstabelecimento"
+              },
+              "meio_hospedagem": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/MeioHospedagem"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "infraestrutura": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/InfraestruturaHospedagem"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "documentos": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/DocumentoControle"
+                }
+              }
+            },
+            "required": [
+              "endereco",
+              "criado_em",
+              "atualizado_em"
+            ]
+          }
+        ]
+      },
+      "EstabelecimentoCreate": {
+        "type": "object",
+        "properties": {
+          "id_categoria": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "ID da categoria Meios de hospedagem disponível em GET /categorias-estabelecimento."
+          },
+          "nome_fantasia": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 160
+          },
+          "razao_social": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 200,
+            "description": "Razão social do estabelecimento. Somente ADMINISTRADOR pode alterar este campo após a criação.",
+            "x-allowed-roles-on-update": [
+              "ADMINISTRADOR"
+            ]
+          },
+          "cnpj": {
+            "type": "string",
+            "pattern": "^\\d{2}\\.?\\d{3}\\.?\\d{3}\\/?\\d{4}-?\\d{2}$",
+            "description": "Aceita CNPJ com ou sem pontuação; validar dígitos verificadores e unicidade. Somente ADMINISTRADOR pode alterar este campo após a criação.",
+            "x-allowed-roles-on-update": [
+              "ADMINISTRADOR"
+            ]
+          },
+          "cnae": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 20
+          },
+          "data_abertura": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "endereco": {
+            "type": "string",
+            "minLength": 5,
+            "maxLength": 300
+          },
+          "bairro": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 120
+          },
+          "latitude": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": -90,
+            "maximum": 90
+          },
+          "longitude": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": -180,
+            "maximum": 180
+          },
+          "telefone_comercial": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 30
+          },
+          "email_comercial": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "email"
+          },
+          "telefone_pesquisas": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 30
+          },
+          "email_pesquisas": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "email"
+          },
+          "aceita_pesquisas": {
+            "type": "boolean",
+            "default": true
+          },
+          "cadastur_status": {
+            "$ref": "#/components/schemas/CadasturStatus",
+            "default": "OBRIGATORIO"
+          },
+          "possui_cadastur": {
+            "type": "boolean",
+            "default": false
+          },
+          "numero_cadastur": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 80
+          },
+          "vencimento_cadastur": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "meio_hospedagem": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MeioHospedagem"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "infraestrutura": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/InfraestruturaHospedagem"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id_categoria",
+          "nome_fantasia",
+          "razao_social",
+          "cnpj",
+          "endereco"
+        ],
+        "additionalProperties": false,
+        "description": "Dados mínimos para criar uma ficha. Os campos operacionais, infraestrutura e documentos são opcionais e podem ser preenchidos depois."
+      },
+      "EstabelecimentoUpdate": {
+        "type": "object",
+        "properties": {
+          "id_categoria": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "ID da categoria de meios de hospedagem."
+          },
+          "nome_fantasia": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 160
+          },
+          "razao_social": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 200,
+            "description": "Razão social do estabelecimento. Somente ADMINISTRADOR pode alterar este campo após a criação.",
+            "x-allowed-roles-on-update": [
+              "ADMINISTRADOR"
+            ]
+          },
+          "cnpj": {
+            "type": "string",
+            "pattern": "^\\d{2}\\.?\\d{3}\\.?\\d{3}\\/?\\d{4}-?\\d{2}$",
+            "description": "Aceita CNPJ com ou sem pontuação; validar dígitos verificadores e unicidade. Somente ADMINISTRADOR pode alterar este campo após a criação.",
+            "x-allowed-roles-on-update": [
+              "ADMINISTRADOR"
+            ]
+          },
+          "cnae": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 20
+          },
+          "data_abertura": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "endereco": {
+            "type": "string",
+            "minLength": 5,
+            "maxLength": 300
+          },
+          "bairro": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 120
+          },
+          "latitude": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": -90,
+            "maximum": 90
+          },
+          "longitude": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": -180,
+            "maximum": 180
+          },
+          "telefone_comercial": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 30
+          },
+          "email_comercial": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "email"
+          },
+          "telefone_pesquisas": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 30
+          },
+          "email_pesquisas": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "email"
+          },
+          "aceita_pesquisas": {
+            "type": "boolean",
+            "default": true
+          },
+          "cadastur_status": {
+            "$ref": "#/components/schemas/CadasturStatus",
+            "default": "OBRIGATORIO"
+          },
+          "possui_cadastur": {
+            "type": "boolean",
+            "default": false
+          },
+          "numero_cadastur": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 80
+          },
+          "vencimento_cadastur": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "meio_hospedagem": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MeioHospedagem"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "infraestrutura": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/InfraestruturaHospedagem"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "minProperties": 1,
+        "description": "Payload de atualização parcial. A autorização é baseada no perfil: apenas ADMINISTRADOR pode alterar razao_social e cnpj; GESTOR não pode editar; HOTEL só atualiza a própria ficha."
+      },
+      "EstabelecimentoListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EstabelecimentoResumo"
+            }
+          },
+          "pagination": {
+            "type": "object",
+            "properties": {
+              "page": {
+                "type": "integer"
+              },
+              "page_size": {
+                "type": "integer"
+              },
+              "total": {
+                "type": "integer"
+              },
+              "total_pages": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "page",
+              "page_size",
+              "total",
+              "total_pages"
+            ]
+          }
+        },
+        "required": [
+          "data",
+          "pagination"
+        ]
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "details": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "field": {
+                      "type": "string"
+                    },
+                    "issue": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "ArquivoDocumento": {
+        "type": "object",
+        "description": "Metadados públicos do arquivo armazenado. Não expõe caminho interno, credenciais ou chave do storage.",
+        "properties": {
+          "nome_arquivo": {
+            "type": "string",
+            "maxLength": 255,
+            "example": "alvara-funcionamento.pdf"
+          },
+          "content_type": {
+            "type": "string",
+            "example": "application/pdf"
+          },
+          "tamanho_bytes": {
+            "type": "integer",
+            "minimum": 1,
+            "example": 245760
+          },
+          "enviado_em": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-10-20T14:30:00Z"
+          }
+        },
+        "required": [
+          "nome_arquivo",
+          "content_type",
+          "tamanho_bytes",
+          "enviado_em"
+        ],
+        "additionalProperties": false
+      },
+      "DocumentoArquivoUpload": {
+        "type": "object",
+        "description": "Arquivo para upload ou substituição. O arquivo é enviado como multipart/form-data. Tipos MIME e tamanho máximo devem ser configurados pela equipe.",
+        "properties": {
+          "arquivo": {
+            "type": "string",
+            "format": "binary",
+            "description": "Arquivo digital do documento. Formatos permitidos e tamanho máximo dependem da configuração do servidor."
+          }
+        },
+        "required": [
+          "arquivo"
+        ],
+        "additionalProperties": false
+      },
+      "DocumentoControleUpload": {
+        "type": "object",
+        "description": "Campos do documento enviados com o arquivo via multipart/form-data.",
+        "properties": {
+          "tipo_documento": {
+            "$ref": "#/components/schemas/TipoDocumento"
+          },
+          "numero": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 120
+          },
+          "data_emissao": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "data_vencimento": {
+            "type": "string",
+            "format": "date"
+          },
+          "arquivo": {
+            "type": "string",
+            "format": "binary",
+            "description": "Arquivo digital. Tipos MIME e tamanho máximo ainda precisam ser definidos."
+          }
+        },
+        "required": [
+          "tipo_documento",
+          "data_vencimento",
+          "arquivo"
+        ],
+        "additionalProperties": false
+      }
+    }
+  }
+}
