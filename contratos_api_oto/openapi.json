@@ -1726,6 +1726,51 @@
           }
         }
       }
+    },
+    "/auth/login": {
+      "post": {"tags": ["Autenticação"], "operationId": "login", "summary": "Autenticar usuário", "security": [], "responses": {"200": {"description": "Token de sessão."}, "401": {"$ref": "#/components/responses/Unauthorized"}}}
+    },
+    "/auth/logout": {
+      "post": {"tags": ["Autenticação"], "operationId": "logout", "summary": "Encerrar sessão", "responses": {"204": {"description": "Sessão encerrada."}, "401": {"$ref": "#/components/responses/Unauthorized"}}}
+    },
+    "/auth/recuperacao-senha": {
+      "post": {"tags": ["Autenticação"], "operationId": "recuperarSenha", "summary": "Solicitar recuperação de senha", "security": [], "responses": {"202": {"description": "Solicitação recebida."}}}
+    },
+    "/perfil": {
+      "get": {"tags": ["Perfil"], "operationId": "obterPerfil", "summary": "Consultar usuário autenticado", "responses": {"200": {"description": "Perfil."}, "401": {"$ref": "#/components/responses/Unauthorized"}}},
+      "patch": {"tags": ["Perfil"], "operationId": "atualizarPerfil", "summary": "Editar usuário autenticado", "responses": {"200": {"description": "Perfil atualizado."}, "401": {"$ref": "#/components/responses/Unauthorized"}, "409": {"$ref": "#/components/responses/Conflict"}, "422": {"$ref": "#/components/responses/ValidationError"}}}
+    },
+    "/usuarios": {
+      "get": {"tags": ["Usuários"], "operationId": "listarUsuarios", "summary": "Listar usuários", "responses": {"200": {"description": "Usuários."}, "401": {"$ref": "#/components/responses/Unauthorized"}, "403": {"$ref": "#/components/responses/Forbidden"}}},
+      "post": {"tags": ["Usuários"], "operationId": "criarUsuario", "summary": "Criar conta pendente", "responses": {"201": {"description": "Usuário criado."}, "401": {"$ref": "#/components/responses/Unauthorized"}, "403": {"$ref": "#/components/responses/Forbidden"}, "409": {"$ref": "#/components/responses/Conflict"}, "422": {"$ref": "#/components/responses/ValidationError"}}}
+    },
+    "/convites": {
+      "post": {"tags": ["Convites"], "operationId": "criarConvite", "summary": "Enviar convite de acesso", "responses": {"201": {"description": "Convite criado."}, "401": {"$ref": "#/components/responses/Unauthorized"}, "403": {"$ref": "#/components/responses/Forbidden"}, "404": {"$ref": "#/components/responses/NotFound"}}}
+    },
+    "/convites/{id_convite}/aceitacao": {
+      "post": {"tags": ["Convites"], "operationId": "aceitarConvite", "summary": "Ativar acesso por convite", "security": [], "responses": {"200": {"description": "Acesso ativado."}, "404": {"$ref": "#/components/responses/NotFound"}, "409": {"$ref": "#/components/responses/Conflict"}}}
+    },
+    "/pesquisas-ocupacao": {
+      "get": {"tags": ["Pesquisas de ocupação"], "operationId": "listarPesquisasOcupacao", "summary": "Listar pesquisas", "responses": {"200": {"description": "Pesquisas."}, "401": {"$ref": "#/components/responses/Unauthorized"}}},
+      "post": {"tags": ["Pesquisas de ocupação"], "operationId": "criarPesquisaOcupacao", "summary": "Criar e distribuir pesquisa", "responses": {"201": {"description": "Pesquisa aberta."}, "401": {"$ref": "#/components/responses/Unauthorized"}, "403": {"$ref": "#/components/responses/Forbidden"}, "422": {"$ref": "#/components/responses/ValidationError"}}}
+    },
+    "/pesquisas-ocupacao/pendentes": {
+      "get": {"tags": ["Respostas de ocupação"], "operationId": "listarPesquisasPendentes", "summary": "Consultar pendências", "responses": {"200": {"description": "Pesquisas pendentes."}, "401": {"$ref": "#/components/responses/Unauthorized"}}}
+    },
+    "/pesquisas-ocupacao/{id_pesquisa}/respostas": {
+      "post": {"tags": ["Respostas de ocupação"], "operationId": "enviarRespostaOcupacao", "summary": "Enviar resposta de ocupação", "responses": {"201": {"description": "Resposta enviada."}, "401": {"$ref": "#/components/responses/Unauthorized"}, "404": {"$ref": "#/components/responses/NotFound"}, "409": {"$ref": "#/components/responses/Conflict"}}}
+    },
+    "/respostas-ocupacao/historico": {
+      "get": {"tags": ["Respostas de ocupação"], "operationId": "historicoRespostasOcupacao", "summary": "Consultar histórico de respostas", "responses": {"200": {"description": "Histórico."}, "401": {"$ref": "#/components/responses/Unauthorized"}}}
+    },
+    "/relatorios": {
+      "post": {"tags": ["Relatórios"], "operationId": "gerarRelatorio", "summary": "Gerar relatório PDF ou CSV", "responses": {"202": {"description": "Geração aceita."}, "401": {"$ref": "#/components/responses/Unauthorized"}, "403": {"$ref": "#/components/responses/Forbidden"}, "422": {"$ref": "#/components/responses/ValidationError"}}}
+    },
+    "/auditoria": {
+      "get": {"tags": ["Auditoria"], "operationId": "listarAuditoria", "summary": "Consultar logs e alterações", "parameters": [{"name": "acao", "in": "query", "schema": {"type": "string"}}, {"name": "id_usuario", "in": "query", "schema": {"type": "integer"}}], "responses": {"200": {"description": "Eventos de auditoria."}, "401": {"$ref": "#/components/responses/Unauthorized"}, "403": {"$ref": "#/components/responses/Forbidden"}}}
+    },
+    "/dashboard": {
+      "get": {"tags": ["Dashboard"], "operationId": "obterDashboard", "summary": "Consultar indicadores e alertas", "responses": {"200": {"description": "Indicadores e alertas."}, "401": {"$ref": "#/components/responses/Unauthorized"}}}
     }
   },
   "components": {

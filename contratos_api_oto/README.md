@@ -22,20 +22,17 @@ social; `HOTEL` só pode atuar sobre sua própria hospedagem.
 
 ## Mocks de respostas
 
-Os mocks abaixo ficam em `mocks/responses/`. Os sucessos usam o formato
-`Estabelecimento`; os erros usam `ErrorResponse` do OpenAPI.
+Os mocks ficam em `mocks/responses/<módulo>/<operação>/`. O nome de cada
+arquivo é o método HTTP e o status da resposta, por exemplo
+`estabelecimentos/inativacao/post-409.json`. Os sucessos de estabelecimento
+usam o formato `Estabelecimento`; os erros usam `ErrorResponse` do OpenAPI.
 
 | Arquivo | Operação/status | Fonte do cenário |
 | --- | --- | --- |
-| `post-estabelecimento-inativacao-200.json` | Inativação bem-sucedida | Registro ativo `11111111-1111-4111-8111-111111111111` do seed. |
-| `post-estabelecimento-reativacao-200.json` | Reativação bem-sucedida | Registro inativo `33333333-3333-4333-8333-333333333333` do seed. |
-| `post-estabelecimento-inativacao-401.json`, `post-estabelecimento-reativacao-401.json` | Sem autenticação | Regra de autenticação do contrato. |
-| `post-estabelecimento-inativacao-403.json`, `post-estabelecimento-reativacao-403.json` | Perfil não autorizado | Apenas `ADMINISTRADOR` pode transicionar status. |
-| `post-estabelecimento-inativacao-404.json`, `post-estabelecimento-reativacao-404.json` | Registro inexistente | Identificador fictício ausente do seed. |
-| `post-estabelecimento-inativacao-409.json` | Inativar já inativo | Regra `INATIVO → INATIVO` inválida. |
-| `post-estabelecimento-reativacao-409.json` | Reativar já ativo | Regra `ATIVO → ATIVO` inválida. |
-| `post-estabelecimento-inativacao-422-*.json` | Motivo ausente, curto ou longo | Limites `minLength: 3` e `maxLength: 500`. |
-| `post-estabelecimentos-422-cnpj-invalido.json` | CNPJ inválido no cadastro | Validação de dígitos verificadores. |
-| `post-estabelecimentos-409-cnpj-duplicado.json` | CNPJ duplicado no cadastro | CNPJ já existente no seed: `54.839.271/0001-64`. |
-| `patch-estabelecimento-422-cnpj-invalido.json` | CNPJ inválido na atualização | Validação de dígitos verificadores. |
-| `patch-estabelecimento-403-perfil.json` | Edição bloqueada por perfil | `GESTOR` é somente leitura. |
+| `estabelecimentos/inativacao/` | Inativação bem-sucedida e erros | Registro ativo do seed e regra `ATIVO → INATIVO`. |
+| `estabelecimentos/reativacao/` | Reativação bem-sucedida e erros | Registro inativo do seed e regra `INATIVO → ATIVO`. |
+| `estabelecimentos/cadastro/`, `estabelecimentos/edicao/` | Validação de CNPJ e perfil | Unicidade do CNPJ e permissões de edição. |
+| `autenticacao/login/` | Login | Credenciais de demonstração ou credenciais inválidas. |
+| `usuarios/criacao/`, `convites/criacao/`, `perfil/consulta/` | Acesso e perfil | Conta pendente, convite e usuário autenticado. |
+| `pesquisas-ocupacao/criacao/`, `respostas-ocupacao/envio/` | Coleta de ocupação | Pesquisa aberta e resposta submetida. |
+| `relatorios/geracao/`, `auditoria/consulta/`, `dashboard/consulta/` | Saídas consolidadas | Relatório concluído, evento auditado e indicadores. |

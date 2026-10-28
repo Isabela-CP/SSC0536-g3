@@ -26,6 +26,20 @@ A API estará em `http://localhost:8000`; a documentação interativa é
 - `GET /estabelecimentos/{id_estabelecimento}/documentos`
 - `GET /estabelecimentos/{id_estabelecimento}/documentos/{id_documento}`
 
+Além das consultas de estabelecimentos, a base de demonstração inclui:
+
+- `POST /auth/login`, `POST /auth/logout` e `POST /auth/recuperacao-senha`
+- `GET|PATCH /perfil`, `GET|POST /usuarios` e fluxos de `POST /convites`
+- `GET|POST /pesquisas-ocupacao`, pendências e respostas de ocupação
+- `POST /relatorios`, `GET /auditoria` e `GET /dashboard`
+
+Os dados desses novos módulos são mantidos apenas em memória para demonstrar
+os contratos e seus fluxos. As credenciais locais são
+`marina.admin@example.test` / `admin-demo`,
+`rafael.consulta@example.test` / `gestor-demo` e
+`camila.editora@example.test` / `editor-demo`; os tokens retornados podem ser
+enviados como `Authorization: Bearer <token>`.
+
 As rotas de escrita, autenticação, autorização e arquivos seguem documentadas
 em `../contratos_api_oto/openapi.json`, mas ainda não foram implementadas nesta
 base inicial.

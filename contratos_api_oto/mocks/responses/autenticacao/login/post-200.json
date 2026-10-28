@@ -1,0 +1,1 @@
+{"access_token":"admin-token","token_type":"Bearer","expires_in":3600,"usuario":{"id_usuario":1,"nome":"Marina Administradora","email":"marina.admin@example.test","perfil":"ADMINISTRADOR","ativo":true}}

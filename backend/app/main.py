@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
+from uuid import uuid4
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import Body, Depends, FastAPI, Header, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
@@ -23,6 +26,56 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+DEMO_USERS = {
+    "marina.admin@example.test": {
+        "id_usuario": 1, "nome": "Marina Administradora", "email": "marina.admin@example.test",
+        "perfil": "ADMINISTRADOR", "senha": "admin-demo", "ativo": True,
+    },
+    "rafael.consulta@example.test": {
+        "id_usuario": 2, "nome": "Rafael Consulta", "email": "rafael.consulta@example.test",
+        "perfil": "GESTOR", "senha": "gestor-demo", "ativo": True,
+    },
+    "camila.editora@example.test": {
+        "id_usuario": 3, "nome": "Camila Editora", "email": "camila.editora@example.test",
+        "perfil": "EDITOR", "senha": "editor-demo", "ativo": True,
+    },
+}
+TOKENS = {"admin-token": "marina.admin@example.test", "gestor-token": "rafael.consulta@example.test", "editor-token": "camila.editora@example.test"}
+INVITES: list[dict[str, Any]] = []
+SURVEYS: list[dict[str, Any]] = []
+OCCUPANCY_RESPONSES: list[dict[str, Any]] = []
+AUDIT_LOG: list[dict[str, Any]] = []
+
+
+def error_response(status_code: int, code: str, message: str, details: list[dict] | None = None) -> JSONResponse:
+    error: dict[str, Any] = {"code": code, "message": message}
+    if details:
+        error["details"] = details
+    return JSONResponse(status_code=status_code, content={"error": error})
+
+
+def current_user(authorization: str | None = Header(default=None)) -> dict:
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="UNAUTHORIZED")
+    email = TOKENS.get(authorization.removeprefix("Bearer "))
+    if not email:
+        raise HTTPException(status_code=401, detail="UNAUTHORIZED")
+    return DEMO_USERS[email]
+
+
+def audit(actor: dict, action: str, entity: str, entity_id: str, before: Any = None, after: Any = None) -> None:
+    AUDIT_LOG.append({
+        "id": str(uuid4()), "criado_em": datetime.now(timezone.utc).isoformat(),
+        "id_usuario": actor["id_usuario"], "usuario": actor["email"], "acao": action,
+        "entidade": entity, "id_entidade": entity_id, "antes": before, "depois": after,
+    })
+
+
+def ensure_role(user: dict, *roles: str) -> None:
+    if user["perfil"] not in roles:
+        raise HTTPException(status_code=403, detail="FORBIDDEN")
 
 
 def seed_data() -> dict:
@@ -107,5 +160,174 @@ def get_establishment(id_estabelecimento: str) -> dict:
 @app.get("/estabelecimentos/{id_estabelecimento}/documentos", tags=["Documentos"])
 def list_documents(id_estabelecimento: str) -> dict:
     return {"data": find_establishment(id_estabelecimento)["documentos"]}
+
+
+@app.post("/auth/login", tags=["Autenticação"])
+def login(payload: dict = Body(...)) -> dict | JSONResponse:
+    user = DEMO_USERS.get(payload.get("email", "").casefold())
+    if not user or user["senha"] != payload.get("senha") or not user["ativo"]:
+        return error_response(401, "INVALID_CREDENTIALS", "E-mail ou senha inválidos.")
+    token = next(token for token, email in TOKENS.items() if email == user["email"])
+    return {"access_token": token, "token_type": "Bearer", "expires_in": 3600, "usuario": public_user(user)}
+
+
+@app.post("/auth/logout", status_code=status.HTTP_204_NO_CONTENT, tags=["Autenticação"])
+def logout(_: dict = Depends(current_user)) -> None:
+    return None
+
+
+@app.post("/auth/recuperacao-senha", status_code=status.HTTP_202_ACCEPTED, tags=["Autenticação"])
+def recover_password(payload: dict = Body(...)) -> dict:
+    return {"message": "Se o e-mail estiver cadastrado, as instruções de recuperação serão enviadas."}
+
+
+def public_user(user: dict) -> dict:
+    return {key: user[key] for key in ("id_usuario", "nome", "email", "perfil", "ativo")}
+
+
+@app.get("/perfil", tags=["Perfil"])
+def get_profile(user: dict = Depends(current_user)) -> dict:
+    return public_user(user)
+
+
+@app.patch("/perfil", tags=["Perfil"])
+def update_profile(payload: dict = Body(...), user: dict = Depends(current_user)) -> dict | JSONResponse:
+    allowed = {"nome", "email"}
+    invalid = set(payload) - allowed
+    if invalid:
+        return error_response(422, "VALIDATION_ERROR", "Verifique os campos informados.", [{"field": next(iter(invalid)), "issue": "Campo não pode ser alterado no perfil."}])
+    if "email" in payload and payload["email"].casefold() != user["email"] and payload["email"].casefold() in DEMO_USERS:
+        return error_response(409, "EMAIL_ALREADY_EXISTS", "Já existe uma conta com esse e-mail.")
+    before = public_user(user)
+    for key, value in payload.items():
+        user[key] = value.casefold() if key == "email" else value
+    audit(user, "PERFIL_ATUALIZADO", "USUARIO", str(user["id_usuario"]), before, public_user(user))
+    return public_user(user)
+
+
+@app.get("/usuarios", tags=["Usuários"])
+def list_users(user: dict = Depends(current_user)) -> dict:
+    ensure_role(user, "ADMINISTRADOR")
+    return {"data": [public_user(item) for item in DEMO_USERS.values()]}
+
+
+@app.post("/usuarios", status_code=status.HTTP_201_CREATED, tags=["Usuários"])
+def create_user(payload: dict = Body(...), user: dict = Depends(current_user)) -> dict | JSONResponse:
+    ensure_role(user, "ADMINISTRADOR")
+    required = {"nome", "email", "perfil"}
+    missing = required - set(payload)
+    if missing:
+        return error_response(422, "VALIDATION_ERROR", "Verifique os campos informados.", [{"field": sorted(missing)[0], "issue": "Campo obrigatório."}])
+    email = payload["email"].casefold()
+    if email in DEMO_USERS:
+        return error_response(409, "EMAIL_ALREADY_EXISTS", "Já existe uma conta com esse e-mail.")
+    if payload["perfil"] not in {"ADMINISTRADOR", "GESTOR", "EDITOR", "HOTEL"}:
+        return error_response(422, "VALIDATION_ERROR", "Verifique os campos informados.", [{"field": "perfil", "issue": "Perfil inválido."}])
+    created = {"id_usuario": len(DEMO_USERS) + 1, "nome": payload["nome"], "email": email, "perfil": payload["perfil"], "senha": "", "ativo": False}
+    DEMO_USERS[email] = created
+    audit(user, "USUARIO_CRIADO", "USUARIO", str(created["id_usuario"]), after=public_user(created))
+    return public_user(created)
+
+
+@app.post("/convites", status_code=status.HTTP_201_CREATED, tags=["Convites"])
+def create_invite(payload: dict = Body(...), user: dict = Depends(current_user)) -> dict | JSONResponse:
+    ensure_role(user, "ADMINISTRADOR")
+    email = payload.get("email", "").casefold()
+    if email not in DEMO_USERS:
+        return error_response(404, "USER_NOT_FOUND", "Usuário não encontrado para convite.")
+    invite = {"id_convite": str(uuid4()), "email": email, "status": "PENDENTE", "expira_em": "2026-11-03T23:59:59Z", "token": str(uuid4())}
+    INVITES.append(invite)
+    audit(user, "CONVITE_ENVIADO", "CONVITE", invite["id_convite"], after={"email": email})
+    return {key: value for key, value in invite.items() if key != "token"}
+
+
+@app.post("/convites/{id_convite}/aceitacao", tags=["Convites"])
+def accept_invite(id_convite: str, payload: dict = Body(...)) -> dict | JSONResponse:
+    invite = next((item for item in INVITES if item["id_convite"] == id_convite), None)
+    if not invite or invite["token"] != payload.get("token"):
+        return error_response(404, "INVITE_NOT_FOUND", "Convite não encontrado ou expirado.")
+    if invite["status"] != "PENDENTE":
+        return error_response(409, "INVITE_ALREADY_USED", "Convite já utilizado.")
+    invited = DEMO_USERS[invite["email"]]
+    invited["senha"] = payload.get("senha", "")
+    invited["ativo"] = True
+    invite["status"] = "ACEITO"
+    return {"message": "Acesso ativado com sucesso.", "usuario": public_user(invited)}
+
+
+@app.get("/pesquisas-ocupacao", tags=["Pesquisas de ocupação"])
+def list_surveys(user: dict = Depends(current_user)) -> dict:
+    return {"data": SURVEYS}
+
+
+@app.post("/pesquisas-ocupacao", status_code=status.HTTP_201_CREATED, tags=["Pesquisas de ocupação"])
+def create_survey(payload: dict = Body(...), user: dict = Depends(current_user)) -> dict | JSONResponse:
+    ensure_role(user, "ADMINISTRADOR", "EDITOR")
+    required = {"titulo", "tipo", "periodo_inicio", "periodo_fim", "estabelecimentos"}
+    missing = required - set(payload)
+    if missing:
+        return error_response(422, "VALIDATION_ERROR", "Verifique os campos informados.", [{"field": sorted(missing)[0], "issue": "Campo obrigatório."}])
+    survey = {"id_pesquisa": str(uuid4()), "titulo": payload["titulo"], "tipo": payload["tipo"], "periodo_inicio": payload["periodo_inicio"], "periodo_fim": payload["periodo_fim"], "estabelecimentos": payload["estabelecimentos"], "status": "ABERTA", "criada_por": user["id_usuario"]}
+    SURVEYS.append(survey)
+    audit(user, "PESQUISA_CRIADA", "PESQUISA_OCUPACAO", survey["id_pesquisa"], after=survey)
+    return survey
+
+
+@app.get("/pesquisas-ocupacao/pendentes", tags=["Respostas de ocupação"])
+def pending_surveys(user: dict = Depends(current_user)) -> dict:
+    establishment_id = user.get("id_estabelecimento")
+    open_surveys = [item for item in SURVEYS if item["status"] == "ABERTA" and (not establishment_id or establishment_id in item["estabelecimentos"])]
+    answered = {item["id_pesquisa"] for item in OCCUPANCY_RESPONSES if item["id_usuario"] == user["id_usuario"]}
+    return {"data": [item for item in open_surveys if item["id_pesquisa"] not in answered]}
+
+
+@app.post("/pesquisas-ocupacao/{id_pesquisa}/respostas", status_code=status.HTTP_201_CREATED, tags=["Respostas de ocupação"])
+def submit_occupancy_response(id_pesquisa: str, payload: dict = Body(...), user: dict = Depends(current_user)) -> dict | JSONResponse:
+    survey = next((item for item in SURVEYS if item["id_pesquisa"] == id_pesquisa), None)
+    if not survey:
+        return error_response(404, "SURVEY_NOT_FOUND", "Pesquisa não encontrada.")
+    if survey["status"] != "ABERTA":
+        return error_response(409, "SURVEY_CLOSED", "A pesquisa não está aberta para respostas.")
+    if any(item["id_pesquisa"] == id_pesquisa and item["id_usuario"] == user["id_usuario"] for item in OCCUPANCY_RESPONSES):
+        return error_response(409, "RESPONSE_ALREADY_SENT", "A resposta desta pesquisa já foi enviada.")
+    response = {"id_resposta": str(uuid4()), "id_pesquisa": id_pesquisa, "id_usuario": user["id_usuario"], "dados": payload, "enviada_em": datetime.now(timezone.utc).isoformat()}
+    OCCUPANCY_RESPONSES.append(response)
+    audit(user, "RESPOSTA_OCUPACAO_ENVIADA", "RESPOSTA_OCUPACAO", response["id_resposta"], after=response)
+    return response
+
+
+@app.get("/respostas-ocupacao/historico", tags=["Respostas de ocupação"])
+def occupancy_history(user: dict = Depends(current_user)) -> dict:
+    if user["perfil"] == "ADMINISTRADOR":
+        return {"data": OCCUPANCY_RESPONSES}
+    return {"data": [item for item in OCCUPANCY_RESPONSES if item["id_usuario"] == user["id_usuario"]]}
+
+
+@app.get("/auditoria", tags=["Auditoria"])
+def list_audit_log(acao: str | None = None, id_usuario: int | None = None, user: dict = Depends(current_user)) -> dict:
+    ensure_role(user, "ADMINISTRADOR")
+    records = AUDIT_LOG
+    if acao:
+        records = [item for item in records if item["acao"] == acao]
+    if id_usuario:
+        records = [item for item in records if item["id_usuario"] == id_usuario]
+    return {"data": records}
+
+
+@app.get("/dashboard", tags=["Dashboard"])
+def dashboard(user: dict = Depends(current_user)) -> dict:
+    establishments = seed_data()["estabelecimentos"]
+    return {"indicadores": {"estabelecimentos_ativos": sum(item["status"] == "ATIVO" for item in establishments), "pesquisas_abertas": sum(item["status"] == "ABERTA" for item in SURVEYS), "respostas_recebidas": len(OCCUPANCY_RESPONSES)}, "alertas": [{"tipo": "DOCUMENTO_A_VENCER", "id_estabelecimento": "11111111-1111-4111-8111-111111111111", "mensagem": "AVCB vence em breve."}]}
+
+
+@app.post("/relatorios", status_code=status.HTTP_202_ACCEPTED, tags=["Relatórios"])
+def generate_report(payload: dict = Body(...), user: dict = Depends(current_user)) -> dict | JSONResponse:
+    ensure_role(user, "ADMINISTRADOR", "GESTOR")
+    report_type = payload.get("tipo")
+    report_format = payload.get("formato")
+    if not report_type or report_format not in {"PDF", "CSV"}:
+        return error_response(422, "VALIDATION_ERROR", "Tipo e formato PDF ou CSV são obrigatórios.")
+    report_id = str(uuid4())
+    return {"id_relatorio": report_id, "tipo": report_type, "formato": report_format, "status": "CONCLUIDO", "download_url": f"/relatorios/{report_id}/arquivo"}
 
 
