@@ -164,7 +164,7 @@ def list_documents(id_estabelecimento: str) -> dict:
 
 
 @app.post("/auth/login", tags=["Autenticação"])
-def login(payload: dict = Body(...)) -> dict | JSONResponse:
+def login(payload: dict = Body(...)) -> Any:
     user = DEMO_USERS.get(payload.get("email", "").casefold())
     if not user or user["senha"] != payload.get("senha") or not user["ativo"]:
         return error_response(401, "INVALID_CREDENTIALS", "E-mail ou senha inválidos.")
@@ -192,7 +192,7 @@ def get_profile(user: dict = Depends(current_user)) -> dict:
 
 
 @app.patch("/perfil", tags=["Perfil"])
-def update_profile(payload: dict = Body(...), user: dict = Depends(current_user)) -> dict | JSONResponse:
+def update_profile(payload: dict = Body(...), user: dict = Depends(current_user)) -> Any:
     allowed = {"nome", "email"}
     invalid = set(payload) - allowed
     if invalid:
@@ -213,7 +213,7 @@ def list_users(user: dict = Depends(current_user)) -> dict:
 
 
 @app.post("/usuarios", status_code=status.HTTP_201_CREATED, tags=["Usuários"])
-def create_user(payload: dict = Body(...), user: dict = Depends(current_user)) -> dict | JSONResponse:
+def create_user(payload: dict = Body(...), user: dict = Depends(current_user)) -> Any:
     ensure_role(user, "ADMINISTRADOR")
     required = {"nome", "email", "perfil"}
     missing = required - set(payload)
@@ -231,7 +231,7 @@ def create_user(payload: dict = Body(...), user: dict = Depends(current_user)) -
 
 
 @app.post("/convites", status_code=status.HTTP_201_CREATED, tags=["Convites"])
-def create_invite(payload: dict = Body(...), user: dict = Depends(current_user)) -> dict | JSONResponse:
+def create_invite(payload: dict = Body(...), user: dict = Depends(current_user)) -> Any:
     ensure_role(user, "ADMINISTRADOR")
     email = payload.get("email", "").casefold()
     if email not in DEMO_USERS:
@@ -243,7 +243,7 @@ def create_invite(payload: dict = Body(...), user: dict = Depends(current_user))
 
 
 @app.post("/convites/{id_convite}/aceitacao", tags=["Convites"])
-def accept_invite(id_convite: str, payload: dict = Body(...)) -> dict | JSONResponse:
+def accept_invite(id_convite: str, payload: dict = Body(...)) -> Any:
     invite = next((item for item in INVITES if item["id_convite"] == id_convite), None)
     if not invite or invite["token"] != payload.get("token"):
         return error_response(404, "INVITE_NOT_FOUND", "Convite não encontrado ou expirado.")
@@ -262,7 +262,7 @@ def list_surveys(user: dict = Depends(current_user)) -> dict:
 
 
 @app.post("/pesquisas-ocupacao", status_code=status.HTTP_201_CREATED, tags=["Pesquisas de ocupação"])
-def create_survey(payload: dict = Body(...), user: dict = Depends(current_user)) -> dict | JSONResponse:
+def create_survey(payload: dict = Body(...), user: dict = Depends(current_user)) -> Any:
     ensure_role(user, "ADMINISTRADOR", "EDITOR")
     required = {"titulo", "tipo", "periodo_inicio", "periodo_fim", "estabelecimentos"}
     missing = required - set(payload)
@@ -275,7 +275,7 @@ def create_survey(payload: dict = Body(...), user: dict = Depends(current_user))
 
 
 @app.patch("/pesquisas-ocupacao/{id_pesquisa}", tags=["Pesquisas de ocupação"])
-def update_survey(id_pesquisa: str, payload: dict = Body(...), user: dict = Depends(current_user)) -> dict | JSONResponse:
+def update_survey(id_pesquisa: str, payload: dict = Body(...), user: dict = Depends(current_user)) -> Any:
     ensure_role(user, "ADMINISTRADOR", "EDITOR")
     survey = next((item for item in SURVEYS if item["id_pesquisa"] == id_pesquisa), None)
     if not survey:
@@ -293,7 +293,7 @@ def update_survey(id_pesquisa: str, payload: dict = Body(...), user: dict = Depe
 
 
 @app.post("/pesquisas-ocupacao/{id_pesquisa}/encerramento", tags=["Pesquisas de ocupação"])
-def close_survey(id_pesquisa: str, user: dict = Depends(current_user)) -> dict | JSONResponse:
+def close_survey(id_pesquisa: str, user: dict = Depends(current_user)) -> Any:
     ensure_role(user, "ADMINISTRADOR", "EDITOR")
     survey = next((item for item in SURVEYS if item["id_pesquisa"] == id_pesquisa), None)
     if not survey:
@@ -315,7 +315,7 @@ def pending_surveys(user: dict = Depends(current_user)) -> dict:
 
 
 @app.post("/pesquisas-ocupacao/{id_pesquisa}/respostas", status_code=status.HTTP_201_CREATED, tags=["Respostas de ocupação"])
-def submit_occupancy_response(id_pesquisa: str, payload: dict = Body(...), user: dict = Depends(current_user)) -> dict | JSONResponse:
+def submit_occupancy_response(id_pesquisa: str, payload: dict = Body(...), user: dict = Depends(current_user)) -> Any:
     survey = next((item for item in SURVEYS if item["id_pesquisa"] == id_pesquisa), None)
     if not survey:
         return error_response(404, "SURVEY_NOT_FOUND", "Pesquisa não encontrada.")
@@ -358,7 +358,7 @@ def dashboard(user: dict = Depends(current_user)) -> dict:
 
 
 @app.post("/relatorios", status_code=status.HTTP_202_ACCEPTED, tags=["Relatórios"])
-def generate_report(payload: dict = Body(...), user: dict = Depends(current_user)) -> dict | JSONResponse:
+def generate_report(payload: dict = Body(...), user: dict = Depends(current_user)) -> Any:
     ensure_role(user, "ADMINISTRADOR", "GESTOR")
     report_type = payload.get("tipo")
     report_format = payload.get("formato")
@@ -372,7 +372,7 @@ def generate_report(payload: dict = Body(...), user: dict = Depends(current_user
 
 
 @app.get("/relatorios/{id_relatorio}", tags=["Relatórios"])
-def get_report(id_relatorio: str, user: dict = Depends(current_user)) -> dict | JSONResponse:
+def get_report(id_relatorio: str, user: dict = Depends(current_user)) -> Any:
     ensure_role(user, "ADMINISTRADOR", "GESTOR")
     report = next((item for item in REPORTS if item["id_relatorio"] == id_relatorio), None)
     if not report:
@@ -381,7 +381,7 @@ def get_report(id_relatorio: str, user: dict = Depends(current_user)) -> dict | 
 
 
 @app.get("/relatorios/{id_relatorio}/arquivo", tags=["Relatórios"])
-def download_report(id_relatorio: str, user: dict = Depends(current_user)) -> dict | JSONResponse:
+def download_report(id_relatorio: str, user: dict = Depends(current_user)) -> Any:
     report = get_report(id_relatorio, user)
     if isinstance(report, JSONResponse):
         return report
