@@ -43,7 +43,16 @@
       "CREDITO",
       "DEBITO",
       "DINHEIRO"
-    ]
+    ],
+    "horario_funcionamento_descritivo": "24 horas, todos os dias",
+    "horario_checkin_checkout_descritivo": "Check-in às 14h / Check-out às 12h",
+    "reservas": "Site próprio, telefone, WhatsApp e OTAs",
+    "atendimento_idiomas": {
+      "nao_possui": false,
+      "ingles": true,
+      "espanhol": true,
+      "outros": []
+    }
   },
   "infraestrutura": {
     "estacionamento": true,
@@ -65,7 +74,92 @@
     "pcd_elevador": true,
     "pcd_sanitario_adaptado": true,
     "pcd_piso_tatil": false,
-    "pcd_equipe_capacitada": true
+    "pcd_equipe_capacitada": true,
+    "estacionamento_detalhe": {
+      "possui": true,
+      "detalhe": "Gratuito e coberto para 40 veículos"
+    },
+    "mensageiro": true,
+    "area_fumantes": false,
+    "pet_detalhe": {
+      "possui": true,
+      "detalhe": "Porte pequeno até 10kg"
+    },
+    "uh_detalhes": {
+      "internet_sem_fio": true,
+      "ar_condicionado": true,
+      "ventilador_climatizador": false,
+      "frigobar": true,
+      "tv": true,
+      "outros": {
+        "indicacao": true,
+        "descricao": "Cofre digital e bancada de trabalho"
+      }
+    },
+    "recepcao": {
+      "nao_possui": false,
+      "internet_sem_fio": {
+        "possui": true,
+        "detalhe": "Wi-Fi gratuito no lobby"
+      },
+      "ar_condicionado": true,
+      "climatizador_ventilador": false,
+      "area_estar": true,
+      "sanitario": true,
+      "sanitario_pcd": true
+    },
+    "alimentos_bebidas": {
+      "nao_possui": false,
+      "cafe_da_manha": {
+        "possui": true,
+        "detalhe": "Incluso na diária das 6h30 às 10h"
+      },
+      "meia_pensao": true,
+      "pensao_completa": false,
+      "all_inclusive": false,
+      "room_service": true,
+      "restaurante": true,
+      "lanchonete": false,
+      "bar": true,
+      "bar_molhado": false,
+      "copa_bebe": true,
+      "area_refeicoes_copa": true,
+      "sanitario_exclusivo_ab": true,
+      "sanitario_pcd_exclusivo_ab": true,
+      "aberto_ao_publico": true,
+      "alimentacao_diferenciada": true
+    },
+    "eventos": {
+      "nao_possui": false,
+      "ar_condicionado": true,
+      "climatizador_ventilador": false,
+      "sanitario_exclusivo_eventos": true,
+      "sanitario_pcd_exclusivo_eventos": true,
+      "mobiliarios": true,
+      "equipamentos_audiovisuais": {
+        "possui": true,
+        "detalhe": "Projetor, som e microfones sem fio"
+      }
+    },
+    "recreacao": {
+      "nao_possui": false,
+      "piscina": true,
+      "piscina_infantil": false,
+      "sauna": true,
+      "spa_ofuro": false,
+      "area_verde": true,
+      "area_descanso_leitura": true,
+      "academia": true,
+      "quadra_poliesportiva": false,
+      "salao_jogos": false,
+      "area_lazer_criancas": true,
+      "equipe_recreacao_criancas": false,
+      "anfiteatro_cinema": false,
+      "mini_golf": false,
+      "campo_futebol": false,
+      "sanitario_exclusivo_lazer": true,
+      "sanitario_pcd_exclusivo_lazer": true
+    }
   },
   "documentos": [
     {
@@ -113,5 +207,154 @@
         "enviado_em": "2026-10-20T14:34:00Z"
       }
     }
-  ]
+  ],
+  "id_origem": "001",
+  "contato": "Carlos Eduardo",
+  "cargo_contato": "Gerente Geral",
+  "proprietarios": "Grupo Serra Azul Participações",
+  "localizacao": "Urbana",
+  "regiao": "Central",
+  "inventariado": true,
+  "telefones_comerciais": [
+    "+55 16 3333-1000",
+    "+55 16 3333-1001"
+  ],
+  "emails_comerciais": [
+    "contato@serra-azul.example",
+    "reservas@serra-azul.example"
+  ],
+  "site": "https://www.serra-azul.example",
+  "facebook": "https://facebook.com/hotelserraazul",
+  "instagram": "https://instagram.com/hotelserraazul",
+  "observacoes": "Estabelecimento completo com dados de referência do dicionário de Olímpia.",
+  "acessibilidade": {
+    "possui_facilidade_pcd": true,
+    "capacidade_receber_pcd": {
+      "nao_possui": false,
+      "fisica": true,
+      "auditiva": true,
+      "auditiva_nivel": "SIM",
+      "visual": true,
+      "intelectual": true,
+      "multipla": true
+    },
+    "rota_externa": {
+      "nao_possui": false,
+      "calcada_rebaixada": true,
+      "faixa_pedestre": true,
+      "rampa": true,
+      "semaforo_sonoro": false,
+      "piso_tatil_alerta": false,
+      "piso_regular_antiderrapante": true,
+      "livre_obstaculos": true,
+      "acesso_em_nivel": true
+    },
+    "embarque_desembarque": {
+      "nao_possui": false,
+      "sinalizado": true,
+      "acesso_em_nivel": true,
+      "sem_obstaculos": true
+    },
+    "estacionamento_acessivel": {
+      "nao_possui": false,
+      "sinalizada": true,
+      "acesso_em_nivel": true,
+      "alargada_cadeira_rodas": true,
+      "rampa_acesso_calcada": true
+    },
+    "circulacao_interna": {
+      "nao_possui": false,
+      "plataforma_elevatoria": false,
+      "circulacao_entre_mobiliario": true,
+      "porta_larga": true
+    },
+    "escadas": {
+      "nao_possui": false,
+      "corrimao": true,
+      "patamar_descanso": true,
+      "sinalizacao_piso_tatil_alerta": true,
+      "sinalizacao_visual": true,
+      "piso_antiderrapante": true
+    },
+    "rampas": {
+      "nao_possui": false,
+      "corrimao": true,
+      "patamar_descanso": true,
+      "piso_antiderrapante": true,
+      "sinalizacao_tatil": false,
+      "inclinacao_adequada": true
+    },
+    "piso": {
+      "nao_possui": false,
+      "tatil": false,
+      "regular_sem_obstaculos": true,
+      "antiderrapante_deslizante": true
+    },
+    "elevador": {
+      "nao_possui": false,
+      "sinalizado_braille": true,
+      "dispositivo_sonoro": true,
+      "dispositivo_luminoso": true,
+      "sensor_eletronico_porta": true,
+      "sinalizacao_visual": true
+    },
+    "equipamento_deslocamento": {
+      "nao_possui": false,
+      "possui": {
+        "possui": true,
+        "detalhe": "1 cadeira de rodas disponível na recepção."
+      }
+    },
+    "sinalizacao_visual": {
+      "nao_possui": false,
+      "entrada_saida": true,
+      "recepcao": true,
+      "sanitario": true,
+      "eventos": true,
+      "restaurante": true,
+      "area_lazer": true,
+      "area_resgate": true
+    },
+    "alarme_emergencia": {
+      "nao_possui": false,
+      "possui": true
+    },
+    "comunicacao": {
+      "nao_possui": false,
+      "texto_informativo_braille": false,
+      "texto_informativo_fonte_ampliada": true,
+      "interprete_libras": false
+    },
+    "balcao_atendimento": {
+      "nao_possui": false,
+      "rebaixado": true,
+      "preferencial_pcd": true
+    },
+    "mobiliario": {
+      "nao_possui": false,
+      "altura_adequada": true,
+      "recuo_adequado": true
+    },
+    "sanitario": {
+      "nao_possui": false,
+      "barra_apoio": true,
+      "porta_larga": true,
+      "acesso_e_giro_cadeira_rodas": true,
+      "pia_rebaixada": true,
+      "espelho_rebaixado_alcance_visual": true,
+      "box_banheira_adaptada": true,
+      "torneira_monocomando_alavanca": true,
+      "piso_regular_sem_obstaculos": true,
+      "piso_tatil": false
+    },
+    "telefone_acessivel": {
+      "nao_possui": true,
+      "altura_adequada": false,
+      "para_surdos_tps_tts": false
+    },
+    "atendimento_preferencial": {
+      "possui": true,
+      "nao_possui": false
+    }
+  }
 }
