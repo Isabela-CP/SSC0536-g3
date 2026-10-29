@@ -1,0 +1,1 @@
+{"error":{"code":"CONFLICT","message":"Já existe um estabelecimento cadastrado com esse CNPJ.","details":[{"field":"cnpj","issue":"CNPJ 54.839.271/0001-64 já está cadastrado."}]}}

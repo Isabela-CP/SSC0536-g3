@@ -1,0 +1,1 @@
+{"error":{"code":"VALIDATION_ERROR","message":"Verifique os campos informados.","details":[{"field":"cnpj","issue":"CNPJ inválido."}]}}

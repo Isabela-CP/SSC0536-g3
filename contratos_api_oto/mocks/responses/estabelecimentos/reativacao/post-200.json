@@ -1,0 +1,12 @@
+{
+  "id_estabelecimento": "33333333-3333-4333-8333-333333333333",
+  "id_categoria": 1,
+  "nome_fantasia": "Hotel Vale do Sol",
+  "cnpj": "81.937.462/0001-31",
+  "status": "ATIVO",
+  "motivo_inativacao": null,
+  "endereco": "Rodovia Municipal, km 4, Cidade Exemplo - SP",
+  "aceita_pesquisas": false,
+  "criado_em": "2025-07-14T12:30:00Z",
+  "atualizado_em": "2026-10-27T12:00:00Z"
+}
