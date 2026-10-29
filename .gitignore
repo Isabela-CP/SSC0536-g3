@@ -3,3 +3,9 @@ dist
 .DS_Store
 __pycache__/
 *.pyc
+backend/.venv
+__pycache__/
+.pytest_cache/
+scripts/
+README-PLANO-SCRUM-73.md
+.vscode/
