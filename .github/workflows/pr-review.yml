@@ -1,0 +1,107 @@
+name: AI PR Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  issue_comment:
+    types: [created]
+
+jobs:
+  review:
+    # Executa se for evento de PR (não draft) OU se alguém comentar '/review' em um PR
+    if: >
+      (github.event_name == 'pull_request' && !github.event.pull_request.draft) ||
+      (github.event_name == 'issue_comment' && github.event.issue.pull_request && contains(github.event.comment.body, '/review'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+
+    steps:
+      - name: Checkout repositório
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Instalar dependências e validar build
+        id: build_check
+        run: |
+          cd frontend
+          npm ci || npm install
+          if npm run build; then
+            echo "BUILD_STATUS=✅ Sucesso (compilou sem erros)" >> $GITHUB_ENV
+          else
+            echo "BUILD_STATUS=❌ Falha no build (npm run build falhou)" >> $GITHUB_ENV
+          fi
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Obter dados do PR e Diff
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ "${{ github.event_name }}" = "issue_comment" ]; then
+            PR_NUM="${{ github.event.issue.number }}"
+          else
+            PR_NUM="${{ github.event.pull_request.number }}"
+          fi
+
+          # Pega metadados do PR via GitHub CLI
+          PR_JSON=$(gh pr view "$PR_NUM" --json title,headRefName,baseRefName,body,isCrossRepository)
+          echo "PR_IS_FORK=$(echo "$PR_JSON" | jq -r '.isCrossRepository')" >> $GITHUB_ENV
+          
+          echo "PR_NUMBER=$PR_NUM" >> $GITHUB_ENV
+          echo "PR_TITLE=$(echo "$PR_JSON" | jq -r '.title')" >> $GITHUB_ENV
+          echo "PR_BRANCH=$(echo "$PR_JSON" | jq -r '.headRefName')" >> $GITHUB_ENV
+          echo "TARGET_BRANCH=$(echo "$PR_JSON" | jq -r '.baseRefName')" >> $GITHUB_ENV
+          
+          # Extrai menção à Issue no corpo do PR
+          BODY=$(echo "$PR_JSON" | jq -r '.body')
+          ISSUE_MATCH=$(echo "$BODY" | grep -iE 'closes #[0-9]+|fixes #[0-9]+' | head -n 1 || echo "Não especificada no template")
+          echo "ISSUE_INFO=$ISSUE_MATCH" >> $GITHUB_ENV
+
+          # Salva diff
+          gh pr diff "$PR_NUM" > diff.txt
+
+      - name: Gerar Análise com IA
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          python3 .github/scripts/review_pr.py diff.txt review.md
+
+      - name: Publicar Review no PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr comment "$PR_NUMBER" --body-file review.md
+
+      - name: Salvar review em pr_reviewing/
+        if: env.PR_IS_FORK == 'false'
+        continue-on-error: true
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin "$PR_BRANCH"
+          git checkout -B "$PR_BRANCH" "origin/$PR_BRANCH"
+          mkdir -p pr_reviewing
+          cp review.md "pr_reviewing/${PR_NUMBER}.md"
+          git add "pr_reviewing/${PR_NUMBER}.md"
+          if git diff --cached --quiet; then
+            echo "Sem mudanças para commitar."
+          else
+            git commit -m "docs: review automático do PR #${PR_NUMBER}"
+            git push origin "HEAD:$PR_BRANCH"
+          fi
