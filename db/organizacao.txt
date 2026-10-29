@@ -1,0 +1,6 @@
+db/
+├── migrations/
+│   ├── 001_core_inventory.sql
+│   └── 002_operational_tables.sql
+└── seeds/
+    └── 001_dev_seed.sql
