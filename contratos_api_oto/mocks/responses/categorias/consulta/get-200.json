@@ -4,6 +4,46 @@
       "id_categoria": 1,
       "nome_categoria": "Meios de hospedagem",
       "descricao": "Hotéis, pousadas, resorts e outros meios de hospedagem."
+    },
+    {
+      "id_categoria": 2,
+      "nome_categoria": "Meios de alimentação e bebidas",
+      "descricao": "Restaurantes, bares, lanchonetes, cafeterias e similares."
+    },
+    {
+      "id_categoria": 3,
+      "nome_categoria": "Agências e operadoras de turismo",
+      "descricao": "Agências de viagens, receptivo e operadoras turísticas."
+    },
+    {
+      "id_categoria": 4,
+      "nome_categoria": "Atrativos lazer e entretenimento",
+      "descricao": "Parques, museus, atrativos culturais, naturais e de lazer."
+    },
+    {
+      "id_categoria": 5,
+      "nome_categoria": "Locadoras de veículos e transporte turístico",
+      "descricao": "Locadoras de automóveis, vans, ônibus e transporte turístico."
+    },
+    {
+      "id_categoria": 6,
+      "nome_categoria": "Espaços para eventos",
+      "descricao": "Centros de convenções, auditórios, salões e pavilhões de feiras."
+    },
+    {
+      "id_categoria": 7,
+      "nome_categoria": "Organizadores e serviços para eventos",
+      "descricao": "Empresas organizadoras, cerimonial, buffet e serviços de apoio a eventos."
+    },
+    {
+      "id_categoria": 8,
+      "nome_categoria": "Guias de turismo",
+      "descricao": "Profissionais e guias de turismo cadastrados."
+    },
+    {
+      "id_categoria": 9,
+      "nome_categoria": "Artesanato e comércio diferenciado",
+      "descricao": "Lojas de artesanato, souvenirs e comércio turístico diferenciado."
     }
   ]
 }

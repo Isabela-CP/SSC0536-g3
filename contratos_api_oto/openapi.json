@@ -908,7 +908,12 @@
                       "error": {
                         "code": "VALIDATION_ERROR",
                         "message": "Verifique os campos informados.",
-                        "details": [{"field": "motivo_inativacao", "issue": "O motivo de inativação é obrigatório."}]
+                        "details": [
+                          {
+                            "field": "motivo_inativacao",
+                            "issue": "O motivo de inativação é obrigatório."
+                          }
+                        ]
                       }
                     }
                   },
@@ -917,7 +922,12 @@
                       "error": {
                         "code": "VALIDATION_ERROR",
                         "message": "Verifique os campos informados.",
-                        "details": [{"field": "motivo_inativacao", "issue": "O motivo de inativação deve ter no mínimo 3 caracteres."}]
+                        "details": [
+                          {
+                            "field": "motivo_inativacao",
+                            "issue": "O motivo de inativação deve ter no mínimo 3 caracteres."
+                          }
+                        ]
                       }
                     }
                   },
@@ -926,7 +936,12 @@
                       "error": {
                         "code": "VALIDATION_ERROR",
                         "message": "Verifique os campos informados.",
-                        "details": [{"field": "motivo_inativacao", "issue": "O motivo de inativação deve ter no máximo 500 caracteres."}]
+                        "details": [
+                          {
+                            "field": "motivo_inativacao",
+                            "issue": "O motivo de inativação deve ter no máximo 500 caracteres."
+                          }
+                        ]
                       }
                     }
                   }
@@ -1285,28 +1300,6 @@
               }
             }
           },
-          "422": {
-            "description": "Falha em uma ou mais validações de campo.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "example": {
-                  "error": {
-                    "code": "VALIDATION_ERROR",
-                    "message": "Verifique os campos informados.",
-                    "details": [
-                      {
-                        "field": "cnpj",
-                        "issue": "CNPJ inválido."
-                      }
-                    ]
-                  }
-                }
-              }
-            }
-          },
           "413": {
             "description": "Arquivo excede o limite configurado.",
             "content": {
@@ -1334,6 +1327,28 @@
                   "error": {
                     "code": "UNSUPPORTED_MEDIA_TYPE",
                     "message": "Tipo de arquivo não permitido."
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Falha em uma ou mais validações de campo.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": "Verifique os campos informados.",
+                    "details": [
+                      {
+                        "field": "cnpj",
+                        "issue": "CNPJ inválido."
+                      }
+                    ]
                   }
                 }
               }
@@ -1728,61 +1743,468 @@
       }
     },
     "/auth/login": {
-      "post": {"tags": ["Autenticação"], "operationId": "login", "summary": "Autenticar usuário", "security": [], "responses": {"200": {"description": "Token de sessão."}, "401": {"$ref": "#/components/responses/Unauthorized"}}}
+      "post": {
+        "tags": [
+          "Autenticação"
+        ],
+        "operationId": "login",
+        "summary": "Autenticar usuário",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Token de sessão."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
     },
     "/auth/logout": {
-      "post": {"tags": ["Autenticação"], "operationId": "logout", "summary": "Encerrar sessão", "responses": {"204": {"description": "Sessão encerrada."}, "401": {"$ref": "#/components/responses/Unauthorized"}}}
+      "post": {
+        "tags": [
+          "Autenticação"
+        ],
+        "operationId": "logout",
+        "summary": "Encerrar sessão",
+        "responses": {
+          "204": {
+            "description": "Sessão encerrada."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
     },
     "/auth/recuperacao-senha": {
-      "post": {"tags": ["Autenticação"], "operationId": "recuperarSenha", "summary": "Solicitar recuperação de senha", "security": [], "responses": {"202": {"description": "Solicitação recebida."}}}
+      "post": {
+        "tags": [
+          "Autenticação"
+        ],
+        "operationId": "recuperarSenha",
+        "summary": "Solicitar recuperação de senha",
+        "security": [],
+        "responses": {
+          "202": {
+            "description": "Solicitação recebida."
+          }
+        }
+      }
     },
     "/perfil": {
-      "get": {"tags": ["Perfil"], "operationId": "obterPerfil", "summary": "Consultar usuário autenticado", "responses": {"200": {"description": "Perfil."}, "401": {"$ref": "#/components/responses/Unauthorized"}}},
-      "patch": {"tags": ["Perfil"], "operationId": "atualizarPerfil", "summary": "Editar usuário autenticado", "responses": {"200": {"description": "Perfil atualizado."}, "401": {"$ref": "#/components/responses/Unauthorized"}, "409": {"$ref": "#/components/responses/Conflict"}, "422": {"$ref": "#/components/responses/ValidationError"}}}
+      "get": {
+        "tags": [
+          "Perfil"
+        ],
+        "operationId": "obterPerfil",
+        "summary": "Consultar usuário autenticado",
+        "responses": {
+          "200": {
+            "description": "Perfil."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Perfil"
+        ],
+        "operationId": "atualizarPerfil",
+        "summary": "Editar usuário autenticado",
+        "responses": {
+          "200": {
+            "description": "Perfil atualizado."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
     },
     "/usuarios": {
-      "get": {"tags": ["Usuários"], "operationId": "listarUsuarios", "summary": "Listar usuários", "responses": {"200": {"description": "Usuários."}, "401": {"$ref": "#/components/responses/Unauthorized"}, "403": {"$ref": "#/components/responses/Forbidden"}}},
-      "post": {"tags": ["Usuários"], "operationId": "criarUsuario", "summary": "Criar conta pendente", "responses": {"201": {"description": "Usuário criado."}, "401": {"$ref": "#/components/responses/Unauthorized"}, "403": {"$ref": "#/components/responses/Forbidden"}, "409": {"$ref": "#/components/responses/Conflict"}, "422": {"$ref": "#/components/responses/ValidationError"}}}
+      "get": {
+        "tags": [
+          "Usuários"
+        ],
+        "operationId": "listarUsuarios",
+        "summary": "Listar usuários",
+        "responses": {
+          "200": {
+            "description": "Usuários."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Usuários"
+        ],
+        "operationId": "criarUsuario",
+        "summary": "Criar conta pendente",
+        "responses": {
+          "201": {
+            "description": "Usuário criado."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
     },
     "/convites": {
-      "post": {"tags": ["Convites"], "operationId": "criarConvite", "summary": "Enviar convite de acesso", "responses": {"201": {"description": "Convite criado."}, "401": {"$ref": "#/components/responses/Unauthorized"}, "403": {"$ref": "#/components/responses/Forbidden"}, "404": {"$ref": "#/components/responses/NotFound"}}}
+      "post": {
+        "tags": [
+          "Convites"
+        ],
+        "operationId": "criarConvite",
+        "summary": "Enviar convite de acesso",
+        "responses": {
+          "201": {
+            "description": "Convite criado."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
     },
     "/convites/{id_convite}/aceitacao": {
-      "post": {"tags": ["Convites"], "operationId": "aceitarConvite", "summary": "Ativar acesso por convite", "security": [], "responses": {"200": {"description": "Acesso ativado."}, "404": {"$ref": "#/components/responses/NotFound"}, "409": {"$ref": "#/components/responses/Conflict"}}}
+      "post": {
+        "tags": [
+          "Convites"
+        ],
+        "operationId": "aceitarConvite",
+        "summary": "Ativar acesso por convite",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Acesso ativado."
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
     },
     "/pesquisas-ocupacao": {
-      "get": {"tags": ["Pesquisas de ocupação"], "operationId": "listarPesquisasOcupacao", "summary": "Listar pesquisas", "responses": {"200": {"description": "Pesquisas."}, "401": {"$ref": "#/components/responses/Unauthorized"}}},
-      "post": {"tags": ["Pesquisas de ocupação"], "operationId": "criarPesquisaOcupacao", "summary": "Criar e distribuir pesquisa", "responses": {"201": {"description": "Pesquisa aberta."}, "401": {"$ref": "#/components/responses/Unauthorized"}, "403": {"$ref": "#/components/responses/Forbidden"}, "422": {"$ref": "#/components/responses/ValidationError"}}}
+      "get": {
+        "tags": [
+          "Pesquisas de ocupação"
+        ],
+        "operationId": "listarPesquisasOcupacao",
+        "summary": "Listar pesquisas",
+        "responses": {
+          "200": {
+            "description": "Pesquisas."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Pesquisas de ocupação"
+        ],
+        "operationId": "criarPesquisaOcupacao",
+        "summary": "Criar e distribuir pesquisa",
+        "responses": {
+          "201": {
+            "description": "Pesquisa aberta."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
     },
     "/pesquisas-ocupacao/pendentes": {
-      "get": {"tags": ["Respostas de ocupação"], "operationId": "listarPesquisasPendentes", "summary": "Consultar pendências", "responses": {"200": {"description": "Pesquisas pendentes."}, "401": {"$ref": "#/components/responses/Unauthorized"}}}
+      "get": {
+        "tags": [
+          "Respostas de ocupação"
+        ],
+        "operationId": "listarPesquisasPendentes",
+        "summary": "Consultar pendências",
+        "responses": {
+          "200": {
+            "description": "Pesquisas pendentes."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
     },
     "/pesquisas-ocupacao/{id_pesquisa}": {
-      "patch": {"tags": ["Pesquisas de ocupação"], "operationId": "atualizarPesquisaOcupacao", "summary": "Editar pesquisa aberta", "responses": {"200": {"description": "Pesquisa atualizada."}, "401": {"$ref": "#/components/responses/Unauthorized"}, "403": {"$ref": "#/components/responses/Forbidden"}, "404": {"$ref": "#/components/responses/NotFound"}, "409": {"$ref": "#/components/responses/Conflict"}, "422": {"$ref": "#/components/responses/ValidationError"}}}
+      "patch": {
+        "tags": [
+          "Pesquisas de ocupação"
+        ],
+        "operationId": "atualizarPesquisaOcupacao",
+        "summary": "Editar pesquisa aberta",
+        "responses": {
+          "200": {
+            "description": "Pesquisa atualizada."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
     },
     "/pesquisas-ocupacao/{id_pesquisa}/encerramento": {
-      "post": {"tags": ["Pesquisas de ocupação"], "operationId": "encerrarPesquisaOcupacao", "summary": "Encerrar pesquisa", "responses": {"200": {"description": "Pesquisa encerrada."}, "401": {"$ref": "#/components/responses/Unauthorized"}, "403": {"$ref": "#/components/responses/Forbidden"}, "404": {"$ref": "#/components/responses/NotFound"}, "409": {"$ref": "#/components/responses/Conflict"}}}
+      "post": {
+        "tags": [
+          "Pesquisas de ocupação"
+        ],
+        "operationId": "encerrarPesquisaOcupacao",
+        "summary": "Encerrar pesquisa",
+        "responses": {
+          "200": {
+            "description": "Pesquisa encerrada."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
     },
     "/pesquisas-ocupacao/{id_pesquisa}/respostas": {
-      "post": {"tags": ["Respostas de ocupação"], "operationId": "enviarRespostaOcupacao", "summary": "Enviar resposta de ocupação", "responses": {"201": {"description": "Resposta enviada."}, "401": {"$ref": "#/components/responses/Unauthorized"}, "404": {"$ref": "#/components/responses/NotFound"}, "409": {"$ref": "#/components/responses/Conflict"}}}
+      "post": {
+        "tags": [
+          "Respostas de ocupação"
+        ],
+        "operationId": "enviarRespostaOcupacao",
+        "summary": "Enviar resposta de ocupação",
+        "responses": {
+          "201": {
+            "description": "Resposta enviada."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
     },
     "/respostas-ocupacao/historico": {
-      "get": {"tags": ["Respostas de ocupação"], "operationId": "historicoRespostasOcupacao", "summary": "Consultar histórico de respostas", "responses": {"200": {"description": "Histórico."}, "401": {"$ref": "#/components/responses/Unauthorized"}}}
+      "get": {
+        "tags": [
+          "Respostas de ocupação"
+        ],
+        "operationId": "historicoRespostasOcupacao",
+        "summary": "Consultar histórico de respostas",
+        "responses": {
+          "200": {
+            "description": "Histórico."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
     },
     "/relatorios": {
-      "post": {"tags": ["Relatórios"], "operationId": "gerarRelatorio", "summary": "Gerar relatório PDF ou CSV", "responses": {"202": {"description": "Geração aceita."}, "401": {"$ref": "#/components/responses/Unauthorized"}, "403": {"$ref": "#/components/responses/Forbidden"}, "422": {"$ref": "#/components/responses/ValidationError"}}}
+      "post": {
+        "tags": [
+          "Relatórios"
+        ],
+        "operationId": "gerarRelatorio",
+        "summary": "Gerar relatório PDF ou CSV",
+        "responses": {
+          "202": {
+            "description": "Geração aceita."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
     },
     "/relatorios/{id_relatorio}": {
-      "get": {"tags": ["Relatórios"], "operationId": "obterRelatorio", "summary": "Consultar estado de relatório", "responses": {"200": {"description": "Relatório."}, "401": {"$ref": "#/components/responses/Unauthorized"}, "403": {"$ref": "#/components/responses/Forbidden"}, "404": {"$ref": "#/components/responses/NotFound"}}}
+      "get": {
+        "tags": [
+          "Relatórios"
+        ],
+        "operationId": "obterRelatorio",
+        "summary": "Consultar estado de relatório",
+        "responses": {
+          "200": {
+            "description": "Relatório."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
     },
     "/relatorios/{id_relatorio}/arquivo": {
-      "get": {"tags": ["Relatórios"], "operationId": "baixarRelatorio", "summary": "Baixar relatório gerado", "responses": {"200": {"description": "Arquivo do relatório."}, "401": {"$ref": "#/components/responses/Unauthorized"}, "403": {"$ref": "#/components/responses/Forbidden"}, "404": {"$ref": "#/components/responses/NotFound"}}}
+      "get": {
+        "tags": [
+          "Relatórios"
+        ],
+        "operationId": "baixarRelatorio",
+        "summary": "Baixar relatório gerado",
+        "responses": {
+          "200": {
+            "description": "Arquivo do relatório."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
     },
     "/auditoria": {
-      "get": {"tags": ["Auditoria"], "operationId": "listarAuditoria", "summary": "Consultar logs e alterações", "parameters": [{"name": "acao", "in": "query", "schema": {"type": "string"}}, {"name": "id_usuario", "in": "query", "schema": {"type": "integer"}}, {"name": "data_inicio", "in": "query", "schema": {"type": "string", "format": "date-time"}}, {"name": "data_fim", "in": "query", "schema": {"type": "string", "format": "date-time"}}], "responses": {"200": {"description": "Eventos de auditoria."}, "401": {"$ref": "#/components/responses/Unauthorized"}, "403": {"$ref": "#/components/responses/Forbidden"}}}
+      "get": {
+        "tags": [
+          "Auditoria"
+        ],
+        "operationId": "listarAuditoria",
+        "summary": "Consultar logs e alterações",
+        "parameters": [
+          {
+            "name": "acao",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id_usuario",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "data_inicio",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "data_fim",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Eventos de auditoria."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
     },
     "/dashboard": {
-      "get": {"tags": ["Dashboard"], "operationId": "obterDashboard", "summary": "Consultar indicadores e alertas", "responses": {"200": {"description": "Indicadores e alertas."}, "401": {"$ref": "#/components/responses/Unauthorized"}}}
+      "get": {
+        "tags": [
+          "Dashboard"
+        ],
+        "operationId": "obterDashboard",
+        "summary": "Consultar indicadores e alertas",
+        "responses": {
+          "200": {
+            "description": "Indicadores e alertas."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2039,15 +2461,58 @@
             "type": "array",
             "items": {
               "type": "string",
-              "enum": [
+              "examples": [
                 "PIX",
                 "CREDITO",
                 "DEBITO",
-                "DINHEIRO"
+                "DINHEIRO",
+                "BOLETO",
+                "TRANSFERENCIA"
               ]
             },
             "uniqueItems": true,
-            "description": "Lista de formas de pagamento aceitas pelo estabelecimento."
+            "description": "Lista de formas de pagamento aceitas pelo estabelecimento (suporta os códigos padronizados PIX/CREDITO/DEBITO/DINHEIRO e termos importados da planilha)."
+          },
+          "horario_funcionamento_descritivo": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "horario_checkin_checkout_descritivo": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reservas": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "regras_reserva": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "diaria_media": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "atendimento_idiomas": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AtendimentoIdiomas"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       },
@@ -2173,6 +2638,442 @@
               "boolean",
               "null"
             ]
+          },
+          "estacionamento_detalhe": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SimOuNaoComDetalhe"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "mensageiro": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "area_fumantes": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "pet_detalhe": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SimOuNaoComDetalhe"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "uh_detalhes": {
+            "type": "object",
+            "description": "Comodidades nas unidades habitacionais (cols AP–AU).",
+            "properties": {
+              "internet_sem_fio": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "ar_condicionado": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "ventilador_climatizador": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "frigobar": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "tv": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "outros": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextoComIndicacao"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          },
+          "recepcao": {
+            "type": "object",
+            "description": "Infraestrutura de recepção (cols AV–BC).",
+            "properties": {
+              "nao_possui": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "internet_sem_fio": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/SimOuNaoComDetalhe"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "ar_condicionado": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "climatizador_ventilador": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "area_estar": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "sanitario": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "sanitario_pcd": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "outros": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextoComIndicacao"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          },
+          "alimentos_bebidas": {
+            "type": "object",
+            "description": "Infraestrutura de Alimentos e Bebidas na hospedagem (cols BD–BT).",
+            "properties": {
+              "nao_possui": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "cafe_da_manha": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/SimOuNaoComDetalhe"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "meia_pensao": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "pensao_completa": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "all_inclusive": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "room_service": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "restaurante": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "lanchonete": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "bar": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "bar_molhado": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "copa_bebe": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "area_refeicoes_copa": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "sanitario_exclusivo_ab": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "sanitario_pcd_exclusivo_ab": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "aberto_ao_publico": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "alimentacao_diferenciada": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "outros": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextoComIndicacao"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          },
+          "eventos": {
+            "type": "object",
+            "description": "Infraestrutura da área de eventos na hospedagem (cols BU–CB).",
+            "properties": {
+              "nao_possui": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "ar_condicionado": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "climatizador_ventilador": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "sanitario_exclusivo_eventos": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "sanitario_pcd_exclusivo_eventos": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "mobiliarios": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "equipamentos_audiovisuais": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/SimOuNaoComDetalhe"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "outros": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextoComIndicacao"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          },
+          "recreacao": {
+            "type": "object",
+            "description": "Infraestrutura da área de recreação e lazer na hospedagem (cols CC–CT).",
+            "properties": {
+              "nao_possui": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "piscina": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "piscina_infantil": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "sauna": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "spa_ofuro": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "area_verde": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "area_descanso_leitura": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "academia": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "quadra_poliesportiva": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "salao_jogos": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "area_lazer_criancas": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "equipe_recreacao_criancas": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "anfiteatro_cinema": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "mini_golf": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "campo_futebol": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "sanitario_exclusivo_lazer": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "sanitario_pcd_exclusivo_lazer": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "outros": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextoComIndicacao"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
           }
         }
       },
@@ -2297,10 +3198,16 @@
             "type": "string"
           },
           "razao_social": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "cnpj": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "bairro": {
             "type": [
@@ -2451,6 +3358,292 @@
                 "items": {
                   "$ref": "#/components/schemas/DocumentoControle"
                 }
+              },
+              "id_origem": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "ID original da planilha (armazenado como texto, preservando zeros iniciais e máscaras)."
+              },
+              "cpf": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "CPF para profissionais/pessoa física (ex.: Guias de turismo), preservando zeros iniciais."
+              },
+              "classificacao": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Classificação ou subtipo no catálogo do segmento administrado pelo OTO."
+              },
+              "tipo_cadastur": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Tipo de cadastro no Cadastur quando aplicável."
+              },
+              "cnae_secundario": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "CNAE secundário armazenado como texto."
+              },
+              "rede_ou_franquia": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "contato": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Nome do contato/responsável pelo estabelecimento."
+              },
+              "cargo_contato": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Cargo do contato/responsável."
+              },
+              "proprietarios": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Nome(s) do(s) proprietário(s)."
+              },
+              "localizacao": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Localização conforme catálogo administrado pelo OTO."
+              },
+              "regiao": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Região conforme catálogo administrado pelo OTO."
+              },
+              "inventariado": {
+                "type": [
+                  "boolean",
+                  "null"
+                ],
+                "description": "Marcador INVENTÁRIO da planilha indicando cadastro inventariado."
+              },
+              "telefones_comerciais": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Lista de telefones comerciais em texto (com DDD, prefixo e ramal)."
+              },
+              "emails_comerciais": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "email"
+                },
+                "description": "Lista de e-mails comerciais."
+              },
+              "site": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "facebook": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "instagram": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "redes_sociais": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "observacoes": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "acessibilidade": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/AcessibilidadeDetalhada"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "alimentacao_bebidas": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/MeioAlimentacaoBebidas"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "agencia_turismo": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/AgenciaOperadoraTurismo"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "atrativo_lazer": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/AtrativoLazerEntretenimento"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "locadora_transporte": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/LocadoraTransporteTuristico"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "espaco_eventos": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/EspacoEventos"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "organizador_eventos": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/OrganizadorServicosEventos"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "guia_turismo": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/GuiaTurismo"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "artesanato_comercio": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/ArtesanatoComercio"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "descricao_geral": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Descrição livre do estabelecimento (aba auxiliar col AM)."
+              },
+              "sobre_area_ab": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Texto descritivo sobre a área de A&B (aba auxiliar col AK)."
+              },
+              "sobre_area_recreacao_lazer": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Texto descritivo sobre a área de recreação e lazer (aba auxiliar col AL)."
+              },
+              "sobre_facilidades_pcd": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Texto descritivo sobre facilidades para PCD (aba auxiliar col AN)."
+              },
+              "sobre_eventos": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Texto descritivo sobre eventos (aba auxiliar col AO)."
+              },
+              "responsavel_preenchimento": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "description": "Dados internos do responsável pelo preenchimento do questionário (aba auxiliar col AP - uso exclusivo interno OTO/ORTE).",
+                "properties": {
+                  "nome": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "telefone_whatsapp": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "cargo": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "texto_original": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                }
               }
             },
             "required": [
@@ -2475,7 +3668,10 @@
             "maxLength": 160
           },
           "razao_social": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "minLength": 2,
             "maxLength": 200,
             "description": "Razão social do estabelecimento. Somente ADMINISTRADOR pode alterar este campo após a criação.",
@@ -2484,7 +3680,10 @@
             ]
           },
           "cnpj": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "pattern": "^\\d{2}\\.?\\d{3}\\.?\\d{3}\\/?\\d{4}-?\\d{2}$",
             "description": "Aceita CNPJ com ou sem pontuação; validar dígitos verificadores e unicidade. Somente ADMINISTRADOR pode alterar este campo após a criação.",
             "x-allowed-roles-on-update": [
@@ -2606,6 +3805,292 @@
                 "type": "null"
               }
             ]
+          },
+          "id_origem": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "ID original da planilha (armazenado como texto, preservando zeros iniciais e máscaras)."
+          },
+          "cpf": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "CPF para profissionais/pessoa física (ex.: Guias de turismo), preservando zeros iniciais."
+          },
+          "classificacao": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Classificação ou subtipo no catálogo do segmento administrado pelo OTO."
+          },
+          "tipo_cadastur": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Tipo de cadastro no Cadastur quando aplicável."
+          },
+          "cnae_secundario": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "CNAE secundário armazenado como texto."
+          },
+          "rede_ou_franquia": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "contato": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Nome do contato/responsável pelo estabelecimento."
+          },
+          "cargo_contato": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Cargo do contato/responsável."
+          },
+          "proprietarios": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Nome(s) do(s) proprietário(s)."
+          },
+          "localizacao": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Localização conforme catálogo administrado pelo OTO."
+          },
+          "regiao": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Região conforme catálogo administrado pelo OTO."
+          },
+          "inventariado": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Marcador INVENTÁRIO da planilha indicando cadastro inventariado."
+          },
+          "telefones_comerciais": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Lista de telefones comerciais em texto (com DDD, prefixo e ramal)."
+          },
+          "emails_comerciais": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "email"
+            },
+            "description": "Lista de e-mails comerciais."
+          },
+          "site": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "facebook": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "instagram": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "redes_sociais": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "observacoes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "acessibilidade": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AcessibilidadeDetalhada"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "alimentacao_bebidas": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MeioAlimentacaoBebidas"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "agencia_turismo": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AgenciaOperadoraTurismo"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "atrativo_lazer": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AtrativoLazerEntretenimento"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "locadora_transporte": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/LocadoraTransporteTuristico"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "espaco_eventos": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EspacoEventos"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "organizador_eventos": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/OrganizadorServicosEventos"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "guia_turismo": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/GuiaTurismo"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "artesanato_comercio": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ArtesanatoComercio"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "descricao_geral": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Descrição livre do estabelecimento (aba auxiliar col AM)."
+          },
+          "sobre_area_ab": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Texto descritivo sobre a área de A&B (aba auxiliar col AK)."
+          },
+          "sobre_area_recreacao_lazer": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Texto descritivo sobre a área de recreação e lazer (aba auxiliar col AL)."
+          },
+          "sobre_facilidades_pcd": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Texto descritivo sobre facilidades para PCD (aba auxiliar col AN)."
+          },
+          "sobre_eventos": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Texto descritivo sobre eventos (aba auxiliar col AO)."
+          },
+          "responsavel_preenchimento": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Dados internos do responsável pelo preenchimento do questionário (aba auxiliar col AP - uso exclusivo interno OTO/ORTE).",
+            "properties": {
+              "nome": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "telefone_whatsapp": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "cargo": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "texto_original": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
           }
         },
         "required": [
@@ -2632,7 +4117,10 @@
             "maxLength": 160
           },
           "razao_social": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "minLength": 2,
             "maxLength": 200,
             "description": "Razão social do estabelecimento. Somente ADMINISTRADOR pode alterar este campo após a criação.",
@@ -2641,7 +4129,10 @@
             ]
           },
           "cnpj": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "pattern": "^\\d{2}\\.?\\d{3}\\.?\\d{3}\\/?\\d{4}-?\\d{2}$",
             "description": "Aceita CNPJ com ou sem pontuação; validar dígitos verificadores e unicidade. Somente ADMINISTRADOR pode alterar este campo após a criação.",
             "x-allowed-roles-on-update": [
@@ -2763,6 +4254,292 @@
                 "type": "null"
               }
             ]
+          },
+          "id_origem": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "ID original da planilha (armazenado como texto, preservando zeros iniciais e máscaras)."
+          },
+          "cpf": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "CPF para profissionais/pessoa física (ex.: Guias de turismo), preservando zeros iniciais."
+          },
+          "classificacao": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Classificação ou subtipo no catálogo do segmento administrado pelo OTO."
+          },
+          "tipo_cadastur": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Tipo de cadastro no Cadastur quando aplicável."
+          },
+          "cnae_secundario": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "CNAE secundário armazenado como texto."
+          },
+          "rede_ou_franquia": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "contato": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Nome do contato/responsável pelo estabelecimento."
+          },
+          "cargo_contato": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Cargo do contato/responsável."
+          },
+          "proprietarios": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Nome(s) do(s) proprietário(s)."
+          },
+          "localizacao": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Localização conforme catálogo administrado pelo OTO."
+          },
+          "regiao": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Região conforme catálogo administrado pelo OTO."
+          },
+          "inventariado": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Marcador INVENTÁRIO da planilha indicando cadastro inventariado."
+          },
+          "telefones_comerciais": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Lista de telefones comerciais em texto (com DDD, prefixo e ramal)."
+          },
+          "emails_comerciais": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "email"
+            },
+            "description": "Lista de e-mails comerciais."
+          },
+          "site": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "facebook": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "instagram": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "redes_sociais": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "observacoes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "acessibilidade": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AcessibilidadeDetalhada"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "alimentacao_bebidas": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MeioAlimentacaoBebidas"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "agencia_turismo": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AgenciaOperadoraTurismo"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "atrativo_lazer": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AtrativoLazerEntretenimento"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "locadora_transporte": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/LocadoraTransporteTuristico"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "espaco_eventos": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EspacoEventos"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "organizador_eventos": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/OrganizadorServicosEventos"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "guia_turismo": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/GuiaTurismo"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "artesanato_comercio": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ArtesanatoComercio"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "descricao_geral": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Descrição livre do estabelecimento (aba auxiliar col AM)."
+          },
+          "sobre_area_ab": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Texto descritivo sobre a área de A&B (aba auxiliar col AK)."
+          },
+          "sobre_area_recreacao_lazer": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Texto descritivo sobre a área de recreação e lazer (aba auxiliar col AL)."
+          },
+          "sobre_facilidades_pcd": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Texto descritivo sobre facilidades para PCD (aba auxiliar col AN)."
+          },
+          "sobre_eventos": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Texto descritivo sobre eventos (aba auxiliar col AO)."
+          },
+          "responsavel_preenchimento": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Dados internos do responsável pelo preenchimento do questionário (aba auxiliar col AP - uso exclusivo interno OTO/ORTE).",
+            "properties": {
+              "nome": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "telefone_whatsapp": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "cargo": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "texto_original": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
           }
         },
         "additionalProperties": false,
@@ -2928,6 +4705,3022 @@
           "arquivo"
         ],
         "additionalProperties": false
+      },
+      "SimOuNaoComDetalhe": {
+        "type": "object",
+        "description": "Indicação booleana separada de observação, condição, quantidade ou restrição em texto.",
+        "properties": {
+          "possui": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "detalhe": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "TextoComIndicacao": {
+        "type": "object",
+        "description": "Descrição em texto acompanhada de indicação booleana de presença quando houver 0/1 e texto no mesmo campo.",
+        "properties": {
+          "indicacao": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "descricao": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "DataOuAno": {
+        "type": "object",
+        "description": "Data completa (AAAA-MM-DD), ano isolado ou texto histórico preservando a precisão original.",
+        "properties": {
+          "data": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "ano": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1500,
+            "maximum": 2100
+          },
+          "precisao": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "DATA",
+              "ANO",
+              "TEXTO_HISTORICO",
+              null
+            ]
+          },
+          "texto_historico": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "PublicoPrincipalPercentual": {
+        "type": "object",
+        "description": "Percentuais de público principal na escala de 0 a 100.",
+        "properties": {
+          "comunidade_percentual": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100
+          },
+          "turistas_percentual": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100
+          }
+        }
+      },
+      "AtendimentoIdiomas": {
+        "type": "object",
+        "description": "Disponibilidade de atendimento ou material informativo por idioma.",
+        "properties": {
+          "nao_possui": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "portugues": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "ingles": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "espanhol": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "outros": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ItemMobiliarioQuantidade": {
+        "type": "object",
+        "description": "Indicação de disponibilidade e contagem de item de mobiliário.",
+        "properties": {
+          "possui": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "quantidade": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "especificacao": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "AcessibilidadeDetalhada": {
+        "type": "object",
+        "description": "Matriz completa de acessibilidade (PCD e mobilidade reduzida) consolidada das abas do inventário de Olímpia.",
+        "properties": {
+          "possui_facilidade_pcd": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "capacidade_receber_pcd": {
+            "type": "object",
+            "properties": {
+              "nao_possui": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "fisica": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "auditiva": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "auditiva_nivel": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "SIM",
+                  "NAO",
+                  "PARCIAL",
+                  "NAO_INFORMADO",
+                  null
+                ],
+                "description": "Suporta resposta Parcial observada na aba de Atrativos."
+              },
+              "visual": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "intelectual": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "mental": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "multipla": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              }
+            }
+          },
+          "rota_externa": {
+            "type": "object",
+            "properties": {
+              "nao_possui": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "estacionamento": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "calcada_rebaixada": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "faixa_pedestre": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "rampa": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "semaforo_sonoro": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "piso_tatil_alerta": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "piso_regular_antiderrapante": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "livre_obstaculos": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "acesso_em_nivel": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "outras": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextoComIndicacao"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          },
+          "embarque_desembarque": {
+            "type": "object",
+            "properties": {
+              "nao_possui": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "sinalizado": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "sinalizado_pcd": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "acesso_em_nivel": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "sem_obstaculos": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "rampa_acesso_calcada": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "outras": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextoComIndicacao"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          },
+          "estacionamento_acessivel": {
+            "type": "object",
+            "properties": {
+              "nao_possui": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "sinalizada": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "vaga_demarcada_pcd": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "acesso_em_nivel": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "alargada_cadeira_rodas": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "rampa_acesso_calcada": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "outras": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextoComIndicacao"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          },
+          "circulacao_interna": {
+            "type": "object",
+            "properties": {
+              "nao_possui": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "rampa": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "elevador": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "plataforma_elevatoria": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "circulacao_entre_mobiliario": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "porta_larga": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "piso_regular": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "piso_antiderrapante": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "piso_sem_obstaculos": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "saidas_emergencia": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "espaco_sensorial": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "locais_demarcados_pcd": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "outras": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextoComIndicacao"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          },
+          "escadas": {
+            "type": "object",
+            "properties": {
+              "nao_possui": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "corrimao": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "patamar_descanso": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "sinalizacao_piso_tatil_alerta": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "piso_tatil": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "sinalizacao_visual": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "piso_antiderrapante": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "outros": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextoComIndicacao"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          },
+          "rampas": {
+            "type": "object",
+            "properties": {
+              "nao_possui": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "corrimao": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "patamar_descanso": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "piso_antiderrapante": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "sinalizacao_tatil": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "piso_tatil": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "sinalizacao_visual": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "inclinacao_adequada": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "outros": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextoComIndicacao"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          },
+          "piso": {
+            "type": "object",
+            "properties": {
+              "nao_possui": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "tatil": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "regular_sem_obstaculos": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "antiderrapante_deslizante": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              }
+            }
+          },
+          "elevador": {
+            "type": "object",
+            "properties": {
+              "nao_possui": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "sinalizado_braille": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "dispositivo_sonoro": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "dispositivo_luminoso": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "sensor_eletronico_porta": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "sinalizacao_visual": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "outros": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextoComIndicacao"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          },
+          "equipamento_deslocamento": {
+            "type": "object",
+            "properties": {
+              "nao_possui": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "possui": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/SimOuNaoComDetalhe"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "cadeira_rodas": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "carrinho": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              }
+            }
+          },
+          "sinalizacao_visual": {
+            "type": "object",
+            "properties": {
+              "nao_possui": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "atendimento_preferencial_pcd": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "entrada_saida": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "area_reservada": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "recepcao": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "caixa": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "recepcao_caixa": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "porta": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "estacionamento": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "area_embarque_desembarque": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "sanitario": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "sanitario_pcd": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "elevador": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "escada": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "eventos": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "restaurante": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "cozinha": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "area_alimentacao": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "area_lazer": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "ambulatorio": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "saida_emergencia_equip_incendio": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "area_resgate": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              }
+            }
+          },
+          "alarme_emergencia": {
+            "type": "object",
+            "properties": {
+              "nao_possui": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "possui": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "sonoro": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "visual": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "vibratorio": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              }
+            }
+          },
+          "comunicacao": {
+            "type": "object",
+            "properties": {
+              "nao_possui": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "texto_informativo_braille": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "cardapio_braille": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "cardapio_lingua_estrangeira": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "texto_informativo_fonte_ampliada": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "cardapio_fonte_ampliada": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "telefone_surdos_tps_tts": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "interprete_libras": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              }
+            }
+          },
+          "balcao_atendimento": {
+            "type": "object",
+            "properties": {
+              "nao_possui": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "rebaixado": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "preferencial_pcd": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              }
+            }
+          },
+          "mobiliario": {
+            "type": "object",
+            "properties": {
+              "nao_possui": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "altura_adequada": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "recuo_adequado": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              }
+            }
+          },
+          "sanitario": {
+            "type": "object",
+            "properties": {
+              "nao_possui": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "feminino": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "masculino": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "servico": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "pcd": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "barra_apoio": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "porta_larga": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "acesso_cadeira_rodas": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "giro_cadeira_rodas": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "acesso_e_giro_cadeira_rodas": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "pia_rebaixada": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "espelho_rebaixado_alcance_visual": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "vaso_sanitario_adaptado": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "box_banheira_adaptada": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "torneira_monocomando_alavanca": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "piso_regular_sem_obstaculos": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "piso_tatil": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "alarme_emergencia_pcd": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "outros": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextoComIndicacao"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          },
+          "telefone_acessivel": {
+            "type": "object",
+            "properties": {
+              "nao_possui": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "altura_adequada": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "para_surdos_tps_tts": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              }
+            }
+          },
+          "atendimento_preferencial": {
+            "type": "object",
+            "properties": {
+              "possui": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "nao_possui": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "MeioAlimentacaoBebidas": {
+        "type": "object",
+        "description": "Campos específicos do segmento Meios de Alimentação e Bebidas (cols A–EK).",
+        "properties": {
+          "classificacao": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "inicio_atividade": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "capacidade": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "func_fixos": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "func_temporarios": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "pet": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SimOuNaoComDetalhe"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "formas_pagamento": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "atendimento_lingua_estrangeira": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "horario_funcionamento": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "estacionamento": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SimOuNaoComDetalhe"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "musica_ao_vivo": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "musica_ambiente": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "espaco_eventos": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SimOuNaoComDetalhe"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "atendimento_grupos": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "manobrista": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "ar_condicionado": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "climatizador": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "ventilador": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "adega": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "internet_sem_fio": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "area_lazer_criancas": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SimOuNaoComDetalhe"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "recreacao_criancas": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "area_fumantes": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "carta_vinhos": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "sanitario_proprio": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "outros": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TextoComIndicacao"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "especificacao_gastronomia": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "tipo_servico": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "produtos": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "observacao": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "publico_principal": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PublicoPrincipalPercentual"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "AgenciaOperadoraTurismo": {
+        "type": "object",
+        "description": "Campos específicos do segmento Agências e Operadoras de Turismo (cols A–BD).",
+        "properties": {
+          "classificacao": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "loja_fisica": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "inicio_atividade": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "tipo_cadastur": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "func_fixos": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "func_temporarios": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "horario_funcionamento": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "estacionamento": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SimOuNaoComDetalhe"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "formas_pagamento": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "idiomas": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AtendimentoIdiomas"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "observacao": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "AtrativoLazerEntretenimento": {
+        "type": "object",
+        "description": "Campos específicos do segmento Atrativos, Lazer e Entretenimento (cols A–GP).",
+        "properties": {
+          "tipo": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "administracao_publica_privada": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "PUBLICA",
+              "PRIVADA",
+              "PUBLICO_PRIVADO",
+              null
+            ]
+          },
+          "publico": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "privado": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "inicio_atividade": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/DataOuAno"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "data_inicio_funcionamento": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/DataOuAno"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "func_fixos": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "func_temporarios": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "horario_funcionamento": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "estacionamento": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SimOuNaoComDetalhe"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "informacoes_gerais": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "destaque": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "publico_principal": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PublicoPrincipalPercentual"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "atendimento_idiomas": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AtendimentoIdiomas"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "informativo_impresso": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AtendimentoIdiomas"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "classificacao_turistica": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "atividade": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "integra_roteiros_comercializados": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "integra_guias_turisticos": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "visitacao": {
+            "type": "object",
+            "properties": {
+              "cobranca_ingresso": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "NAO",
+                  "SIM",
+                  "SOMENTE_ATRACOES_INTERNAS",
+                  null
+                ],
+                "description": "Código de cobrança: 0=NÃO, 1=SIM, 2=SOMENTE ATRAÇÕES INTERNAS."
+              },
+              "formas_pagamento": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "aberto_ao_publico": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "visita_agendada_opcional": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "visita_agendada_obrigatoria": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "visita_auto_guiada": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "visita_guiada": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "cobranca_extra_visita_acompanhada": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "outros": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextoComIndicacao"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "outras_regras_informacoes": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "instalacoes_gerais": {
+            "type": "object",
+            "properties": {
+              "nao_possui_visitacao_instalacoes": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "centro_recepcao": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "posto_informacao": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "portaria_principal": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "guarita": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "bilheteria_caixa": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "anfiteatro": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "espaco_festas_eventos_apresentacoes": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "loja_souvenir": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "feiras": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "lanchonete_bar_restaurante": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "area_exposicao": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "agua_potavel_bebedouro_ods6": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "ar_condicionado": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "climatizador_ventilador": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "guarda_volumes": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "circuito_monitoramento_seguranca": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "instalacoes_sanitarias_ods6": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "servico_informacoes": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "servico_seguranca": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "area_descanso": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "area_lazer_criancas": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "equipe_recreacao_criancas": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "conectividade_wifi_ods6": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "ambulatorio_atendimento_medico_ods3": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "bens_culturais_tombados_ods11": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "outros": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextoComIndicacao"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          },
+          "acervo": {
+            "type": "object",
+            "properties": {
+              "nao_possui": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "artes_visuais_cinematograficas": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextoComIndicacao"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "caca_e_guerra": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextoComIndicacao"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "objetos_pecuniarios": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextoComIndicacao"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "interiores": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextoComIndicacao"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "trabalho": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextoComIndicacao"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "lazer_desporto": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextoComIndicacao"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "religiao_cerimonia": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextoComIndicacao"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "comunicacao": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextoComIndicacao"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "transporte": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextoComIndicacao"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "objetos_pessoais": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextoComIndicacao"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "castigo_penitencia": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextoComIndicacao"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "objetos_arqueologicos": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextoComIndicacao"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "estilo_arquitetonico_predominante": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "empresa_gestora": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "razao_social_gestora": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "cnpj_gestora": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "cadastur_gestora": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "vencimento_cadastur_gestora": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          }
+        }
+      },
+      "LocadoraTransporteTuristico": {
+        "type": "object",
+        "description": "Campos específicos do segmento Locadoras de Veículos e Transporte Turístico (cols A–X).",
+        "properties": {
+          "classificacao": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "func_fixos": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "func_temporarios": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "acessibilidade_descritiva": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "observacao": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "EspacoEventos": {
+        "type": "object",
+        "description": "Campos específicos do segmento Espaços para Eventos (cols A–HG).",
+        "properties": {
+          "tipo_cadastur": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "func_fixos": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "func_temporarios": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "formas_pagamento": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "atendimento_idiomas": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AtendimentoIdiomas"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "horario_funcionamento": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "outras_regras_informacoes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "descricao_espaco": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "observacao": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "subtipos": {
+            "type": "object",
+            "properties": {
+              "centro_convencoes_feiras": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "parque_pavilhao_centro_exposicoes": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "auditorio_salao_reunioes": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "outros": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "espaco": {
+            "type": "object",
+            "properties": {
+              "area_total_construida_m2": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "area_locavel_m2": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "capacidade_maxima_pessoas": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "capacidade_por_montagem_descritivo": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "estacionamento": {
+            "type": "object",
+            "properties": {
+              "nao_possui": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "pago": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "gratuito": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "coberto": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "descoberto": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "capacidade_veiculos": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "capacidade_onibus": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "vaga_pcd": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              }
+            }
+          },
+          "area_carga_descarga": {
+            "type": "object",
+            "properties": {
+              "nao_possui": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "possui": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "sinalizada": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              }
+            }
+          },
+          "area_embarque_desembarque": {
+            "type": "object",
+            "properties": {
+              "nao_possui": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "possui": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "sinalizada_pcd": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              }
+            }
+          },
+          "instalacoes_espaco": {
+            "type": "object",
+            "properties": {
+              "area_exposicao_coberta": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "area_exposicao_descoberta": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "area_cozinha": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "auditorio": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "bar_lanchonete": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "cabine_som": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "escaninho": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "espaco_multiuso": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "pavilhao_feiras": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "praca_alimentacao": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "restaurante": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "sala": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "salas_modulares": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "teatro": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "outros": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextoComIndicacao"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          },
+          "mobiliario_eventos": {
+            "type": "object",
+            "properties": {
+              "cadeira_movel": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/ItemMobiliarioQuantidade"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "cadeira_com_prancheta": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/ItemMobiliarioQuantidade"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "cadeira_com_braco": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/ItemMobiliarioQuantidade"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "cadeira_sem_braco": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/ItemMobiliarioQuantidade"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "mesa_quadrada": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/ItemMobiliarioQuantidade"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "mesa_retangular": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/ItemMobiliarioQuantidade"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "mesa_redonda": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/ItemMobiliarioQuantidade"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "poltrona": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/ItemMobiliarioQuantidade"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "outros": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/ItemMobiliarioQuantidade"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          },
+          "equipamentos_servicos": {
+            "type": "object",
+            "properties": {
+              "aparelho_scanner": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "apontador_laser_pointer": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "ar_condicionado": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "bancadas": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "bandeiras": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "camarins": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "circuito_interno_tv": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "climatizacao": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "computador": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "equipamento_traducao_simultanea": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "flip_chart": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "impressora": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "internet_wifi": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "manobrista": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "maquina_copiadora": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "montagem_estandes": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "palco": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "pulpito": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "projetor_multimidia": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "quadro_lousa": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "servico_copa_cafe": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "servico_limpeza": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "servico_manobrista": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "servico_garcons_atendentes": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "servico_recepcionista": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "servico_seguranca": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "sonorizacao": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "tablado": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "tela_projecao": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "tela_fixa": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "tela_movel": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "telefonia": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "tv": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "outros": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextoComIndicacao"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          },
+          "seguranca": {
+            "type": "object",
+            "properties": {
+              "ambulatorio": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "detector_metais": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "alarme_equipamentos_incendio": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "area_resgate": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "saida_emergencia": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "placas_sinalizacao_espacos": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "sinalizacao_atendimento_prioritario": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "guarda_volumes": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "achados_perdidos": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "outros": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextoComIndicacao"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          },
+          "energia_eletrica": {
+            "type": "object",
+            "properties": {
+              "volts_110": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "volts_220": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "volts_110_220": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "capacidade_kva": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "gerador_emergencia": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "gerador_capacidade_kva": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              }
+            }
+          }
+        }
+      },
+      "OrganizadorServicosEventos": {
+        "type": "object",
+        "description": "Campos específicos do segmento Organizadores e Serviços para Eventos (cols A–AH).",
+        "properties": {
+          "classificacao": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tipo_cadastur": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "func_fixos": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "func_temporarios": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "formas_pagamento": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "atendimento_lingua_estrangeira": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "horario_funcionamento": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "forma_atendimento": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "atividades_basicas": {
+            "type": "object",
+            "properties": {
+              "eventos_sociais": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/SimOuNaoComDetalhe"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "eventos_corporativos": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "eventos_esportivos": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "eventos_culturais_entretenimento": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "eventos_religiosos": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "eventos_academicos_educacionais": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "outros": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/TextoComIndicacao"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          },
+          "servicos_oferecidos": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "observacao": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "GuiaTurismo": {
+        "type": "object",
+        "description": "Campos específicos do segmento Guias de Turismo (cols A–N).",
+        "properties": {
+          "nome": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "cpf": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "categorias": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "classificacao": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "ArtesanatoComercio": {
+        "type": "object",
+        "description": "Campos específicos do segmento Artesanato e Comércio Diferenciado (cols A–V).",
+        "properties": {
+          "classificacao": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "formas_pagamento": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "atendimento_lingua_estrangeira": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "horario_funcionamento": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "produtos_servicos": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "publico_principal": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PublicoPrincipalPercentual"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
       }
     }
   }
