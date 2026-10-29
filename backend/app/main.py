@@ -13,6 +13,7 @@ from fastapi.responses import JSONResponse
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 SEED_FILE = ROOT_DIR / "contratos_api_oto" / "mocks" / "seed-data.json"
+OPENAPI_FILE = ROOT_DIR / "contratos_api_oto" / "openapi.json"
 
 app = FastAPI(
     title="Inventário OTO",
@@ -26,6 +27,17 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+def custom_openapi() -> dict[str, Any]:
+    """Expõe o contrato completo de contratos_api_oto/openapi.json no /docs."""
+    with OPENAPI_FILE.open(encoding="utf-8") as file:
+        spec = json.load(file)
+    spec["servers"] = [{"url": "/", "description": "Servidor local"}]
+    return spec
+
+
+app.openapi = custom_openapi  # type: ignore[method-assign]
 
 
 DEMO_USERS = {
