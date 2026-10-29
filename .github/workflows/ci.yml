@@ -35,7 +35,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Executar testes do FastAPI
-        run: pytest -v
+        run: python -m pytest -v
 
   frontend-ci:
     name: Testes e Build do Frontend
