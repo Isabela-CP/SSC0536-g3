@@ -2461,15 +2461,17 @@
             "type": "array",
             "items": {
               "type": "string",
-              "enum": [
+              "examples": [
                 "PIX",
                 "CREDITO",
                 "DEBITO",
-                "DINHEIRO"
+                "DINHEIRO",
+                "BOLETO",
+                "TRANSFERENCIA"
               ]
             },
             "uniqueItems": true,
-            "description": "Lista de formas de pagamento aceitas pelo estabelecimento."
+            "description": "Lista de formas de pagamento aceitas pelo estabelecimento (suporta os códigos padronizados PIX/CREDITO/DEBITO/DINHEIRO e termos importados da planilha)."
           },
           "horario_funcionamento_descritivo": {
             "type": [
@@ -3196,10 +3198,16 @@
             "type": "string"
           },
           "razao_social": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "cnpj": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "bairro": {
             "type": [
@@ -3568,6 +3576,74 @@
                     "type": "null"
                   }
                 ]
+              },
+              "descricao_geral": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Descrição livre do estabelecimento (aba auxiliar col AM)."
+              },
+              "sobre_area_ab": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Texto descritivo sobre a área de A&B (aba auxiliar col AK)."
+              },
+              "sobre_area_recreacao_lazer": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Texto descritivo sobre a área de recreação e lazer (aba auxiliar col AL)."
+              },
+              "sobre_facilidades_pcd": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Texto descritivo sobre facilidades para PCD (aba auxiliar col AN)."
+              },
+              "sobre_eventos": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Texto descritivo sobre eventos (aba auxiliar col AO)."
+              },
+              "responsavel_preenchimento": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "description": "Dados internos do responsável pelo preenchimento do questionário (aba auxiliar col AP - uso exclusivo interno OTO/ORTE).",
+                "properties": {
+                  "nome": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "telefone_whatsapp": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "cargo": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "texto_original": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                }
               }
             },
             "required": [
@@ -3592,7 +3668,10 @@
             "maxLength": 160
           },
           "razao_social": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "minLength": 2,
             "maxLength": 200,
             "description": "Razão social do estabelecimento. Somente ADMINISTRADOR pode alterar este campo após a criação.",
@@ -3601,7 +3680,10 @@
             ]
           },
           "cnpj": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "pattern": "^\\d{2}\\.?\\d{3}\\.?\\d{3}\\/?\\d{4}-?\\d{2}$",
             "description": "Aceita CNPJ com ou sem pontuação; validar dígitos verificadores e unicidade. Somente ADMINISTRADOR pode alterar este campo após a criação.",
             "x-allowed-roles-on-update": [
@@ -3941,6 +4023,74 @@
                 "type": "null"
               }
             ]
+          },
+          "descricao_geral": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Descrição livre do estabelecimento (aba auxiliar col AM)."
+          },
+          "sobre_area_ab": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Texto descritivo sobre a área de A&B (aba auxiliar col AK)."
+          },
+          "sobre_area_recreacao_lazer": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Texto descritivo sobre a área de recreação e lazer (aba auxiliar col AL)."
+          },
+          "sobre_facilidades_pcd": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Texto descritivo sobre facilidades para PCD (aba auxiliar col AN)."
+          },
+          "sobre_eventos": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Texto descritivo sobre eventos (aba auxiliar col AO)."
+          },
+          "responsavel_preenchimento": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Dados internos do responsável pelo preenchimento do questionário (aba auxiliar col AP - uso exclusivo interno OTO/ORTE).",
+            "properties": {
+              "nome": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "telefone_whatsapp": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "cargo": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "texto_original": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
           }
         },
         "required": [
@@ -3967,7 +4117,10 @@
             "maxLength": 160
           },
           "razao_social": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "minLength": 2,
             "maxLength": 200,
             "description": "Razão social do estabelecimento. Somente ADMINISTRADOR pode alterar este campo após a criação.",
@@ -3976,7 +4129,10 @@
             ]
           },
           "cnpj": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "pattern": "^\\d{2}\\.?\\d{3}\\.?\\d{3}\\/?\\d{4}-?\\d{2}$",
             "description": "Aceita CNPJ com ou sem pontuação; validar dígitos verificadores e unicidade. Somente ADMINISTRADOR pode alterar este campo após a criação.",
             "x-allowed-roles-on-update": [
@@ -4316,6 +4472,74 @@
                 "type": "null"
               }
             ]
+          },
+          "descricao_geral": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Descrição livre do estabelecimento (aba auxiliar col AM)."
+          },
+          "sobre_area_ab": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Texto descritivo sobre a área de A&B (aba auxiliar col AK)."
+          },
+          "sobre_area_recreacao_lazer": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Texto descritivo sobre a área de recreação e lazer (aba auxiliar col AL)."
+          },
+          "sobre_facilidades_pcd": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Texto descritivo sobre facilidades para PCD (aba auxiliar col AN)."
+          },
+          "sobre_eventos": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Texto descritivo sobre eventos (aba auxiliar col AO)."
+          },
+          "responsavel_preenchimento": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Dados internos do responsável pelo preenchimento do questionário (aba auxiliar col AP - uso exclusivo interno OTO/ORTE).",
+            "properties": {
+              "nome": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "telefone_whatsapp": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "cargo": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "texto_original": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
           }
         },
         "additionalProperties": false,
@@ -6480,6 +6704,37 @@
                 ]
               }
             }
+          },
+          "empresa_gestora": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "razao_social_gestora": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "cnpj_gestora": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "cadastur_gestora": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "vencimento_cadastur_gestora": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
           }
         }
       },
