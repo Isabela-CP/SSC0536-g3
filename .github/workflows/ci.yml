@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - Develop
+      - develop
+  pull_request:
+    branches:
+      - Develop
+      - develop
+
+jobs:
+  backend-tests:
+    name: Testes do Backend (FastAPI)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Instalar dependências do backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Executar testes do FastAPI
+        run: pytest -v
+
+  frontend-ci:
+    name: Testes e Build do Frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Instalar dependências do frontend
+        run: npm ci || npm install
+
+      - name: Executar testes do frontend
+        run: npm test
+
+      - name: Buildar o frontend
+        run: npm run build
