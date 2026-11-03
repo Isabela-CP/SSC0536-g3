@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+from copy import deepcopy
+from functools import lru_cache
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Annotated, Any, Literal
@@ -12,6 +14,8 @@ from fastapi.responses import JSONResponse
 
 from app.inventory import InventoryQuery, InventoryRepository, JsonInventoryRepository, query_establishments
 from app.inventory_http import InventoryRoute
+from app.inventory_repository import MemoryInventoryRepository
+from app.inventory_writes import create_write_router
 
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
@@ -86,7 +90,7 @@ def audit(actor: dict, action: str, entity: str, entity_id: str, before: Any = N
     AUDIT_LOG.append({
         "id": str(uuid4()), "criado_em": datetime.now(timezone.utc).isoformat(),
         "id_usuario": actor["id_usuario"], "usuario": actor["email"], "acao": action,
-        "entidade": entity, "id_entidade": entity_id, "antes": before, "depois": after,
+        "entidade": entity, "id_entidade": entity_id, "antes": deepcopy(before), "depois": deepcopy(after),
     })
 
 
@@ -119,8 +123,9 @@ def health() -> dict[str, str]:
 inventory_router = APIRouter(route_class=InventoryRoute)
 
 
-def inventory_repository() -> InventoryRepository:
-    return JsonInventoryRepository(SEED_FILE)
+@lru_cache
+def inventory_repository() -> MemoryInventoryRepository:
+    return MemoryInventoryRepository(JsonInventoryRepository(SEED_FILE))
 
 
 def inventory_user(user: dict = Depends(current_user)) -> dict:
@@ -186,6 +191,7 @@ def list_documents(establishment: dict = Depends(authorized_establishment)) -> d
 
 
 app.include_router(inventory_router)
+app.include_router(create_write_router(inventory_repository, inventory_user, audit))
 
 
 @app.post("/auth/login", tags=["Autenticação"])

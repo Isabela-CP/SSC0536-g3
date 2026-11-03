@@ -1,7 +1,7 @@
 # Backend — Inventário OTO
 
-API FastAPI do Inventário OTO. As consultas usam
-`../contratos_api_oto/mocks/seed-data.json` e seguem os schemas de
+API FastAPI do Inventário OTO. Leitura e escrita compartilham um repositório
+em memória inicializado de `../contratos_api_oto/mocks/seed-data.json`, seguindo
 `../contratos_api_oto/openapi.json`.
 
 ## Executar
@@ -52,11 +52,92 @@ A ficha preserva os campos do seed, incluindo hospedagem, infraestrutura,
 acessibilidade e documentos com metadados de arquivo. Cadastros incompletos
 preservam campos nulos e seções opcionais ausentes.
 
-`app/inventory.py` contém o protocolo `InventoryRepository`, o adaptador JSON
-e a consulta. As rotas recebem o repositório via `inventory_repository`, que
-pode ser substituído por uma implementação PostgreSQL sem alterar os contratos
-HTTP. A consulta não depende de migrations. A integração SQL deverá ser
-validada separadamente com o núcleo de SCRUM-85.
+`app/inventory.py` contém o protocolo de leitura e o adaptador JSON.
+`app/inventory_repository.py` adiciona `WritableInventoryRepository` e o
+repositório em memória compartilhado entre leitura e escrita. As rotas recebem
+o repositório via `inventory_repository`; uma implementação PostgreSQL pode
+substituí-lo sem alterar o contrato HTTP. O mock usa lock e rollback por
+transação; a implementação SQL deverá usar transações e unicidade do CNPJ
+normalizado, além de persistir a auditoria junto da operação.
+
+O mock é inicializado no primeiro acesso e preserva o arquivo seed original.
+O estado é por processo: use um único worker em desenvolvimento. Reiniciar a
+API restaura o seed e perde alterações e referências de arquivos em memória.
+Arquivos locais permanecem no storage. A persistência PostgreSQL e seus testes
+de integração devem ser validados com SCRUM-85 e as migrations operacionais.
+
+## Escrita de estabelecimentos
+
+- `POST /estabelecimentos`: ADMINISTRADOR, resposta `201`.
+- `PATCH /estabelecimentos/{id_estabelecimento}`: ADMINISTRADOR, EDITOR ou HOTEL.
+- `POST /estabelecimentos/{id_estabelecimento}/inativacao`: ADMINISTRADOR.
+- `POST /estabelecimentos/{id_estabelecimento}/reativacao`: ADMINISTRADOR.
+
+Cadastro exige categoria existente, nome fantasia, razão social, CNPJ e endereço.
+Capacidade, infraestrutura e checklists são opcionais. CNPJ aceita a máscara do
+contrato ou apenas dígitos; valida dígitos verificadores e rejeita duplicidade
+com `409 CONFLICT`, comparando os dígitos independentemente da máscara.
+
+Os modelos de entrada e saída são Pydantic, derivados dos schemas do OpenAPI
+em `app/inventory_models.py`. A validação anterior à conversão também verifica
+formatos, campos extras, `minProperties` e `uniqueItems` pelo JSON Schema.
+
+PATCH usa `exclude_unset=True`: campo ausente é preservado; `null` explícito
+limpa apenas campos anuláveis. Objetos aninhados são atualizados parcialmente;
+listas são substituídas integralmente. CNPJ e razão social são exclusivos de
+ADMINISTRADOR, inclusive tentativas com valor nulo ou inválido. HOTEL só edita
+a própria ficha; GESTOR não escreve. Status é alterado apenas nas rotas próprias.
+
+Inativação faz `ATIVO -> INATIVO` e exige `motivo_inativacao` com 3 a 500
+caracteres. Reativação faz `INATIVO -> ATIVO` e limpa o motivo da ficha atual,
+preservando o motivo anterior nos snapshots da auditoria. Transições repetidas
+retornam `409 ESTABELECIMENTO_JA_INATIVO` ou `ESTABELECIMENTO_JA_ATIVO`.
+
+## Documentos e arquivos
+
+- `POST /estabelecimentos/{id_estabelecimento}/documentos`: multipart, resposta `201`.
+- `PATCH /estabelecimentos/{id_estabelecimento}/documentos/{id_documento}`: metadados JSON.
+- `GET /estabelecimentos/{id_estabelecimento}/documentos/{id_documento}/arquivo`: download.
+- `PUT /estabelecimentos/{id_estabelecimento}/documentos/{id_documento}/arquivo`: substituição multipart.
+
+Escrita de documentos permite ADMINISTRADOR, EDITOR e HOTEL; download também
+permite GESTOR. HOTEL permanece limitado à hospedagem vinculada, e o documento
+sempre é buscado dentro do estabelecimento indicado na URL.
+
+Upload exige `tipo_documento`, `data_vencimento` e `arquivo`; `numero` e
+`data_emissao` são opcionais. PUT recebe somente `arquivo`. Os formatos são
+`multipart/form-data`, sem base64 em JSON. Campos extras ou repetidos são
+rejeitados. O status é calculado na criação e ao alterar o vencimento: vencido
+antes da data UTC atual, a vencer entre hoje e 30 dias, regular após esse prazo.
+Esse intervalo de 30 dias é uma decisão de desenvolvimento a confirmar.
+
+`app/document_storage.py` define `DocumentStorage` e `LocalDocumentStorage`.
+Os limites adotados para desenvolvimento são:
+
+- MIME `application/pdf`, `image/jpeg` e `image/png`, conforme o encoding do contrato.
+- Extensões correspondentes `.pdf`, `.jpg`/`.jpeg` e `.png`.
+- Limite padrão **10 MiB por arquivo**, configurável por `OTO_UPLOAD_MAX_BYTES`.
+- Nome de arquivo de até 255 caracteres; caminhos enviados pelo cliente são removidos.
+- Storage padrão `~/.local/share/oto/documentos`, configurável por `OTO_STORAGE_DIR`.
+
+MIME declarado e extensão são verificados; tamanho é contado durante a cópia
+em blocos. Arquivo vazio retorna `422`; tipo não permitido, `415`; tamanho acima
+do limite, `413`. O parser multipart do framework usa arquivos temporários
+antes da validação do storage. Os testes usam storage isolado em `tmp_path`.
+
+Cada arquivo recebe uma chave UUID gerada pelo servidor. A referência fica
+separada da ficha e dos metadados públicos: nome, MIME, tamanho e envio. Binários
+ficam apenas no storage. Download usa `application/octet-stream` com attachment.
+Documentos do seed têm metadados fictícios; sem upload de um arquivo real,
+o download retorna `404`. PUT permite anexar o arquivo a esses documentos.
+
+Substituição mantém o ID do documento, grava um arquivo novo e remove o anterior
+após atualizar a referência. Falhas de persistência desfazem a alteração no mock
+e removem o arquivo novo; o anterior é preservado.
+
+`app/inventory_service.py` concentra regras e operações. Cadastro, edição,
+transições, upload, edição de metadados e substituição chamam `audit()`, com
+snapshots independentes antes/depois, sem expor chave ou caminho de storage.
 
 ## Credenciais e demais módulos de demonstração
 
@@ -73,8 +154,7 @@ como as demais credenciais locais; não implementam sessões de produção.
 
 A base também inclui autenticação, perfil, usuários, convites, pesquisas de
 ocupação, respostas, relatórios, auditoria e dashboard. Esses módulos mantêm
-seus dados em memória; as rotas de escrita do inventário e download de documentos
-não fazem parte desta implementação de leitura.
+seus dados em memória, assim como o repositório temporário do inventário.
 
 ## Decisões e pontos do contrato para discussão
 
@@ -92,12 +172,27 @@ Os testes validam respostas diretamente contra seus schemas e formatos.
   `DocumentoControle` o exija. As respostas seguem o schema e o seed atual,
   que já fornece os metadados. Ajustes nos exemplos ficam para discussão.
 
+- O schema de cadastro aceita CNPJ e razão social nulos, mas a descrição e a
+  issue #30 exigem esses dados. No cadastro a implementação rejeita `null` com
+  `422`; no PATCH o ADMINISTRADOR pode usar `null`, conforme o schema. A equipe
+  deve decidir se o contrato de criação deve deixar de ser anulável.
+- O PUT de arquivo não documenta `422` para multipart ausente/inválido. A API
+  retorna `422 VALIDATION_ERROR` nesses casos. JSON/multipart malformado e IDs
+  inválidos usam `400 BAD_REQUEST`, que também está ausente em algumas operações.
+  São lacunas a discutir antes de alterar o contrato.
+- O tamanho máximo e a janela de documento a vencer ficam configuráveis ou
+  documentados como padrões de desenvolvimento; a equipe deve confirmar os valores.
+
 ## Plano executado e validação
 
 1. Comparar parâmetros, perfis e estruturas de resposta com o OpenAPI.
 2. Separar repositório JSON e consultas das rotas HTTP.
 3. Completar filtros, ordenação, validações e autorização, incluindo HOTEL.
 4. Validar contratos e comportamentos com fixtures independentes baseadas no seed.
+5. Adicionar modelos Pydantic e repositório mutável substituível.
+6. Implementar escrita, autorização por campo e transições com auditoria.
+7. Implementar documentos, storage, download e substituição com rollback.
+8. Testar casos positivos, negativos, concorrência de CNPJ e falhas de persistência.
 
 Execute a mesma suíte usada pelo CI:
 
@@ -108,4 +203,6 @@ python -m pytest -v
 
 Os testes usam `pytest`, `TestClient` e `jsonschema`; cobrem filtros combinados,
 busca nos três campos, limites, paginação, ordenação com empates e fusos horários,
-fichas completas/incompletas, documentos, autenticação e isolamento de HOTEL.
+fichas completas/incompletas, escrita, documentos, autenticação e isolamento de
+HOTEL. As fixtures de escrita reutilizam o seed, injetam um repositório por teste
+e storage em `tmp_path`, sem modificar os mocks nem criar arquivos no repositório.
