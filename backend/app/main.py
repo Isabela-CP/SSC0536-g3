@@ -3,12 +3,15 @@ from __future__ import annotations
 import json
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Annotated, Any
-from uuid import uuid4
+from typing import Annotated, Any, Literal
+from uuid import UUID, uuid4
 
-from fastapi import Body, Depends, FastAPI, Header, HTTPException, Query, status
+from fastapi import APIRouter, Body, Depends, FastAPI, Header, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+
+from app.inventory import InventoryQuery, InventoryRepository, JsonInventoryRepository, query_establishments
+from app.inventory_http import InventoryRoute
 
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
@@ -70,12 +73,13 @@ def error_response(status_code: int, code: str, message: str, details: list[dict
 
 
 def current_user(authorization: str | None = Header(default=None)) -> dict:
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="UNAUTHORIZED")
-    email = TOKENS.get(authorization.removeprefix("Bearer "))
-    if not email:
-        raise HTTPException(status_code=401, detail="UNAUTHORIZED")
-    return DEMO_USERS[email]
+    scheme, _, token = (authorization or "").partition(" ")
+    email = TOKENS.get(token) if scheme.casefold() == "bearer" else None
+    user = DEMO_USERS.get(email) if email else None
+    if not user or not user.get("ativo"):
+        raise HTTPException(status_code=401, detail="UNAUTHORIZED",
+                            headers={"WWW-Authenticate": "Bearer"})
+    return user
 
 
 def audit(actor: dict, action: str, entity: str, entity_id: str, before: Any = None, after: Any = None) -> None:
@@ -97,82 +101,81 @@ def seed_data() -> dict:
         return json.load(file)
 
 
-def find_establishment(establishment_id: str) -> dict:
-    for establishment in seed_data()["estabelecimentos"]:
-        if establishment["id_estabelecimento"] == establishment_id:
-            return establishment
-    raise HTTPException(status_code=404, detail="Estabelecimento não encontrado.")
-
-
 @app.get("/health", tags=["Sistema"])
 def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-@app.get("/categorias-estabelecimento", tags=["Categorias"])
-def list_categories() -> dict:
-    return {"data": seed_data()["categorias_estabelecimento"]}
+inventory_router = APIRouter(route_class=InventoryRoute)
 
 
-@app.get("/estabelecimentos", tags=["Estabelecimentos"])
+def inventory_repository() -> InventoryRepository:
+    return JsonInventoryRepository(SEED_FILE)
+
+
+def inventory_user(user: dict = Depends(current_user)) -> dict:
+    ensure_role(user, "ADMINISTRADOR", "GESTOR", "EDITOR", "HOTEL")
+    if user["perfil"] == "HOTEL" and not user.get("id_estabelecimento"):
+        raise HTTPException(status_code=403, detail="FORBIDDEN")
+    return user
+
+
+def authorized_establishment(
+    id_estabelecimento: UUID,
+    user: dict = Depends(inventory_user),
+    repository: InventoryRepository = Depends(inventory_repository),
+) -> dict:
+    establishment_id = str(id_estabelecimento)
+    if user["perfil"] == "HOTEL" and user["id_estabelecimento"] != establishment_id:
+        raise HTTPException(status_code=403, detail="FORBIDDEN")
+    establishment = repository.establishment(establishment_id)
+    if establishment is None:
+        raise HTTPException(status_code=404, detail="NOT_FOUND")
+    return establishment
+
+
+@inventory_router.get("/categorias-estabelecimento", tags=["Categorias"])
+def list_categories(
+    user: dict = Depends(inventory_user),
+    repository: InventoryRepository = Depends(inventory_repository),
+) -> dict:
+    return {"data": repository.categories()}
+
+
+@inventory_router.get("/estabelecimentos", tags=["Estabelecimentos"])
 def list_establishments(
-    busca: str | None = None,
-    status: str | None = None,
-    id_categoria: int | None = None,
+    busca: Annotated[str | None, Query(max_length=120)] = None,
+    status: Literal["ATIVO", "INATIVO"] | None = None,
+    id_categoria: Annotated[int | None, Query(ge=1)] = None,
+    cadastur_status: Literal["OBRIGATORIO", "OPCIONAL", "NAO_CONSTA"] | None = None,
     aceita_pesquisas: bool | None = None,
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1, le=100)] = 20,
+    ordenar_por: Literal["nome_fantasia", "criado_em", "atualizado_em"] = "nome_fantasia",
+    ordem: Literal["asc", "desc"] = "asc",
+    user: dict = Depends(inventory_user),
+    repository: InventoryRepository = Depends(inventory_repository),
 ) -> dict:
-    establishments = seed_data()["estabelecimentos"]
-    if busca:
-        term = busca.casefold()
-        establishments = [
-            item for item in establishments
-            if term in " ".join(
-                [item["nome_fantasia"], item["razao_social"], item["cnpj"]]
-            ).casefold()
-        ]
-    if status:
-        establishments = [item for item in establishments if item["status"] == status]
-    if id_categoria:
-        establishments = [item for item in establishments if item["id_categoria"] == id_categoria]
-    if aceita_pesquisas is not None:
-        establishments = [
-            item for item in establishments if item["aceita_pesquisas"] == aceita_pesquisas
-        ]
-
-    total = len(establishments)
-    start = (page - 1) * page_size
-    summaries = [
-        {
-            key: item[key]
-            for key in (
-                "id_estabelecimento", "id_categoria", "nome_fantasia", "razao_social",
-                "cnpj", "bairro", "status", "cadastur_status", "possui_cadastur",
-                "aceita_pesquisas", "latitude", "longitude",
-            )
-        }
-        for item in establishments[start : start + page_size]
-    ]
-    return {
-        "data": summaries,
-        "pagination": {
-            "page": page,
-            "page_size": page_size,
-            "total": total,
-            "total_pages": max(1, (total + page_size - 1) // page_size),
-        },
-    }
+    query = InventoryQuery(
+        busca=busca, status=status, id_categoria=id_categoria,
+        cadastur_status=cadastur_status, aceita_pesquisas=aceita_pesquisas,
+        page=page, page_size=page_size, ordenar_por=ordenar_por, ordem=ordem,
+    )
+    scope = user["id_estabelecimento"] if user["perfil"] == "HOTEL" else None
+    return query_establishments(repository, query, scope)
 
 
-@app.get("/estabelecimentos/{id_estabelecimento}", tags=["Estabelecimentos"])
-def get_establishment(id_estabelecimento: str) -> dict:
-    return find_establishment(id_estabelecimento)
+@inventory_router.get("/estabelecimentos/{id_estabelecimento}", tags=["Estabelecimentos"])
+def get_establishment(establishment: dict = Depends(authorized_establishment)) -> dict:
+    return establishment
 
 
-@app.get("/estabelecimentos/{id_estabelecimento}/documentos", tags=["Documentos"])
-def list_documents(id_estabelecimento: str) -> dict:
-    return {"data": find_establishment(id_estabelecimento)["documentos"]}
+@inventory_router.get("/estabelecimentos/{id_estabelecimento}/documentos", tags=["Documentos"])
+def list_documents(establishment: dict = Depends(authorized_establishment)) -> dict:
+    return {"data": establishment.get("documentos", [])}
+
+
+app.include_router(inventory_router)
 
 
 @app.post("/auth/login", tags=["Autenticação"])
