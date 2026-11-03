@@ -101,6 +101,16 @@ def seed_data() -> dict:
         return json.load(file)
 
 
+# Contas HOTEL de demonstração usam o vínculo da fonte de dados do servidor.
+for account in seed_data()["contas_empresario"]:
+    DEMO_USERS[account["email"]] = {
+        "id_usuario": account["id_conta"], "nome": "Responsável pela hospedagem",
+        "email": account["email"], "perfil": "HOTEL", "senha": "hotel-demo",
+        "ativo": account["ativo"], "id_estabelecimento": account["id_estabelecimento"],
+    }
+    TOKENS[f"hotel-{account['id_conta']}-token"] = account["email"]
+
+
 @app.get("/health", tags=["Sistema"])
 def health() -> dict[str, str]:
     return {"status": "ok"}
