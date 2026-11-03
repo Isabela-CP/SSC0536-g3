@@ -11,7 +11,7 @@ def test_health():
 
 
 def test_list_establishments_uses_contract_shape():
-    response = client.get("/estabelecimentos", params={"page_size": 2})
+    response = client.get("/estabelecimentos", params={"page_size": 2}, headers={"Authorization": "Bearer gestor-token"})
     assert response.status_code == 200
     body = response.json()
     assert body["pagination"]["total"] == 4
@@ -19,7 +19,7 @@ def test_list_establishments_uses_contract_shape():
 
 
 def test_list_categories_returns_seed_categories():
-    response = client.get("/categorias-estabelecimento")
+    response = client.get("/categorias-estabelecimento", headers={"Authorization": "Bearer gestor-token"})
     assert response.status_code == 200
     body = response.json()
     assert "data" in body
