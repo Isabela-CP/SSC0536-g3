@@ -86,7 +86,9 @@ def build_model(name: str, schema: dict):
             ("minLength", "min_length"), ("maxLength", "max_length"),
             ("minimum", "ge"), ("maximum", "le"), ("pattern", "pattern"),
         ) if source in value}
-        annotation = Annotated[field_type(value, name + key.title()), Field(**constraints)] if constraints else field_type(value, name + key.title())
+        annotation = field_type(value, name + key.title())
+        if constraints:
+            annotation = Annotated[annotation, Field(**constraints)]
         default = ... if key in schema.get("required", []) else value.get("default", None)
         fields[key] = (annotation, default)
     config = ConfigDict(extra="forbid" if schema.get("additionalProperties") is False else "allow",
@@ -109,4 +111,3 @@ Document = contract_model("DocumentoControle")
 Inactivation = build_model("Inactivation", CONTRACT["paths"][
     "/estabelecimentos/{id_estabelecimento}/inativacao"]["post"][
         "requestBody"]["content"]["application/json"]["schema"])
-
