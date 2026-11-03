@@ -1,5 +1,5 @@
 """Erros HTTP do inventário no formato ErrorResponse do contrato."""
-from fastapi import HTTPException
+from starlette.exceptions import HTTPException
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
@@ -20,7 +20,7 @@ class InventoryRoute(APIRoute):
                 return JSONResponse(status_code=exc.status_code, content={"error": exc.error})
             except RequestValidationError as exc:
                 errors = exc.errors()
-                malformed = any(error["type"] == "json_invalid" or error["loc"][0] == "path" for error in errors)
+                malformed = any(error["type"] == "json_invalid" or (error["loc"] and error["loc"][0] == "path") for error in errors)
                 status = 400 if malformed else self.validation_status
                 return JSONResponse(status_code=status, content={"error": {
                     "code": "BAD_REQUEST" if status == 400 else "VALIDATION_ERROR",
@@ -29,8 +29,12 @@ class InventoryRoute(APIRoute):
                                  "issue": error.get("ctx", {}).get("issue") or error["msg"]} for error in errors],
                 }})
             except HTTPException as exc:
-                codes = {401: "UNAUTHORIZED", 403: "FORBIDDEN", 404: "NOT_FOUND"}
+                codes = {400: "BAD_REQUEST", 401: "UNAUTHORIZED", 403: "FORBIDDEN", 404: "NOT_FOUND",
+                         413: "PAYLOAD_TOO_LARGE", 415: "UNSUPPORTED_MEDIA_TYPE"}
                 messages = {
+                    400: "A requisição não pôde ser interpretada.",
+                    413: "O arquivo excede o tamanho máximo permitido.",
+                    415: "Tipo de arquivo não permitido.",
                     401: "É necessário autenticar-se.",
                     403: "Seu perfil não pode executar esta operação.",
                     404: "Estabelecimento ou documento não encontrado.",

@@ -62,7 +62,7 @@ class LocalDocumentStorage:
             raise
         return StoredFile(key, {"nome_arquivo": filename, "content_type": content_type,
                                 "tamanho_bytes": size,
-                                "enviado_em": datetime.now(timezone.utc).isoformat()})
+                                "enviado_em": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")})
 
     def open(self, key: str) -> BinaryIO:
         return self._path(key).open("rb")
