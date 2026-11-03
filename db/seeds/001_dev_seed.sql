@@ -22,6 +22,189 @@
 BEGIN;
 
 -- ──────────────────────────────────────────────────────────
+-- CATEGORIAS DE ESTABELECIMENTO (Catálogo completo OTO)
+-- ──────────────────────────────────────────────────────────
+
+INSERT INTO categorias_estabelecimento (id_categoria, nome_categoria, descricao)
+VALUES
+    (1, 'Meios de hospedagem', 'Hotéis, pousadas, resorts e outros meios de hospedagem.'),
+    (2, 'Meios de alimentação e bebidas', 'Restaurantes, bares, lanchonetes, cafeterias e similares.'),
+    (3, 'Agências e operadoras de turismo', 'Agências de viagens, receptivo e operadoras turísticas.'),
+    (4, 'Atrativos lazer e entretenimento', 'Parques, museus, atrativos culturais, naturais e de lazer.'),
+    (5, 'Locadoras de veículos e transporte turístico', 'Locadoras de automóveis, vans, ônibus e transporte turístico.'),
+    (6, 'Espaços para eventos', 'Centros de convenções, auditórios, salões e pavilhões de feiras.'),
+    (7, 'Organizadores e serviços para eventos', 'Empresas organizadoras, cerimonial, buffet e serviços de apoio a eventos.'),
+    (8, 'Guias de turismo', 'Profissionais e guias de turismo cadastrados.'),
+    (9, 'Artesanato e comércio diferenciado', 'Lojas de artesanato, souvenirs e comércio turístico diferenciado.')
+ON CONFLICT (id_categoria) DO UPDATE
+    SET nome_categoria = EXCLUDED.nome_categoria,
+        descricao      = EXCLUDED.descricao;
+
+SELECT setval(
+    pg_get_serial_sequence('categorias_estabelecimento', 'id_categoria'),
+    COALESCE((SELECT MAX(id_categoria) FROM categorias_estabelecimento), 1),
+    true
+);
+
+-- ──────────────────────────────────────────────────────────
+-- ESTABELECIMENTOS DO INVENTÁRIO (4 registros fictícios do seed-data.json)
+-- ──────────────────────────────────────────────────────────
+
+INSERT INTO estabelecimentos (
+    id_estabelecimento, id_categoria, nome_fantasia, razao_social, cnpj,
+    cnae, status, motivo_inativacao, data_abertura, endereco, bairro,
+    latitude, longitude, telefone_comercial, email_comercial,
+    telefone_pesquisas, email_pesquisas, aceita_pesquisas,
+    cadastur_status, possui_cadastur, numero_cadastur, vencimento_cadastur,
+    site, facebook, instagram, observacoes, id_origem, contato, cargo_contato
+)
+VALUES
+    -- Hotel Serra Azul (completo)
+    (
+        '11111111-1111-4111-8111-111111111111', 1,
+        'Hotel Serra Azul', 'Serra Azul Hospedagem Ltda.', '54.839.271/0001-64',
+        '5510801', 'ATIVO', NULL, '2018-03-15',
+        'Av. das Palmeiras, 120, Cidade Exemplo - SP', 'Centro',
+        -22.0174, -47.8908, '+55 16 3333-1000', 'contato@serra-azul.example',
+        '+55 16 99999-1000', 'pesquisas@serra-azul.example', TRUE,
+        'OBRIGATORIO', TRUE, 'CAD-OTO-000123', '2027-08-31',
+        'https://www.serra-azul.example', 'https://facebook.com/hotelserraazul', 'https://instagram.com/hotelserraazul',
+        'Estabelecimento completo com dados de referência do dicionário de Olímpia.', '001', 'Carlos Eduardo', 'Gerente Geral'
+    ),
+    -- Pousada Ipê Amarelo
+    (
+        '22222222-2222-4222-8222-222222222222', 1,
+        'Pousada Ipê Amarelo', 'Ipê Amarelo Hospedagem Ltda.', '67.294.153/0001-60',
+        '5590601', 'ATIVO', NULL, '2021-06-10',
+        'Rua do Lago, 45, Cidade Exemplo - SP', 'Jardim das Flores',
+        -22.0111, -47.9012, '+55 16 3333-2000', 'contato@ipe-amarelo.example',
+        '+55 16 98888-2000', 'pesquisas@ipe-amarelo.example', TRUE,
+        'OBRIGATORIO', FALSE, NULL, NULL,
+        NULL, NULL, NULL,
+        NULL, NULL, NULL, NULL
+    ),
+    -- Hotel Vale do Sol (inativo)
+    (
+        '33333333-3333-4333-8333-333333333333', 1,
+        'Hotel Vale do Sol', 'Vale do Sol Turismo Ltda.', '81.937.462/0001-31',
+        '5510801', 'INATIVO', 'Encerramento de atividades informado pela administração.', '2012-09-20',
+        'Rodovia Municipal, km 4, Cidade Exemplo - SP', 'Zona Rural',
+        -22.0350, -47.8650, '+55 16 3333-3000', 'contato@vale-sol.example',
+        '+55 16 97777-3000', 'pesquisas@vale-sol.example', FALSE,
+        'OPCIONAL', FALSE, NULL, NULL,
+        NULL, NULL, NULL,
+        NULL, NULL, NULL, NULL
+    ),
+    -- Hospedagem em Cadastro (exemplo de cadastro inicial incompleto do OpenAPI)
+    (
+        '44444444-4444-4444-8444-444444444444', 1,
+        'Hospedagem em Cadastro', 'Hospedagem em Cadastro Ltda.', '12.345.678/0001-95',
+        NULL, 'ATIVO', NULL, NULL,
+        'Rua de Exemplo, 10, Cidade Exemplo - SP', NULL,
+        NULL, NULL, NULL, NULL,
+        NULL, NULL, TRUE,
+        'OBRIGATORIO', FALSE, NULL, NULL,
+        NULL, NULL, NULL,
+        'Exemplo de cadastro inicial incompleto persistido com dados mínimos.', NULL, NULL, NULL
+    )
+ON CONFLICT (id_estabelecimento) DO NOTHING;
+
+-- Atualiza inativado_em para o estabelecimento inativo
+UPDATE estabelecimentos
+SET inativado_em = '2026-09-15 16:45:00+00'
+WHERE id_estabelecimento = '33333333-3333-4333-8333-333333333333'
+  AND inativado_em IS NULL;
+
+-- ──────────────────────────────────────────────────────────
+-- MEIOS DE HOSPEDAGEM (Relação 1:1)
+-- ──────────────────────────────────────────────────────────
+
+INSERT INTO meio_hospedagem (
+    id_estabelecimento, tipo_hospedagem, total_uh, total_leitos, uh_pcd,
+    func_fixos, func_temporarios, funcionamento_24h,
+    checkin_horario, checkout_horario, formas_pagamento,
+    horario_funcionamento_descritivo, horario_checkin_checkout_descritivo,
+    reservas, infraestrutura
+)
+VALUES
+    (
+        '11111111-1111-4111-8111-111111111111',
+        'HOTEL', 48, 96, 3, 18, 4, TRUE,
+        '14:00:00', '12:00:00',
+        '["PIX", "CREDITO", "DEBITO", "DINHEIRO"]'::jsonb,
+        '24 horas, todos os dias', 'Check-in às 14h / Check-out às 12h',
+        'Site próprio, telefone, WhatsApp e OTAs',
+        '{"wifi": true, "academia": true, "pcd_rampa": true, "restaurante": true, "pcd_elevador": true, "estacionamento": true, "piscina_adulto": true, "pcd_sanitario_adaptado": true}'::jsonb
+    ),
+    (
+        '22222222-2222-4222-8222-222222222222',
+        'POUSADA', 16, 34, 1, 6, 2, FALSE,
+        '15:00:00', '11:00:00',
+        '["PIX", "CREDITO", "DINHEIRO"]'::jsonb,
+        NULL, NULL, NULL,
+        '{"wifi": true, "pcd_rampa": true, "estacionamento": true, "pcd_sanitario_adaptado": true}'::jsonb
+    ),
+    (
+        '33333333-3333-4333-8333-333333333333',
+        'HOTEL_FAZENDA', 30, 72, 2, 12, 8, TRUE,
+        '14:00:00', '12:00:00',
+        '["PIX", "CREDITO", "DEBITO"]'::jsonb,
+        NULL, NULL, NULL,
+        '{"wifi": true, "pcd_rampa": true, "restaurante": true, "estacionamento": true, "piscina_adulto": true}'::jsonb
+    )
+    -- Nota: '44444444-4444-4444-8444-444444444444' propositalmente não possui meio_hospedagem (cadastro incompleto)
+ON CONFLICT (id_estabelecimento) DO NOTHING;
+
+-- ──────────────────────────────────────────────────────────
+-- DOCUMENTOS DE CONTROLE
+-- ──────────────────────────────────────────────────────────
+
+INSERT INTO documentos_controle (
+    id_documento, id_estabelecimento, tipo_documento, numero,
+    data_emissao, data_vencimento, status,
+    nome_arquivo, content_type, tamanho_bytes, checksum_sha256,
+    caminho_storage, enviado_em
+)
+VALUES
+    (
+        1001, '11111111-1111-4111-8111-111111111111', 'ALVARA', 'ALV-2026-0042',
+        '2026-01-10', '2027-01-10', 'REGULAR',
+        'alvara-funcionamento.pdf', 'application/pdf', 245760, 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+        'estabelecimentos/11111111-1111-4111-8111-111111111111/docs/alvara-funcionamento.pdf', '2026-10-20 14:30:00+00'
+    ),
+    (
+        1002, '11111111-1111-4111-8111-111111111111', 'AVCB', 'AVCB-2025-0781',
+        '2025-12-01', '2026-11-30', 'A_VENCER',
+        'avcb.pdf', 'application/pdf', 311296, 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b856',
+        'estabelecimentos/11111111-1111-4111-8111-111111111111/docs/avcb.pdf', '2026-10-20 14:32:00+00'
+    ),
+    (
+        1003, '11111111-1111-4111-8111-111111111111', 'VIGILANCIA_SANITARIA', 'VS-2026-0118',
+        '2026-02-01', '2027-02-01', 'REGULAR',
+        'licenca-sanitaria.pdf', 'application/pdf', 198144, 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b857',
+        'estabelecimentos/11111111-1111-4111-8111-111111111111/docs/licenca-sanitaria.pdf', '2026-10-20 14:34:00+00'
+    ),
+    (
+        1004, '22222222-2222-4222-8222-222222222222', 'ALVARA', 'ALV-2026-0112',
+        '2026-04-10', '2027-04-10', 'REGULAR',
+        'alvara-pousada.pdf', 'application/pdf', 184320, 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b858',
+        'estabelecimentos/22222222-2222-4222-8222-222222222222/docs/alvara-pousada.pdf', '2026-10-21 10:00:00+00'
+    ),
+    (
+        1005, '33333333-3333-4333-8333-333333333333', 'AVCB', 'AVCB-2024-0098',
+        '2024-01-15', '2025-01-15', 'VENCIDO',
+        'avcb-vencido.pdf', 'application/pdf', 276480, 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b859',
+        'estabelecimentos/33333333-3333-4333-8333-333333333333/docs/avcb-vencido.pdf', '2026-09-10 12:00:00+00'
+    )
+ON CONFLICT (id_documento) DO NOTHING;
+
+SELECT setval(
+    pg_get_serial_sequence('documentos_controle', 'id_documento'),
+    COALESCE((SELECT MAX(id_documento) FROM documentos_controle), 1),
+    true
+);
+
+-- ──────────────────────────────────────────────────────────
 -- USUÁRIOS  (10 registros)
 --   Perfis: 1 ADMINISTRADOR, 2 GESTORES, 3 EDITORES, 4 HOTEL
 --   Estados: ATIVO, INATIVO, PENDENTE
