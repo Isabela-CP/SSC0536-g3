@@ -15,6 +15,7 @@ from fastapi.responses import JSONResponse
 from app.inventory import InventoryQuery, InventoryRepository, JsonInventoryRepository, query_establishments
 from app.inventory_http import InventoryRoute
 from app.inventory_repository import MemoryInventoryRepository
+from app.inventory_writes import create_write_router
 
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
@@ -190,6 +191,7 @@ def list_documents(establishment: dict = Depends(authorized_establishment)) -> d
 
 
 app.include_router(inventory_router)
+app.include_router(create_write_router(inventory_repository, inventory_user, audit))
 
 
 @app.post("/auth/login", tags=["Autenticação"])

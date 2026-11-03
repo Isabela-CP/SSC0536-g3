@@ -48,6 +48,9 @@ class ContractModel(BaseModel):
         if errors:
             error = errors[0]
             path = ".".join(map(str, error.path))
+            if error.validator == "required":
+                missing = next(key for key in error.validator_value if key not in error.instance)
+                path = ".".join(filter(None, (path, missing)))
             raise PydanticCustomError("contract", "{field}: {issue}",
                                       {"field": path or "body", "issue": error.message})
         return value

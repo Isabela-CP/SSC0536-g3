@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 def now() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
 def cnpj_digits(value: str) -> str:
