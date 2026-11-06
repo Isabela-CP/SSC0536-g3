@@ -43,15 +43,16 @@ export default function App({ api: providedApi, initialUser, initialEstablishmen
   }
   const { item, user, categories, api, mode } = state
   const access = permissions(user, item)
+  const outOfScope = user?.perfil === 'HOTEL' && item && user.id_estabelecimento !== item.id_estabelecimento
   const configuredMax = Number(import.meta.env.VITE_UPLOAD_MAX_BYTES)
   const maxBytes = Number.isFinite(configuredMax) && configuredMax > 0 ? configuredMax : MAX_UPLOAD_BYTES
   return <Layout user={user} onNavigate={navigate}>
-    {state.status === 'loading' ? <div className="loading-card" role="status">Carregando dados da hospedagem…</div> : state.status === 'error' ? <><h1>Cadastro de hospedagem</h1><Feedback message={state.error} /><button className="button button-secondary" type="button" onClick={() => window.location.reload()}>Tentar novamente</button></> : <>
+    {state.status === 'loading' ? <div className="loading-card" role="status">Carregando dados da hospedagem…</div> : state.status === 'error' || outOfScope ? <><h1>Cadastro de hospedagem</h1><Feedback message={outOfScope ? 'Você só pode acessar sua própria hospedagem.' : state.error} /><button className="button button-secondary" type="button" onClick={() => window.location.reload()}>Tentar novamente</button></> : <>
       <div inert={dialog ? true : undefined}>
         <header className="page-heading"><h1>{mode === 'create' ? 'Cadastro base do CNPJ' : user?.perfil === 'HOTEL' ? 'Meus dados' : access.edit ? 'Editar dados' : 'Dados da hospedagem'}</h1>{item && <span className={`status-badge ${item.status === 'INATIVO' ? 'inactive' : ''}`}>{item.status === 'ATIVO' ? 'Ativo' : 'Inativo'}</span>}</header>
         {state.mock && <Feedback kind="info" message="Ambiente de demonstração. As alterações são temporárias." />}
         <Feedback kind="success" message={notice} />
-        <EstablishmentForm key={`${mode}:${item?.id_estabelecimento || 'new'}`} mode={mode} establishment={item} user={user} categories={categories} api={api} onSaved={result => saved(result, mode === 'create' ? 'Hospedagem cadastrada com sucesso.' : 'Dados salvos com sucesso.')} onCancel={() => setNotice('Alterações descartadas.')} />
+        <EstablishmentForm key={`${mode}:${item?.id_estabelecimento || 'new'}`} mode={mode} establishment={item} user={user} categories={categories} api={api} onSaved={result => saved(result, mode === 'create' ? 'Hospedagem cadastrada com sucesso.' : '')} onEditing={() => setNotice('')} onCancel={() => setNotice('Alterações descartadas.')} />
         {item && <><DocumentsPanel key={item.id_estabelecimento} establishment={item} api={api} canManage={access.documents} maxBytes={maxBytes} onChange={documents => setState(previous => ({ ...previous, item: { ...previous.item, documentos: documents } }))} />{access.status && <div className="maintenance-actions"><button className="button button-secondary" type="button" onClick={() => setDialog(true)}>{item.status === 'ATIVO' ? 'Inativar hospedagem' : 'Reativar hospedagem'}</button></div>}</>}
       </div>
       {dialog && item && access.status && <StatusDialog establishment={item} api={api} onClose={() => setDialog(false)} onSaved={result => saved(result, result.status === 'ATIVO' ? 'Hospedagem reativada com sucesso.' : 'Hospedagem inativada com sucesso.')} />}

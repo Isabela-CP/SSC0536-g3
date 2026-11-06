@@ -2,7 +2,7 @@ import contract from '../../../contratos_api_oto/openapi.json'
 
 export const schemas = contract.components.schemas
 export const REQUIRED = schemas.EstabelecimentoCreate.required
-export const BASIC_FIELDS = ['id_categoria', 'nome_fantasia', 'razao_social', 'cnpj', 'email_comercial', 'endereco', 'latitude', 'longitude']
+export const BASIC_FIELDS = ['nome_fantasia', 'razao_social', 'id_categoria', 'cnpj', 'email_comercial', 'endereco', 'latitude', 'longitude']
 export const CONTACT_FIELDS = ['bairro', 'cnae', 'data_abertura', 'telefone_comercial', 'telefones_comerciais', 'emails_comerciais', 'telefone_pesquisas', 'email_pesquisas', 'aceita_pesquisas', 'contato', 'cargo_contato', 'proprietarios', 'site', 'facebook', 'instagram', 'redes_sociais', 'observacoes']
 export const CADASTUR_FIELDS = ['cadastur_status', 'possui_cadastur', 'numero_cadastur', 'vencimento_cadastur']
 export const SECTION_FIELDS = ['meio_hospedagem', 'infraestrutura', 'acessibilidade']
@@ -145,3 +145,5 @@ export function applyApiError(error) {
   if (error.status === 409 && error.code === 'CONFLICT') fields.cnpj ??= 'Já existe uma hospedagem com este CNPJ.'
   return { message: messages[error.status] || error.message || 'Não foi possível concluir a operação. Tente novamente.', fields }
 }
+
+export const hostingCategories = categories => categories.filter(category => category.nome_categoria.toLocaleLowerCase('pt-BR') === 'meios de hospedagem')

@@ -3,9 +3,9 @@ import { resolveSchema, schemas, REQUIRED } from '../domain/establishment.js'
 import { labelFor } from '../domain/labels.js'
 
 const payments = ['PIX', 'CREDITO', 'DEBITO', 'DINHEIRO', 'BOLETO', 'TRANSFERENCIA']
-export function Field({ path, schema: raw, value, onChange, error, disabled = false, required = false, compact = false, options }) {
+export function Field({ path, schema: raw, value, onChange, error, disabled = false, required = false, compact = false, options, labelOverride }) {
   const schema = resolveSchema(raw)
-  const label = labelFor(path)
+  const label = labelOverride || labelFor(path)
   const id = `field-${path.replaceAll('.', '-')}`
   const common = { id, name: path, disabled, 'aria-invalid': !!error, 'aria-describedby': error ? `${id}-error` : undefined, 'aria-required': required }
   const update = next => onChange(path, next)
@@ -23,7 +23,7 @@ export function Field({ path, schema: raw, value, onChange, error, disabled = fa
     const type = schema.format === 'date' ? 'date' : schema.format === 'time' ? 'time' : schema.format === 'email' ? 'email' : ['integer', 'number'].includes(schema.type) ? 'number' : 'text'
     input = <input {...common} type={type} placeholder={label} value={value ?? ''} min={schema.minimum} max={schema.maximum} minLength={schema.minLength} maxLength={schema.maxLength} step={schema.type === 'integer' ? '1' : type === 'number' ? 'any' : type === 'time' ? '1' : undefined} onChange={event => update(event.target.value)} />
   }
-  const wide = ['nome_fantasia', 'razao_social', 'endereco'].includes(path) || schema.type === 'array' || path.endsWith('observacoes')
+  const wide = ['nome_fantasia', 'endereco'].includes(path) || schema.type === 'array' || path.endsWith('observacoes')
   return <div className={`form-field ${wide ? 'span-two' : ''} ${schema.type === 'boolean' ? 'boolean-field' : ''}`}>
     {schema.type !== 'boolean' && !path.endsWith('formas_pagamento') && <label className={compact ? 'sr-only' : 'field-label'} htmlFor={id}>{label}{required && <span aria-hidden="true"> *</span>}</label>}
     {input}
@@ -31,12 +31,13 @@ export function Field({ path, schema: raw, value, onChange, error, disabled = fa
   </div>
 }
 
-export function SchemaFields({ schema: raw, prefix = '', draft, errors = {}, onChange, disabled = false }) {
+export function SchemaFields({ schema: raw, prefix = '', draft, errors = {}, onChange, disabled = false, exclude = [] }) {
   const schema = resolveSchema(raw)
   return <div className="field-grid">{Object.entries(schema.properties || {}).map(([key, rawField]) => {
     const path = prefix ? `${prefix}.${key}` : key
+    if (exclude.includes(path)) return null
     const field = resolveSchema(rawField)
-    if (field.type === 'object') return <details className="subgroup span-two" key={path}><summary>{labelFor(path)}</summary><SchemaFields schema={field} prefix={path} draft={draft} errors={errors} onChange={onChange} disabled={disabled} /></details>
+    if (field.type === 'object') return <details className="subgroup span-two" key={path}><summary>{labelFor(path)}</summary><SchemaFields schema={field} prefix={path} draft={draft} errors={errors} onChange={onChange} disabled={disabled} exclude={exclude} /></details>
     return <Field key={path} path={path} schema={field} value={draft[path]} onChange={onChange} error={errors[path]} disabled={disabled} />
   })}</div>
 }

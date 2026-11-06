@@ -90,3 +90,14 @@ test('nome de download preserva acentos e remove caminhos', () => {
   assert.equal(documents.downloadName('attachment; filename="../../a.pdf"'), 'a.pdf')
   assert.equal(documents.downloadName("attachment; filename*=UTF-8''%zz", 'arquivo.pdf'), 'arquivo.pdf')
 })
+
+test('download cria link temporário e libera URL após o acionamento', () => {
+  const events = []
+  const browser = {
+    URL: { createObjectURL: () => 'blob:test', revokeObjectURL: url => events.push(['revoke', url]) },
+    document: { createElement: () => ({ click() { events.push(['click', this.download, this.href]) }, remove() { events.push(['remove']) } }), body: { appendChild() {} } },
+    setTimeout: callback => callback(),
+  }
+  documents.saveDownload({ blob: new Blob(['pdf']), disposition: "attachment; filename*=UTF-8''alvar%C3%A1.pdf" }, 'fallback.pdf', browser)
+  assert.deepEqual(events, [['click', 'alvará.pdf', 'blob:test'], ['remove'], ['revoke', 'blob:test']])
+})

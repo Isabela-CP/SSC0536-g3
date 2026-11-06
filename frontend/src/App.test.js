@@ -145,3 +145,15 @@ test('rotas isolam HOTEL antes de consultar API', () => {
   assert.deepEqual(resolveRoute('#/estabelecimentos/own/editar', hotel), { mode: 'edit', id: 'own' })
   assert.throws(() => resolveRoute('#/pesquisas', admin), error => error.status === 404)
 })
+
+test('categoria oferece somente o segmento de hospedagem do MVP', () => {
+  const result = html(Form, { ...props(), mode: 'create' })
+  assert.match(result, /Meios de hospedagem/)
+  assert.doesNotMatch(result, /<option[^>]*>Meios de alimentação|<option[^>]*>Agências/)
+})
+test('atalhos operacionais não duplicam IDs dos checklists detalhados', () => {
+  const result = html(Form, props())
+  const ids = [...result.matchAll(/\bid="([^"]+)"/g)].map(match => match[1])
+  assert.equal(new Set(ids).size, ids.length)
+  assert.match(result, /Área de Lazer/)
+})

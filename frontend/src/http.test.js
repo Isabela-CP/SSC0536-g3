@@ -51,3 +51,12 @@ test('operações usam os métodos e caminhos do contrato', async () => {
     ['/estabelecimentos', 'POST'], ['/estabelecimentos/id', 'PATCH'], ['/estabelecimentos/id/inativacao', 'POST'], ['/estabelecimentos/id/reativacao', 'POST'], ['/estabelecimentos/id/documentos', 'POST'], ['/estabelecimentos/id/documentos/1', 'PATCH'], ['/estabelecimentos/id/documentos/1/arquivo', 'GET'], ['/estabelecimentos/id/documentos/1/arquivo', 'PUT'],
   ])
 })
+
+test('erros 401 e 403 são propagados sem fallback nem repetição', async () => {
+  for (const status of [401, 403]) {
+    let calls = 0
+    const request = createHttpClient({ fetchImpl: async () => { calls++; return Response.json({ error: { code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN' } }, { status }) } })
+    await assert.rejects(request('/perfil'), error => error.status === status)
+    assert.equal(calls, 1)
+  }
+})
