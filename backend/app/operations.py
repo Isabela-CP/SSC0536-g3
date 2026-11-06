@@ -31,7 +31,7 @@ def survey(payload):
     fields(payload, allowed, allowed)
     result = dict(payload)
     result["titulo"] = text(result["titulo"], "titulo")
-    if result["tipo"] not in {"CONSOLIDADO", "EXPECTATIVA"}:
+    if result["tipo"] not in ("CONSOLIDADO", "EXPECTATIVA"):
         raise invalid_field("tipo", "Selecione Consolidado ou Expectativa.")
     for field in ("periodo_inicio", "periodo_fim"):
         try:

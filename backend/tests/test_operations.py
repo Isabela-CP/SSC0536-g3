@@ -158,3 +158,10 @@ def test_report_validation_and_renewed_invitation(env):
     token = main.INVITES[0]["token"]
     assert env.client.post("/convites", json={"email": body["email"]}).status_code == 201
     assert env.client.post(f'/convites/{first["id_convite"]}/aceitacao', json={"token": token, "senha": "nova"}).status_code == 409
+
+
+@pytest.mark.parametrize("value", [[], {}])
+def test_enum_objects_return_validation_error(env, value):
+    assert research(env, tipo=value).status_code == 422
+    assert env.client.post("/usuarios", json={"nome": "Conta", "email": "teste@example.test", "perfil": value}).status_code == 422
+    assert env.client.post("/relatorios", json={"tipo": "OCUPACAO", "formato": value}).status_code == 422

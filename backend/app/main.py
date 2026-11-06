@@ -278,7 +278,7 @@ def create_user(payload: dict = Body(...), user: dict = Depends(current_user)) -
     name = operations.text(payload["nome"], "nome")
     if email in DEMO_USERS:
         return error_response(409, "EMAIL_ALREADY_EXISTS", "Já existe uma conta com esse e-mail.")
-    if payload["perfil"] not in {"ADMINISTRADOR", "GESTOR", "EDITOR", "HOTEL"}:
+    if payload["perfil"] not in ("ADMINISTRADOR", "GESTOR", "EDITOR", "HOTEL"):
         raise invalid_field("perfil", "Perfil inválido.")
     association = payload.get("id_estabelecimento")
     if payload["perfil"] == "HOTEL":
@@ -460,7 +460,7 @@ def dashboard(user: dict = Depends(current_user)) -> dict:
 def generate_report(payload: dict = Body(...), user: dict = Depends(current_user)) -> Any:
     ensure_role(user, "ADMINISTRADOR", "GESTOR")
     report_type, report_format = payload.get("tipo"), payload.get("formato")
-    if report_type != "OCUPACAO" or report_format not in {"PDF", "CSV"}:
+    if report_type != "OCUPACAO" or report_format not in ("PDF", "CSV"):
         return error_response(422, "VALIDATION_ERROR", "Informe tipo OCUPACAO e formato PDF ou CSV.")
     survey_id = payload.get("id_pesquisa")
     if survey_id and not any(item["id_pesquisa"] == survey_id for item in SURVEYS):
