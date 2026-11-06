@@ -133,14 +133,6 @@ export default function App({
                       : 'Dados da hospedagem'}
               </h1>
               <div className="heading-badges">
-                {state.mock && (
-                  <span
-                    className="demo-badge"
-                    title="As alterações deste ambiente são temporárias."
-                  >
-                    Demonstração
-                  </span>
-                )}
                 {item && (
                   <span className={`status-badge ${item.status === 'INATIVO' ? 'inactive' : ''}`}>
                     {item.status === 'ATIVO' ? 'Ativo' : 'Inativo'}

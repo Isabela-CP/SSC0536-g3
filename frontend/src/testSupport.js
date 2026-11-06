@@ -9,6 +9,7 @@ export async function testServer() {
   const cacheDir = await mkdtemp(join(tmpdir(), 'oto-vite-test-'))
   try {
     const server = await createServer({
+      configFile: false,
       cacheDir,
       plugins: [react()],
       server: { middlewareMode: true, ws: false },

@@ -673,11 +673,3 @@ a {
   flex-wrap: wrap;
   gap: 8px;
 }
-.demo-badge {
-  background: #eaf4fa;
-  color: #315369;
-  border: 1px solid #bdd8e8;
-  border-radius: 4px;
-  padding: 4px 9px;
-  font-size: 11px;
-}

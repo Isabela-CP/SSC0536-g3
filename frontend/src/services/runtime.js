@@ -5,7 +5,7 @@ export function applicationRuntime() {
     // Mocks são opt-in; erros de autenticação da API nunca ativam fallback.
     const mock = import.meta.env.VITE_API_MODE === 'mock'
     const options = {
-      baseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000',
+      baseUrl: import.meta.env.VITE_API_BASE_URL || '/api',
       getToken: () => globalThis.sessionStorage?.getItem('oto.accessToken'),
     }
     if (mock) {

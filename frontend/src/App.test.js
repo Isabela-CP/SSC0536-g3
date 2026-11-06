@@ -264,3 +264,11 @@ test('listas de contatos mostram quebras de linha reais no campo', () => {
   assert.ok(result.includes('1111\n2222'))
   assert.ok(!result.includes('1111\\n2222'))
 })
+
+test('cadastro não exibe a tag de demonstração', () => {
+  const result = html(App, {
+    initialUser: admin,
+    initialCategories: seed.categorias_estabelecimento,
+  })
+  assert.doesNotMatch(result, /Demonstração|demo-badge/)
+})

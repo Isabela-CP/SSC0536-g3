@@ -4,7 +4,9 @@ Telas de cadastro, edição e manutenção dos meios de hospedagem, com componen
 reutilizáveis e integração com os oito endpoints de escrita/documentos do OpenAPI.
 Listagem, filtros, paginação, consulta completa e mapa pertencem à SCRUM-96.
 
-## Executar com dados de demonstração
+## Executar conectado ao backend
+
+Inicie o FastAPI conforme `backend/README.md`. Em outro terminal:
 
 ```bash
 cd frontend
@@ -13,11 +15,34 @@ cp .env.example .env.local
 npm run dev
 ```
 
-O modo `mock` é explícito em `.env.local`. Sem essa configuração, o cliente usa a
-API real. A demonstração carrega o seed existente, mantém alterações e arquivos
-somente na memória da sessão e restaura os exemplos ao recarregar a página.
-Arquivos fictícios do seed retornam 404 até um arquivo real ser anexado por upload
-ou substituição. Nenhum arquivo binário é serializado em JSON.
+A API real é o padrão (`VITE_API_MODE=real`). O navegador solicita `/api`, e o
+servidor Vite encaminha ao FastAPI em `OTO_API_TARGET` (padrão
+`http://127.0.0.1:8000`). Isso funciona tanto em `localhost:5173` quanto em
+`127.0.0.1:5173`, sem duplicar a configuração HTTP no navegador.
+
+Enquanto o login da SCRUM-98 não está integrado, pode-se configurar
+`OTO_DEV_BEARER_TOKEN` em `.env.local` com um token válido do backend local.
+Por exemplo, `admin-token` é o token público da conta ADMINISTRADOR de
+**desenvolvimento** já fornecida pelo backend. Essa variável não tem prefixo
+`VITE_`, é lida somente pelo servidor de desenvolvimento e não entra no bundle.
+Uma sessão Bearer enviada pelo navegador tem prioridade sobre a conta local.
+Sem token de sessão nem token local configurado, a API retorna 401 normalmente.
+
+O proxy é configurado somente em `vite serve`. Em produção, configure um proxy
+reverso para `/api` ou informe a URL real em `VITE_API_BASE_URL`, com CORS apropriado
+no backend. O build não inclui o proxy nem o Bearer de desenvolvimento.
+
+## Dados de demonstração opcionais
+
+Use `VITE_API_MODE=mock` explicitamente para trabalhar sem backend. Esse modo
+carrega o seed existente e mantém alterações e arquivos somente na memória da
+sessão, restaurando os exemplos ao recarregar a página. Arquivos fictícios do
+seed retornam 404 até um arquivo real ser anexado. Nenhum binário é serializado
+em JSON. A etiqueta visual de demonstração foi removida do cabeçalho.
+
+A API real atual também usa um repositório temporário em memória, mas no servidor:
+as alterações sobrevivem à atualização do navegador e são perdidas ao reiniciar
+o backend. A conexão real não representa uma integração PostgreSQL concluída.
 
 Rotas de entrada:
 
@@ -34,14 +59,11 @@ HOTEL abre sua própria ficha por padrão. Não há seletor de perfis na interfa
 
 ## API real e cliente compartilhado com SCRUM-96
 
-Configure `VITE_API_MODE=real` e `VITE_API_BASE_URL=http://localhost:8000`.
-Execute o backend conforme seu README e use o frontend em `http://localhost:5173`,
-origem já permitida pelo CORS do backend.
-
 A integração de autenticação deve disponibilizar o access token na chave
 `oto.accessToken` de `sessionStorage`. O cliente lê o token a cada requisição;
-nenhuma credencial de demonstração é enviada automaticamente à API real.
-Login e recuperação de senha não fazem parte desta issue.
+o proxy local só usa uma conta de desenvolvimento quando isso é configurado
+explicitamente em `.env.local`. Login e recuperação de senha não fazem parte
+desta issue.
 
 `services/http.js` centraliza URL, Bearer, JSON, multipart, erros HTTP, cancelamento
 e download binário. `services/runtime.js` concentra a configuração da sessão.
@@ -139,3 +161,9 @@ a substituição falha. O transporte mockado reutiliza o seed original por teste
 A verificação manual no navegador inclui cadastro mínimo, erros de obrigatoriedade,
 inativação sem/com motivo, envio, substituição e download. O conteúdo baixado foi
 comparado ao arquivo temporário usado na substituição.
+
+A integração HTTP foi validada contra o FastAPI real passando pelo proxy Vite:
+perfil, categorias, cadastro, PATCH, upload, metadados, download, substituição,
+inativação e reativação, além de 401 para token inválido e 403 para escrita GESTOR.
+Os testes unitários do proxy verificam precedência de sessão e ausência de
+configuração de desenvolvimento no build, sem depender de um backend em execução.
