@@ -206,3 +206,21 @@ busca nos três campos, limites, paginação, ordenação com empates e fusos ho
 fichas completas/incompletas, escrita, documentos, autenticação e isolamento de
 HOTEL. As fixtures de escrita reutilizam o seed, injetam um repositório por teste
 e storage em `tmp_path`, sem modificar os mocks nem criar arquivos no repositório.
+
+## Integração das operações do portal
+
+Login/saída, atualização do perfil, contas/convites e pesquisas usam os endpoints
+existentes, com autorização no servidor. HOTEL obtém seu vínculo da sessão e só
+responde pesquisas destinadas à própria hospedagem; uma resposta por hospedagem.
+Convites expiram em sete dias e o reenvio invalida os anteriores ainda pendentes.
+A saída revoga o token apresentado. Dados, sessões e convites continuam em memória.
+Recuperação apenas registra a solicitação; não há SMTP nem fluxo de redefinição
+final neste contrato. Não há endpoint de exclusão de conta ou upload de avatar.
+
+Relatórios OCUPACAO são gerados como PDF (ReportLab) ou CSV UTF-8 com BOM a partir
+das respostas registradas. O filtro opcional `id_pesquisa` seleciona uma pesquisa.
+O download retorna bytes e MIME apropriados; não retorna JSON no lugar do arquivo.
+Os binários de relatório ficam separados dos metadados, temporariamente na memória
+do processo, até integração com persistência/storage definitivo. A geração local
+é síncrona dentro do endpoint 202; não há fila de jobs nem persistência PostgreSQL.
+Os testes isolam sessões, convites, pesquisas, respostas e arquivos por fixture.

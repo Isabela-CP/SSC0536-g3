@@ -20,13 +20,20 @@ servidor Vite encaminha ao FastAPI em `OTO_API_TARGET` (padrão
 `http://127.0.0.1:8000`). Isso funciona tanto em `localhost:5173` quanto em
 `127.0.0.1:5173`, sem duplicar a configuração HTTP no navegador.
 
-Enquanto o login da SCRUM-98 não está integrado, pode-se configurar
-`OTO_DEV_BEARER_TOKEN` em `.env.local` com um token válido do backend local.
-Por exemplo, `admin-token` é o token público da conta ADMINISTRADOR de
-**desenvolvimento** já fornecida pelo backend. Essa variável não tem prefixo
-`VITE_`, é lida somente pelo servidor de desenvolvimento e não entra no bundle.
-Uma sessão Bearer enviada pelo navegador tem prioridade sobre a conta local.
-Sem token de sessão nem token local configurado, a API retorna 401 normalmente.
+O login está integrado. A sessão guarda `oto.accessToken` e `oto.expiresAt` em
+`sessionStorage`; expiração, resposta 401 e saída removem a sessão. O cliente
+bloqueia chamadas protegidas sem sessão antes de alcançar o proxy.
+`OTO_DEV_BEARER_TOKEN` permanece opcional para ferramentas locais, somente no
+servidor Vite; não autentica automaticamente a interface e não entra no bundle.
+
+Contas fictícias do backend local:
+
+| Perfil | E-mail | Senha |
+| --- | --- | --- |
+| ADMINISTRADOR | marina.admin@example.test | admin-demo |
+| EDITOR | camila.editora@example.test | editor-demo |
+| GESTOR | rafael.consulta@example.test | gestor-demo |
+| HOTEL | responsavel@serra-azul.example | hotel-demo |
 
 O proxy é configurado somente em `vite serve`. Em produção, configure um proxy
 reverso para `/api` ou informe a URL real em `VITE_API_BASE_URL`, com CORS apropriado
@@ -53,17 +60,12 @@ Rotas de entrada:
 Exemplo de edição com o seed:
 `http://localhost:5173/#/estabelecimentos/11111111-1111-4111-8111-111111111111/editar`.
 
-`VITE_MOCK_ROLE` permite verificar ADMINISTRADOR, EDITOR, HOTEL e GESTOR sem criar
-uma tela de gestão de contas. Para EDITOR/GESTOR, abra a rota de edição do exemplo;
-HOTEL abre sua própria ficha por padrão. Não há seletor de perfis na interface.
+`VITE_MOCK_ROLE` escolhe o perfil da conta de desenvolvimento em modo mock.
+Esse transporte cobre cadastro/manutenção/documentos, login e perfil. Contas,
+convites, pesquisas e relatórios exigem backend real e mostram indisponibilidade
+explícita no modo mock.
 
 ## API real e cliente compartilhado com SCRUM-96
-
-A integração de autenticação deve disponibilizar o access token na chave
-`oto.accessToken` de `sessionStorage`. O cliente lê o token a cada requisição;
-o proxy local só usa uma conta de desenvolvimento quando isso é configurado
-explicitamente em `.env.local`. Login e recuperação de senha não fazem parte
-desta issue.
 
 `services/http.js` centraliza URL, Bearer, JSON, multipart, erros HTTP, cancelamento
 e download binário. `services/runtime.js` concentra a configuração da sessão.
@@ -133,10 +135,11 @@ Diferenças necessárias entre a referência visual e o escopo/contrato:
 - O atalho “Piscina” representa `infraestrutura.piscina_adulto`; “Acessibilidade”
   representa `acessibilidade.possui_facilidade_pcd`; “Área de Lazer” inverte
   `infraestrutura.recreacao.nao_possui`, sem criar uma propriedade fora do contrato.
-- Ações de convite e alertas fixos de vencimento não foram implementados. O botão
-  “Salvar e enviar convite” é de outro fluxo e não aparece como uma ação falsa.
-- Os rótulos de navegação de outros módulos servem de contexto visual; as respectivas
-  telas e operações não foram implementadas. “Sair” também não aciona autenticação.
+- “Salvar e enviar convite” primeiro persiste a hospedagem e abre a confirmação
+  da conta HOTEL vinculada. Falha no convite permite tentar novamente sem criar
+  outra hospedagem ou duplicar uma conta já criada.
+- Dashboards ADMIN/FUNCIONARIO, inventário, mapa e auditoria pertencem à SCRUM-96.
+  Suas entradas apresentam indisponibilidade explícita até essa implementação.
 - O campo “Justificativa de Remoção” mantém o rótulo do protótipo, mas envia
   `motivo_inativacao` e executa uma transição lógica, sem apagar o registro.
 
@@ -167,3 +170,31 @@ perfil, categorias, cadastro, PATCH, upload, metadados, download, substituição
 inativação e reativação, além de 401 para token inválido e 403 para escrita GESTOR.
 Os testes unitários do proxy verificam precedência de sessão e ausência de
 configuração de desenvolvimento no build, sem depender de um backend em execução.
+
+## Complemento da SCRUM-97
+
+O planejamento local foi consolidado nas duas tarefas existentes: SCRUM-96 para
+consulta e SCRUM-97 para acesso e operações. Nenhuma SCRUM-98–102 foi criada.
+
+- `/#/login`, `/#/recuperar-senha` e `/#/ativar-convite?id=...&token=...`:
+  autenticação, solicitação de recuperação e definição de senha de convite.
+  Após ativar, o usuário entra pelo login; confirmação de senha fica no cliente.
+- `/#/contas`: administração de equipe/HOTEL e criação/reenvio de convite.
+- `/#/pesquisas`: criação, edição, confirmação, encerramento e exportação para
+  os perfis permitidos. GESTOR consulta/exporta; HOTEL responde pelo seu início.
+- `/#/inicio`: pendências e histórico do HOTEL, com resposta de ocupação de 0–100%.
+- `/#/perfil`: nome/e-mail e preferências locais de tema e tamanho de fonte,
+  isoladas por usuário. Cargo permanece protegido.
+
+Não há endpoint de remoção de conta, alteração direta de senha nem upload de
+avatar no contrato. Essas ações não simulam sucesso. A recuperação registra a
+solicitação e os convites são registrados pelo servidor; entrega de e-mail e
+conclusão da recuperação dependem do serviço de envio/contrato correspondente.
+Relatórios agora retornam arquivos PDF/CSV reais, com polling limitado e validação
+de MIME no cliente. Os dados e arquivos de relatório ainda são temporários no
+backend; PostgreSQL segue dependente das migrations.
+
+Os testes adicionais cobrem sessão/expiração, isolamento de rotas e preferências,
+payloads, validação de acesso, convites com falha parcial, paginação de destinatários,
+pesquisas, ocupação, exportação e renderização SSR dos novos módulos. Nenhuma
+biblioteca de interação DOM ou dependência frontend foi adicionada.
