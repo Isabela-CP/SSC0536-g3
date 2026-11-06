@@ -51,7 +51,9 @@ export function EstablishmentWorkspace({
       window.scrollTo(0, 0)
       setState((previous) => ({ ...previous, status: 'loading', error: null }))
       try {
-        const runtime = providedApi ? { api: providedApi, mock: false } : await applicationRuntime()
+        const runtime = providedApi
+          ? { api: providedApi, mock: false }
+          : await applicationRuntime()
         const user = initialUser || (await runtime.api.profile({ signal: controller.signal }))
         if (active) setState((previous) => ({ ...previous, user }))
         const route = resolveRoute(location, user)
@@ -94,7 +96,11 @@ export function EstablishmentWorkspace({
     setNotice(message)
     window.scrollTo(0, 0)
     if (state.mode === 'create')
-      window.history.replaceState(null, '', `#/estabelecimentos/${item.id_estabelecimento}/editar`)
+      window.history.replaceState(
+        null,
+        '',
+        `#/estabelecimentos/${item.id_estabelecimento}/editar`,
+      )
   }
   const { item, user, categories, api, mode } = state
   const access = permissions(user, item)
@@ -138,7 +144,9 @@ export function EstablishmentWorkspace({
               </h1>
               <div className="heading-badges">
                 {item && (
-                  <span className={`status-badge ${item.status === 'INATIVO' ? 'inactive' : ''}`}>
+                  <span
+                    className={`status-badge ${item.status === 'INATIVO' ? 'inactive' : ''}`}
+                  >
                     {item.status === 'ATIVO' ? 'Ativo' : 'Inativo'}
                   </span>
                 )}
@@ -190,11 +198,19 @@ export function EstablishmentWorkspace({
             )}
           </div>
           {inviteDraft && user?.perfil === 'ADMINISTRADOR' && (
-            <AccountDialog api={api} recipients={[inviteDraft]}
-              initialDraft={{ perfil: 'HOTEL', nome: inviteDraft.nome_fantasia,
-                email: inviteDraft.email_comercial || '', id_estabelecimento: inviteDraft.id_estabelecimento }}
+            <AccountDialog
+              api={api}
+              recipients={[inviteDraft]}
+              initialDraft={{
+                perfil: 'HOTEL',
+                nome: inviteDraft.nome_fantasia,
+                email: inviteDraft.email_comercial || '',
+                id_estabelecimento: inviteDraft.id_estabelecimento,
+              }}
               onClose={() => setInviteDraft(null)}
-              onChanged={() => setNotice('Hospedagem salva. Conta registrada; confira o resultado do convite.')}
+              onChanged={() =>
+                setNotice('Hospedagem salva. Conta registrada; confira o resultado do convite.')
+              }
             />
           )}
           {dialog && item && access.status && (

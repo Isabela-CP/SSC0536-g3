@@ -12,6 +12,7 @@ export async function testServer() {
       configFile: false,
       cacheDir,
       plugins: [react()],
+      optimizeDeps: { noDiscovery: true, include: [] },
       server: { middlewareMode: true, ws: false },
       appType: 'custom',
     })
@@ -20,12 +21,12 @@ export async function testServer() {
       try {
         await close()
       } finally {
-        await rm(cacheDir, { recursive: true, force: true })
+        await rm(cacheDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 50 })
       }
     }
     return server
   } catch (error) {
-    await rm(cacheDir, { recursive: true, force: true })
+    await rm(cacheDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 50 })
     throw error
   }
 }

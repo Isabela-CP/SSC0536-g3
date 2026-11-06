@@ -86,7 +86,9 @@ export default function EstablishmentForm({
       setMessage(
         mode === 'create' ? 'Hospedagem cadastrada com sucesso.' : 'Dados salvos com sucesso.',
       )
-      onSaved?.(result, { invite: event.nativeEvent?.submitter?.name === 'save-invite' })
+      onSaved?.(result, {
+        invite: event.nativeEvent?.submitter?.name === 'save-invite',
+      })
     } catch (error) {
       const feedback = applyApiError(error)
       setErrors(feedback.fields)
@@ -132,7 +134,12 @@ export default function EstablishmentForm({
         {busy ? 'Salvando…' : user?.perfil === 'HOTEL' ? 'Salvar Meus Dados' : 'Salvar'}
       </button>
       {mode === 'create' && user?.perfil === 'ADMINISTRADOR' && (
-        <button className="button button-primary" type="submit" name="save-invite" disabled={busy}>
+        <button
+          className="button button-primary"
+          type="submit"
+          name="save-invite"
+          disabled={busy}
+        >
           Salvar e enviar convite
         </button>
       )}

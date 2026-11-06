@@ -15,7 +15,7 @@ before(async () => {
   server = await testServer()
   domain = await server.ssrLoadModule('/src/domain/operations.js')
   navigation = await server.ssrLoadModule('/src/domain/navigation.js')
-  ;({prepareReport} = await server.ssrLoadModule('/src/services/reports.js'))
+  ;({ prepareReport } = await server.ssrLoadModule('/src/services/reports.js'))
   for (const name of ['AccessPage', 'ProfilePage', 'AccountsPage', 'SurveysPage', 'HotelHome'])
     pages[name] = (await server.ssrLoadModule(`/src/pages/${name}.jsx`)).default
 })
@@ -73,7 +73,10 @@ test('requisição protegida sem sessão não chega ao proxy local', async () =>
   await assert.rejects(request('/perfil'), (error) => error.status === 401)
   assert.equal(count, 0)
   assert.equal(expired, 1)
-  await request('/auth/login', { method: 'POST', body: { email: 'a@b', senha: 'x' } })
+  await request('/auth/login', {
+    method: 'POST',
+    body: { email: 'a@b', senha: 'x' },
+  })
   assert.equal(count, 1)
 })
 test('login inválido não dispara o tratamento de expiração', async () => {
@@ -94,15 +97,23 @@ test('valida login, convite, senha confirmada e recuperação', () => {
   assert.deepEqual(domain.validateAccess({ email: 'usuario@example.test' }, 'recover'), {})
 })
 test('perfil envia somente nome/email alterados e ignora cargo', () => {
-  assert.deepEqual(domain.profilePayload({ ...user, nome: ' Novo ' }, user), { nome: 'Novo' })
+  assert.deepEqual(domain.profilePayload({ ...user, nome: ' Novo ' }, user), {
+    nome: 'Novo',
+  })
   assert.ok(domain.validateProfile({ nome: '', email: 'errado' }).email)
 })
 test('preferências são isoladas por usuário e validadas ao carregar', () => {
   const local = storage(),
     other = { id_usuario: 2 }
   savePreferences(local, user, { theme: 'dark', font: 'large' })
-  assert.deepEqual(readPreferences(local, user), { theme: 'dark', font: 'large' })
-  assert.deepEqual(readPreferences(local, other), { theme: 'light', font: 'normal' })
+  assert.deepEqual(readPreferences(local, user), {
+    theme: 'dark',
+    font: 'large',
+  })
+  assert.deepEqual(readPreferences(local, other), {
+    theme: 'light',
+    font: 'normal',
+  })
   local.setItem('oto.preferences.2', 'invalid')
   assert.equal(readPreferences(local, other).theme, 'light')
   const root = {
@@ -165,7 +176,10 @@ test('recipientes carregam todas as páginas, não apenas a primeira', async () 
     }),
     establishments: async (params) => {
       seen.push(params.page)
-      return { data: [{ id_estabelecimento: String(params.page) }], pagination: { total_pages: 2 } }
+      return {
+        data: [{ id_estabelecimento: String(params.page) }],
+        pagination: { total_pages: 2 },
+      }
     },
   })
   assert.equal(rows.length, 2)
@@ -182,8 +196,11 @@ test('pesquisa valida período e destinatários, PATCH não envia campos intocad
   assert.deepEqual(domain.validateSurvey(draft), {})
   assert.ok(domain.validateSurvey({ ...draft, periodo_fim: '2026-10-01' }).periodo_fim)
   assert.ok(domain.validateSurvey({ ...draft, estabelecimentos: [] }).estabelecimentos)
-  assert.deepEqual(domain.surveyPayload({ ...draft, titulo: 'Novo' }, draft), { titulo: 'Novo' })
-  for (const rate of ['', -1, 101, 'abc']) assert.ok(domain.validateOccupancy(rate).taxa_ocupacao)
+  assert.deepEqual(domain.surveyPayload({ ...draft, titulo: 'Novo' }, draft), {
+    titulo: 'Novo',
+  })
+  for (const rate of ['', '   ', false, [], -1, 101, 'abc'])
+    assert.ok(domain.validateOccupancy(rate).taxa_ocupacao)
   assert.deepEqual(domain.validateOccupancy('0'), {})
   assert.deepEqual(domain.validateOccupancy('100'), {})
 })
@@ -301,7 +318,9 @@ test('relatórios aguardam geração e rejeitam JSON disfarçado de arquivo', as
         calls++
         return { id_relatorio: 'id', status: 'CONCLUIDO' }
       },
-      downloadReport: async () => ({ blob: new Blob(['pdf'], { type: 'application/pdf' }) }),
+      downloadReport: async () => ({
+        blob: new Blob(['pdf'], { type: 'application/pdf' }),
+      }),
     },
     { formato: 'PDF' },
     { wait: async () => {} },
@@ -312,7 +331,9 @@ test('relatórios aguardam geração e rejeitam JSON disfarçado de arquivo', as
     prepareReport(
       {
         createReport: async () => ({ id_relatorio: 'id', status: 'CONCLUIDO' }),
-        downloadReport: async () => ({ blob: new Blob(['{}'], { type: 'application/json' }) }),
+        downloadReport: async () => ({
+          blob: new Blob(['{}'], { type: 'application/json' }),
+        }),
       },
       { formato: 'PDF' },
     ),

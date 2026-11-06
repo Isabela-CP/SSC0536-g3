@@ -116,7 +116,7 @@ export default function AccessPage({
               {operation.busy
                 ? 'Aguarde…'
                 : kind === 'activate'
-                  ? 'Salvar e Acessar Painel'
+                  ? 'Salvar senha e ativar acesso'
                   : kind === 'recover'
                     ? 'Solicitar recuperação'
                     : 'Entrar no Sistema'}

@@ -11,7 +11,13 @@ import {
   createAccountAndInvite,
   loadRecipients,
 } from '../domain/operations.js'
-export function AccountDialog({ api, recipients, onClose, onChanged = () => {}, initialDraft = {} }) {
+export function AccountDialog({
+  api,
+  recipients,
+  onClose,
+  onChanged = () => {},
+  initialDraft = {},
+}) {
   const [draft, setDraft] = useState({
       nome: '',
       email: '',
@@ -47,7 +53,8 @@ export function AccountDialog({ api, recipients, onClose, onChanged = () => {}, 
         <OperationFeedback operation={operation} errors={errors} />
         {created && (
           <p className="muted">
-            A conta foi criada. Tente novamente para criar apenas o convite, sem duplicar a conta.
+            A conta foi criada. Tente novamente para criar apenas o convite, sem duplicar a
+            conta.
           </p>
         )}
         <div className="field-grid">
@@ -133,7 +140,11 @@ export default function AccountsPage({ api, initialData = null }) {
     { key: 'nome', label: 'Nome' },
     { key: 'email', label: 'E-mail' },
     { key: 'perfil', label: 'Cargo', render: (user) => roles[user.perfil] },
-    { key: 'ativo', label: 'Status', render: (user) => (user.ativo ? 'Ativa' : 'Pendente') },
+    {
+      key: 'ativo',
+      label: 'Status',
+      render: (user) => (user.ativo ? 'Ativa' : 'Pendente'),
+    },
     {
       key: 'actions',
       label: 'Ações',

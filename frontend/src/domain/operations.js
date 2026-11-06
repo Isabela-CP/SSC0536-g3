@@ -59,7 +59,10 @@ export function validateAccount(draft) {
 export async function createAccountAndInvite(api, payload, previousAccount) {
   const account = previousAccount || (await api.createUser(payload))
   try {
-    return { account, invite: await api.createInvite({ email: account.email }) }
+    return {
+      account,
+      invite: await api.createInvite({ email: account.email }),
+    }
   } catch (error) {
     error.account = account
     throw error
@@ -105,7 +108,8 @@ export function operationError(error) {
   const fields = Object.fromEntries(
     (error.details || []).map((detail) => [detail.field, detail.issue]),
   )
-  if (error.code === 'EMAIL_ALREADY_EXISTS') fields.email = 'Já existe uma conta com esse e-mail.'
+  if (error.code === 'EMAIL_ALREADY_EXISTS')
+    fields.email = 'Já existe uma conta com esse e-mail.'
   const messages = {
     INVALID_CREDENTIALS: 'E-mail ou senha inválidos.',
     INVITE_NOT_FOUND: 'Convite não encontrado ou expirado.',

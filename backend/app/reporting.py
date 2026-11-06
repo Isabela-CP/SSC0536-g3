@@ -18,7 +18,7 @@ def build_report(format, rows):
     output = BytesIO()
     styles = getSampleStyleSheet()
     content = [[Paragraph(escape(str(value)), styles["BodyText"]) for value in row] for row in rows]
-    table = Table(content, repeatRows=1, hAlign="LEFT")
+    table = Table(content, colWidths=[(landscape(A4)[0] - 64) / len(rows[0])] * len(rows[0]), repeatRows=1, hAlign="LEFT")
     table.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#eaf4f8")), ("GRID", (0, 0), (-1, -1), .5, colors.HexColor("#bdd6e7")), ("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 8), ("RIGHTPADDING", (0, 0), (-1, -1), 8), ("TOPPADDING", (0, 0), (-1, -1), 8), ("BOTTOMPADDING", (0, 0), (-1, -1), 8)]))
     document = SimpleDocTemplate(output, pagesize=landscape(A4), title="Relatório OTO", leftMargin=32, rightMargin=32)
     document.build([Paragraph("Relatório de ocupação — OTO", styles["Title"]), Spacer(1, 18), table])
