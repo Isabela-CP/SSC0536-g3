@@ -11,6 +11,7 @@ def env(write_env, monkeypatch):
     monkeypatch.setattr(main, "TOKENS", main.TOKENS.copy())
     for name in ("INVITES", "SURVEYS", "OCCUPANCY_RESPONSES", "REPORTS"):
         monkeypatch.setattr(main, name, [])
+    monkeypatch.setattr(main, "REPORT_FILES", {})
     return write_env
 
 
@@ -124,3 +125,36 @@ def test_invalid_occupancy(env, value):
     id = research(env).json()["id_pesquisa"]
     assert env.client.post(f"/pesquisas-ocupacao/{id}/respostas", json={"taxa_ocupacao": value}, headers=env.headers("HOTEL")).status_code == 422
     assert main.OCCUPANCY_RESPONSES == []
+
+
+@pytest.mark.parametrize("format,mime", [("CSV", "text/csv"), ("PDF", "application/pdf")])
+def test_reports_are_real_downloadable_files(env, format, mime):
+    survey = research(env).json()
+    assert env.client.post(f'/pesquisas-ocupacao/{survey["id_pesquisa"]}/respostas', json={"taxa_ocupacao": 75}, headers=env.headers("HOTEL")).status_code == 201
+    response = env.client.post("/relatorios", json={"tipo": "OCUPACAO", "formato": format, "id_pesquisa": survey["id_pesquisa"]})
+    assert response.status_code == 202
+    assert "content" not in response.json()
+    path = response.json()["download_url"]
+    download = env.client.get(path)
+    assert download.status_code == 200
+    assert download.headers["content-type"].startswith(mime)
+    assert "attachment" in download.headers["content-disposition"]
+    if format == "PDF":
+        assert download.content.startswith(b"%PDF-")
+        assert b"%%EOF" in download.content
+    else:
+        text = download.content.decode("utf-8-sig")
+        assert "Hotel Serra Azul" in text
+        assert "75" in text
+    assert env.client.get(path, headers=env.headers("HOTEL")).status_code == 403
+    assert env.client.get(path, headers=env.headers("EDITOR")).status_code == 403
+
+
+def test_report_validation_and_renewed_invitation(env):
+    assert env.client.post("/relatorios", json={"tipo": "OCUPACAO", "formato": "EXE"}).status_code == 422
+    assert env.client.post("/relatorios", json={"tipo": "OCUPACAO", "formato": "CSV", "id_pesquisa": "missing"}).status_code == 404
+    body = account(env)
+    first = env.client.post("/convites", json={"email": body["email"]}).json()
+    token = main.INVITES[0]["token"]
+    assert env.client.post("/convites", json={"email": body["email"]}).status_code == 201
+    assert env.client.post(f'/convites/{first["id_convite"]}/aceitacao', json={"token": token, "senha": "nova"}).status_code == 409

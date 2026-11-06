@@ -10,7 +10,7 @@ from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Body, Depends, FastAPI, Header, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 
 from app.inventory import InventoryQuery, InventoryRepository, JsonInventoryRepository, query_establishments
 from app.inventory_http import InventoryRoute
@@ -18,6 +18,7 @@ from app.inventory_repository import MemoryInventoryRepository
 from app.inventory_writes import create_write_router
 from app.inventory_errors import InventoryError, invalid_field
 from app import operations
+from app.reporting import build_report
 
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
@@ -69,6 +70,7 @@ SURVEYS: list[dict[str, Any]] = []
 OCCUPANCY_RESPONSES: list[dict[str, Any]] = []
 AUDIT_LOG: list[dict[str, Any]] = []
 REPORTS: list[dict[str, Any]] = []
+REPORT_FILES: dict[str, tuple[bytes, str]] = {}
 
 
 def error_response(status_code: int, code: str, message: str, details: list[dict] | None = None) -> JSONResponse:
@@ -300,6 +302,9 @@ def create_invite(payload: dict = Body(...), user: dict = Depends(current_user))
     if email not in DEMO_USERS:
         return error_response(404, "USER_NOT_FOUND", "Usuário não encontrado para convite.")
     invite = {"id_convite": str(uuid4()), "email": email, "status": "PENDENTE", "expira_em": (datetime.now(timezone.utc) + timedelta(days=7)).isoformat(), "token": str(uuid4())}
+    for previous in INVITES:
+        if previous["email"] == email and previous["status"] == "PENDENTE":
+            previous["status"] = "SUBSTITUIDO"
     INVITES.append(invite)
     audit(user, "CONVITE_ENVIADO", "CONVITE", invite["id_convite"], after={"email": email})
     return {key: value for key, value in invite.items() if key != "token"}
@@ -454,12 +459,24 @@ def dashboard(user: dict = Depends(current_user)) -> dict:
 @app.post("/relatorios", status_code=status.HTTP_202_ACCEPTED, tags=["Relatórios"])
 def generate_report(payload: dict = Body(...), user: dict = Depends(current_user)) -> Any:
     ensure_role(user, "ADMINISTRADOR", "GESTOR")
-    report_type = payload.get("tipo")
-    report_format = payload.get("formato")
-    if not report_type or report_format not in {"PDF", "CSV"}:
-        return error_response(422, "VALIDATION_ERROR", "Tipo e formato PDF ou CSV são obrigatórios.")
+    report_type, report_format = payload.get("tipo"), payload.get("formato")
+    if report_type != "OCUPACAO" or report_format not in {"PDF", "CSV"}:
+        return error_response(422, "VALIDATION_ERROR", "Informe tipo OCUPACAO e formato PDF ou CSV.")
+    survey_id = payload.get("id_pesquisa")
+    if survey_id and not any(item["id_pesquisa"] == survey_id for item in SURVEYS):
+        return error_response(404, "SURVEY_NOT_FOUND", "Pesquisa não encontrada.")
+    surveys = {item["id_pesquisa"]: item for item in SURVEYS}
+    rows = [["Pesquisa", "Hospedagem", "Período inicial", "Período final", "Ocupação (%)", "Enviada em"]]
+    for item in OCCUPANCY_RESPONSES:
+        if survey_id and item["id_pesquisa"] != survey_id:
+            continue
+        survey = surveys.get(item["id_pesquisa"], {})
+        establishment = inventory_repository().establishment(item.get("id_estabelecimento", "")) or {}
+        rows.append([survey.get("titulo", ""), establishment.get("nome_fantasia", ""), survey.get("periodo_inicio", ""), survey.get("periodo_fim", ""), item["dados"].get("taxa_ocupacao", ""), item["enviada_em"]])
+    content, mime = build_report(report_format, rows)
     report_id = str(uuid4())
     report = {"id_relatorio": report_id, "tipo": report_type, "formato": report_format, "status": "CONCLUIDO", "criado_em": datetime.now(timezone.utc).isoformat(), "download_url": f"/relatorios/{report_id}/arquivo"}
+    REPORT_FILES[report_id] = (content, mime)
     REPORTS.append(report)
     audit(user, "RELATORIO_GERADO", "RELATORIO", report_id, after=report)
     return report
@@ -479,6 +496,7 @@ def download_report(id_relatorio: str, user: dict = Depends(current_user)) -> An
     report = get_report(id_relatorio, user)
     if isinstance(report, JSONResponse):
         return report
-    return {"id_relatorio": id_relatorio, "formato": report["formato"], "content": "Arquivo de demonstração; use storage na implementação de produção."}
-
-
+    if id_relatorio not in REPORT_FILES:
+        return error_response(404, "NOT_FOUND", "Arquivo não encontrado.")
+    content, mime = REPORT_FILES[id_relatorio]
+    return Response(content=content, media_type=mime, headers={"Content-Disposition": f'attachment; filename="relatorio.{report["formato"].lower()}"'})
