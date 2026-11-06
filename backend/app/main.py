@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from copy import deepcopy
 from functools import lru_cache
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Annotated, Any, Literal
 from uuid import UUID, uuid4
@@ -16,6 +16,8 @@ from app.inventory import InventoryQuery, InventoryRepository, JsonInventoryRepo
 from app.inventory_http import InventoryRoute
 from app.inventory_repository import MemoryInventoryRepository
 from app.inventory_writes import create_write_router
+from app.inventory_errors import InventoryError, invalid_field
+from app import operations
 
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
@@ -74,6 +76,11 @@ def error_response(status_code: int, code: str, message: str, details: list[dict
     if details:
         error["details"] = details
     return JSONResponse(status_code=status_code, content={"error": error})
+
+
+@app.exception_handler(InventoryError)
+async def operation_error(request, exc):
+    return JSONResponse(status_code=exc.status_code, content={"error": exc.error})
 
 
 def current_user(authorization: str | None = Header(default=None)) -> dict:
@@ -196,25 +203,34 @@ app.include_router(create_write_router(inventory_repository, inventory_user, aud
 
 @app.post("/auth/login", tags=["Autenticação"])
 def login(payload: dict = Body(...)) -> Any:
-    user = DEMO_USERS.get(payload.get("email", "").casefold())
-    if not user or user["senha"] != payload.get("senha") or not user["ativo"]:
+    email = payload.get("email")
+    user = DEMO_USERS.get(email.strip().casefold()) if isinstance(email, str) else None
+    if not user or not isinstance(payload.get("senha"), str) or not payload["senha"] or user["senha"] != payload["senha"] or not user["ativo"]:
         return error_response(401, "INVALID_CREDENTIALS", "E-mail ou senha inválidos.")
-    token = next(token for token, email in TOKENS.items() if email == user["email"])
+    token = next((token for token, email in TOKENS.items() if email == user["email"]), None)
+    if token is None:
+        token = str(uuid4())
+        TOKENS[token] = user["email"]
     return {"access_token": token, "token_type": "Bearer", "expires_in": 3600, "usuario": public_user(user)}
 
 
 @app.post("/auth/logout", status_code=status.HTTP_204_NO_CONTENT, tags=["Autenticação"])
-def logout(_: dict = Depends(current_user)) -> None:
+def logout(authorization: str = Header(...), _: dict = Depends(current_user)) -> None:
+    TOKENS.pop(authorization.partition(" ")[2], None)
     return None
 
 
 @app.post("/auth/recuperacao-senha", status_code=status.HTTP_202_ACCEPTED, tags=["Autenticação"])
 def recover_password(payload: dict = Body(...)) -> dict:
+    operations.email(payload.get("email"))
     return {"message": "Se o e-mail estiver cadastrado, as instruções de recuperação serão enviadas."}
 
 
 def public_user(user: dict) -> dict:
-    return {key: user[key] for key in ("id_usuario", "nome", "email", "perfil", "ativo")}
+    result = {key: user[key] for key in ("id_usuario", "nome", "email", "perfil", "ativo")}
+    if user["perfil"] == "HOTEL":
+        result["id_estabelecimento"] = user.get("id_estabelecimento")
+    return result
 
 
 @app.get("/perfil", tags=["Perfil"])
@@ -224,15 +240,24 @@ def get_profile(user: dict = Depends(current_user)) -> dict:
 
 @app.patch("/perfil", tags=["Perfil"])
 def update_profile(payload: dict = Body(...), user: dict = Depends(current_user)) -> Any:
-    allowed = {"nome", "email"}
-    invalid = set(payload) - allowed
-    if invalid:
-        return error_response(422, "VALIDATION_ERROR", "Verifique os campos informados.", [{"field": next(iter(invalid)), "issue": "Campo não pode ser alterado no perfil."}])
-    if "email" in payload and payload["email"].casefold() != user["email"] and payload["email"].casefold() in DEMO_USERS:
-        return error_response(409, "EMAIL_ALREADY_EXISTS", "Já existe uma conta com esse e-mail.")
-    before = public_user(user)
-    for key, value in payload.items():
-        user[key] = value.casefold() if key == "email" else value
+    operations.fields(payload, {"nome", "email"})
+    if not payload:
+        raise invalid_field("body", "Altere pelo menos um campo.")
+    changes = dict(payload)
+    if "nome" in changes:
+        changes["nome"] = operations.text(changes["nome"], "nome")
+    if "email" in changes:
+        changes["email"] = operations.email(changes["email"])
+        if changes["email"] != user["email"] and changes["email"] in DEMO_USERS:
+            return error_response(409, "EMAIL_ALREADY_EXISTS", "Já existe uma conta com esse e-mail.")
+    before, old_email = public_user(user), user["email"]
+    user.update(changes)
+    if user["email"] != old_email:
+        DEMO_USERS.pop(old_email)
+        DEMO_USERS[user["email"]] = user
+        for token, email in TOKENS.items():
+            if email == old_email:
+                TOKENS[token] = user["email"]
     audit(user, "PERFIL_ATUALIZADO", "USUARIO", str(user["id_usuario"]), before, public_user(user))
     return public_user(user)
 
@@ -246,16 +271,23 @@ def list_users(user: dict = Depends(current_user)) -> dict:
 @app.post("/usuarios", status_code=status.HTTP_201_CREATED, tags=["Usuários"])
 def create_user(payload: dict = Body(...), user: dict = Depends(current_user)) -> Any:
     ensure_role(user, "ADMINISTRADOR")
-    required = {"nome", "email", "perfil"}
-    missing = required - set(payload)
-    if missing:
-        return error_response(422, "VALIDATION_ERROR", "Verifique os campos informados.", [{"field": sorted(missing)[0], "issue": "Campo obrigatório."}])
-    email = payload["email"].casefold()
+    operations.fields(payload, {"nome", "email", "perfil", "id_estabelecimento"}, {"nome", "email", "perfil"})
+    email = operations.email(payload["email"])
+    name = operations.text(payload["nome"], "nome")
     if email in DEMO_USERS:
         return error_response(409, "EMAIL_ALREADY_EXISTS", "Já existe uma conta com esse e-mail.")
     if payload["perfil"] not in {"ADMINISTRADOR", "GESTOR", "EDITOR", "HOTEL"}:
-        return error_response(422, "VALIDATION_ERROR", "Verifique os campos informados.", [{"field": "perfil", "issue": "Perfil inválido."}])
-    created = {"id_usuario": len(DEMO_USERS) + 1, "nome": payload["nome"], "email": email, "perfil": payload["perfil"], "senha": "", "ativo": False}
+        raise invalid_field("perfil", "Perfil inválido.")
+    association = payload.get("id_estabelecimento")
+    if payload["perfil"] == "HOTEL":
+        if not isinstance(association, str) or inventory_repository().establishment(association) is None:
+            raise invalid_field("id_estabelecimento", "Selecione uma hospedagem existente.")
+    elif association is not None:
+        raise invalid_field("id_estabelecimento", "Somente HOTEL recebe vínculo de hospedagem.")
+    created = {"id_usuario": max(item["id_usuario"] for item in DEMO_USERS.values()) + 1,
+               "nome": name, "email": email, "perfil": payload["perfil"], "senha": "", "ativo": False}
+    if association:
+        created["id_estabelecimento"] = association
     DEMO_USERS[email] = created
     audit(user, "USUARIO_CRIADO", "USUARIO", str(created["id_usuario"]), after=public_user(created))
     return public_user(created)
@@ -264,10 +296,10 @@ def create_user(payload: dict = Body(...), user: dict = Depends(current_user)) -
 @app.post("/convites", status_code=status.HTTP_201_CREATED, tags=["Convites"])
 def create_invite(payload: dict = Body(...), user: dict = Depends(current_user)) -> Any:
     ensure_role(user, "ADMINISTRADOR")
-    email = payload.get("email", "").casefold()
+    email = operations.email(payload.get("email"))
     if email not in DEMO_USERS:
         return error_response(404, "USER_NOT_FOUND", "Usuário não encontrado para convite.")
-    invite = {"id_convite": str(uuid4()), "email": email, "status": "PENDENTE", "expira_em": "2026-11-03T23:59:59Z", "token": str(uuid4())}
+    invite = {"id_convite": str(uuid4()), "email": email, "status": "PENDENTE", "expira_em": (datetime.now(timezone.utc) + timedelta(days=7)).isoformat(), "token": str(uuid4())}
     INVITES.append(invite)
     audit(user, "CONVITE_ENVIADO", "CONVITE", invite["id_convite"], after={"email": email})
     return {key: value for key, value in invite.items() if key != "token"}
@@ -276,30 +308,45 @@ def create_invite(payload: dict = Body(...), user: dict = Depends(current_user))
 @app.post("/convites/{id_convite}/aceitacao", tags=["Convites"])
 def accept_invite(id_convite: str, payload: dict = Body(...)) -> Any:
     invite = next((item for item in INVITES if item["id_convite"] == id_convite), None)
-    if not invite or invite["token"] != payload.get("token"):
+    if not invite or invite["token"] != payload.get("token") or datetime.fromisoformat(invite["expira_em"].replace("Z", "+00:00")) <= datetime.now(timezone.utc):
         return error_response(404, "INVITE_NOT_FOUND", "Convite não encontrado ou expirado.")
     if invite["status"] != "PENDENTE":
         return error_response(409, "INVITE_ALREADY_USED", "Convite já utilizado.")
     invited = DEMO_USERS[invite["email"]]
-    invited["senha"] = payload.get("senha", "")
+    password = payload.get("senha")
+    if not isinstance(password, str) or not password:
+        raise invalid_field("senha", "Informe uma senha.")
+    invited["senha"] = password
     invited["ativo"] = True
     invite["status"] = "ACEITO"
+    audit(invited, "CONVITE_ACEITO", "USUARIO", str(invited["id_usuario"]))
     return {"message": "Acesso ativado com sucesso.", "usuario": public_user(invited)}
+
+
+def validate_survey_recipients(ids):
+    for establishment_id in ids:
+        item = inventory_repository().establishment(establishment_id)
+        if not item or item["status"] != "ATIVO" or not item["aceita_pesquisas"]:
+            raise invalid_field("estabelecimentos", "Selecione hospedagens ativas que aceitam pesquisas.")
 
 
 @app.get("/pesquisas-ocupacao", tags=["Pesquisas de ocupação"])
 def list_surveys(user: dict = Depends(current_user)) -> dict:
+    ensure_role(user, "ADMINISTRADOR", "GESTOR", "EDITOR", "HOTEL")
+    if user["perfil"] == "HOTEL":
+        association = user.get("id_estabelecimento")
+        if not association:
+            raise HTTPException(status_code=403, detail="FORBIDDEN")
+        return {"data": [item for item in SURVEYS if association in item["estabelecimentos"]]}
     return {"data": SURVEYS}
 
 
 @app.post("/pesquisas-ocupacao", status_code=status.HTTP_201_CREATED, tags=["Pesquisas de ocupação"])
 def create_survey(payload: dict = Body(...), user: dict = Depends(current_user)) -> Any:
     ensure_role(user, "ADMINISTRADOR", "EDITOR")
-    required = {"titulo", "tipo", "periodo_inicio", "periodo_fim", "estabelecimentos"}
-    missing = required - set(payload)
-    if missing:
-        return error_response(422, "VALIDATION_ERROR", "Verifique os campos informados.", [{"field": sorted(missing)[0], "issue": "Campo obrigatório."}])
-    survey = {"id_pesquisa": str(uuid4()), "titulo": payload["titulo"], "tipo": payload["tipo"], "periodo_inicio": payload["periodo_inicio"], "periodo_fim": payload["periodo_fim"], "estabelecimentos": payload["estabelecimentos"], "status": "ABERTA", "criada_por": user["id_usuario"]}
+    data = operations.survey(payload)
+    validate_survey_recipients(data["estabelecimentos"])
+    survey = {"id_pesquisa": str(uuid4()), **data, "status": "ABERTA", "criada_por": user["id_usuario"]}
     SURVEYS.append(survey)
     audit(user, "PESQUISA_CRIADA", "PESQUISA_OCUPACAO", survey["id_pesquisa"], after=survey)
     return survey
@@ -314,11 +361,13 @@ def update_survey(id_pesquisa: str, payload: dict = Body(...), user: dict = Depe
     if survey["status"] != "ABERTA":
         return error_response(409, "SURVEY_CLOSED", "A pesquisa encerrada não pode ser alterada.")
     allowed = {"titulo", "tipo", "periodo_inicio", "periodo_fim", "estabelecimentos"}
-    invalid = set(payload) - allowed
-    if invalid:
-        return error_response(422, "VALIDATION_ERROR", "Verifique os campos informados.", [{"field": sorted(invalid)[0], "issue": "Campo não permitido."}])
-    before = survey.copy()
-    survey.update(payload)
+    operations.fields(payload, allowed)
+    if not payload:
+        raise invalid_field("body", "Altere pelo menos um campo.")
+    data = operations.survey({**{key: survey[key] for key in allowed}, **payload})
+    validate_survey_recipients(data["estabelecimentos"])
+    before = deepcopy(survey)
+    survey.update(data)
     audit(user, "PESQUISA_ATUALIZADA", "PESQUISA_OCUPACAO", id_pesquisa, before, survey)
     return survey
 
@@ -339,22 +388,32 @@ def close_survey(id_pesquisa: str, user: dict = Depends(current_user)) -> Any:
 
 @app.get("/pesquisas-ocupacao/pendentes", tags=["Respostas de ocupação"])
 def pending_surveys(user: dict = Depends(current_user)) -> dict:
-    establishment_id = user.get("id_estabelecimento")
-    open_surveys = [item for item in SURVEYS if item["status"] == "ABERTA" and (not establishment_id or establishment_id in item["estabelecimentos"])]
-    answered = {item["id_pesquisa"] for item in OCCUPANCY_RESPONSES if item["id_usuario"] == user["id_usuario"]}
-    return {"data": [item for item in open_surveys if item["id_pesquisa"] not in answered]}
+    ensure_role(user, "HOTEL")
+    association = user.get("id_estabelecimento")
+    if not association:
+        raise HTTPException(status_code=403, detail="FORBIDDEN")
+    answered = {item["id_pesquisa"] for item in OCCUPANCY_RESPONSES if item.get("id_estabelecimento") == association}
+    return {"data": [item for item in SURVEYS if item["status"] == "ABERTA" and association in item["estabelecimentos"] and item["id_pesquisa"] not in answered]}
 
 
 @app.post("/pesquisas-ocupacao/{id_pesquisa}/respostas", status_code=status.HTTP_201_CREATED, tags=["Respostas de ocupação"])
 def submit_occupancy_response(id_pesquisa: str, payload: dict = Body(...), user: dict = Depends(current_user)) -> Any:
+    ensure_role(user, "HOTEL")
+    association = user.get("id_estabelecimento")
     survey = next((item for item in SURVEYS if item["id_pesquisa"] == id_pesquisa), None)
     if not survey:
         return error_response(404, "SURVEY_NOT_FOUND", "Pesquisa não encontrada.")
+    if not association or association not in survey["estabelecimentos"]:
+        raise HTTPException(status_code=403, detail="FORBIDDEN")
     if survey["status"] != "ABERTA":
         return error_response(409, "SURVEY_CLOSED", "A pesquisa não está aberta para respostas.")
-    if any(item["id_pesquisa"] == id_pesquisa and item["id_usuario"] == user["id_usuario"] for item in OCCUPANCY_RESPONSES):
+    operations.fields(payload, {"taxa_ocupacao"}, {"taxa_ocupacao"})
+    rate = payload["taxa_ocupacao"]
+    if isinstance(rate, bool) or not isinstance(rate, (float, int)) or not 0 <= rate <= 100:
+        raise invalid_field("taxa_ocupacao", "Informe uma taxa entre 0 e 100%.")
+    if any(item["id_pesquisa"] == id_pesquisa and item.get("id_estabelecimento") == association for item in OCCUPANCY_RESPONSES):
         return error_response(409, "RESPONSE_ALREADY_SENT", "A resposta desta pesquisa já foi enviada.")
-    response = {"id_resposta": str(uuid4()), "id_pesquisa": id_pesquisa, "id_usuario": user["id_usuario"], "dados": payload, "enviada_em": datetime.now(timezone.utc).isoformat()}
+    response = {"id_resposta": str(uuid4()), "id_pesquisa": id_pesquisa, "id_usuario": user["id_usuario"], "id_estabelecimento": association, "dados": payload, "enviada_em": datetime.now(timezone.utc).isoformat()}
     OCCUPANCY_RESPONSES.append(response)
     audit(user, "RESPOSTA_OCUPACAO_ENVIADA", "RESPOSTA_OCUPACAO", response["id_resposta"], after=response)
     return response
@@ -362,9 +421,13 @@ def submit_occupancy_response(id_pesquisa: str, payload: dict = Body(...), user:
 
 @app.get("/respostas-ocupacao/historico", tags=["Respostas de ocupação"])
 def occupancy_history(user: dict = Depends(current_user)) -> dict:
-    if user["perfil"] == "ADMINISTRADOR":
+    ensure_role(user, "ADMINISTRADOR", "GESTOR", "EDITOR", "HOTEL")
+    if user["perfil"] != "HOTEL":
         return {"data": OCCUPANCY_RESPONSES}
-    return {"data": [item for item in OCCUPANCY_RESPONSES if item["id_usuario"] == user["id_usuario"]]}
+    association = user.get("id_estabelecimento")
+    if not association:
+        raise HTTPException(status_code=403, detail="FORBIDDEN")
+    return {"data": [item for item in OCCUPANCY_RESPONSES if item.get("id_estabelecimento") == association]}
 
 
 @app.get("/auditoria", tags=["Auditoria"])
