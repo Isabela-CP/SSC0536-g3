@@ -1,3 +1,5 @@
+import { AccountDialog } from './pages/AccountsPage.jsx'
+import Application from './pages/Application.jsx'
 import React, { useEffect, useRef, useState } from 'react'
 import Layout from './components/Layout.jsx'
 import EstablishmentForm from './pages/EstablishmentForm.jsx'
@@ -9,12 +11,13 @@ import { resolveRoute } from './domain/routing.js'
 import { applicationRuntime } from './services/runtime.js'
 import { MAX_UPLOAD_BYTES } from './domain/documents.js'
 
-export default function App({
+export function EstablishmentWorkspace({
   api: providedApi,
   initialUser,
   initialEstablishment,
   initialCategories = [],
   initialMode = 'create',
+  onLogout,
 }) {
   const [state, setState] = useState({
     status: initialUser ? 'ready' : 'loading',
@@ -27,6 +30,7 @@ export default function App({
   const [location, setLocation] = useState(() => globalThis.window?.location.hash || '')
   const [dialog, setDialog] = useState(false)
   const [notice, setNotice] = useState('')
+  const [inviteDraft, setInviteDraft] = useState(null)
   const mounted = useRef(true)
   const currentLocation = useRef(location)
   currentLocation.current = location
@@ -100,7 +104,7 @@ export default function App({
   const maxBytes =
     Number.isSafeInteger(configuredMax) && configuredMax > 0 ? configuredMax : MAX_UPLOAD_BYTES
   return (
-    <Layout user={user} onNavigate={navigate}>
+    <Layout user={user} onNavigate={navigate} onLogout={onLogout}>
       {state.status === 'loading' ? (
         <div className="loading-card" role="status">
           Carregando dados da hospedagem…
@@ -121,7 +125,7 @@ export default function App({
         </>
       ) : (
         <>
-          <div inert={dialog ? true : undefined}>
+          <div inert={dialog || inviteDraft ? true : undefined}>
             <header className="page-heading">
               <h1>
                 {mode === 'create'
@@ -148,9 +152,10 @@ export default function App({
               user={user}
               categories={categories}
               api={api}
-              onSaved={(result) =>
+              onSaved={(result, options) => {
                 saved(result, mode === 'create' ? 'Hospedagem cadastrada com sucesso.' : '')
-              }
+                if (options?.invite) setInviteDraft(result)
+              }}
               onEditing={() => setNotice('')}
               onCancel={() => setNotice('Alterações descartadas.')}
             />
@@ -184,6 +189,14 @@ export default function App({
               </>
             )}
           </div>
+          {inviteDraft && user?.perfil === 'ADMINISTRADOR' && (
+            <AccountDialog api={api} recipients={[inviteDraft]}
+              initialDraft={{ perfil: 'HOTEL', nome: inviteDraft.nome_fantasia,
+                email: inviteDraft.email_comercial || '', id_estabelecimento: inviteDraft.id_estabelecimento }}
+              onClose={() => setInviteDraft(null)}
+              onChanged={() => setNotice('Hospedagem salva. Conta registrada; confira o resultado do convite.')}
+            />
+          )}
           {dialog && item && access.status && (
             <StatusDialog
               establishment={item}
@@ -203,4 +216,9 @@ export default function App({
       )}
     </Layout>
   )
+}
+
+export default function App(props) {
+  if (props.initialUser || props.api) return <EstablishmentWorkspace {...props} />
+  return <Application Workspace={EstablishmentWorkspace} />
 }

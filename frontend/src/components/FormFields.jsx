@@ -14,6 +14,7 @@ export function Field({
   compact = false,
   options,
   labelOverride,
+  autoComplete,
 }) {
   const schema = resolveSchema(raw)
   const label = labelOverride || labelFor(path)
@@ -133,19 +134,22 @@ export function Field({
     )
   } else {
     const type =
-      schema.format === 'date'
-        ? 'date'
-        : schema.format === 'time'
-          ? 'time'
-          : schema.format === 'email'
-            ? 'email'
-            : ['integer', 'number'].includes(schema.type)
-              ? 'number'
-              : 'text'
+      schema.format === 'password'
+        ? 'password'
+        : schema.format === 'date'
+          ? 'date'
+          : schema.format === 'time'
+            ? 'time'
+            : schema.format === 'email'
+              ? 'email'
+              : ['integer', 'number'].includes(schema.type)
+                ? 'number'
+                : 'text'
     input = (
       <input
         {...common}
         type={type}
+        autoComplete={autoComplete}
         placeholder={label}
         value={value ?? ''}
         min={schema.minimum}

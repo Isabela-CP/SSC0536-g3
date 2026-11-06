@@ -51,6 +51,43 @@ export function createMockFetch(user = mockUser()) {
     if (options.signal?.aborted) throw new DOMException('Cancelado', 'AbortError')
     const path = new URL(url, 'http://mock.local').pathname
     const method = options.method || 'GET'
+    if (path === '/auth/login') {
+      const data = JSON.parse(options.body || '{}')
+      const password = {
+        ADMINISTRADOR: 'admin-demo',
+        GESTOR: 'gestor-demo',
+        EDITOR: 'editor-demo',
+        HOTEL: 'hotel-demo',
+      }[user.perfil]
+      return data.email?.trim().toLowerCase() === user.email && data.senha === password
+        ? json({
+            access_token: 'mock-session',
+            expires_in: 3600,
+            token_type: 'Bearer',
+            usuario: user,
+          })
+        : fail(401, 'INVALID_CREDENTIALS', 'E-mail ou senha inválidos.')
+    }
+    if (path === '/auth/logout') return new Response(null, { status: 204 })
+    if (path === '/auth/recuperacao-senha') return json({ message: 'Solicitação recebida.' }, 202)
+    if (path === '/perfil' && method === 'PATCH') {
+      const data = JSON.parse(options.body || '{}')
+      if (Object.keys(data).some((key) => !['nome', 'email'].includes(key)))
+        return fail(422, 'VALIDATION_ERROR', 'Campo não permitido.')
+      Object.assign(user, data)
+      return json(user)
+    }
+    if (
+      [
+        '/usuarios',
+        '/convites',
+        '/pesquisas-ocupacao',
+        '/pesquisas-ocupacao/pendentes',
+        '/respostas-ocupacao/historico',
+        '/relatorios',
+      ].includes(path)
+    )
+      return fail(503, 'MOCK_NOT_AVAILABLE', 'Este módulo requer a conexão com o backend real.')
     if (path === '/perfil') return json(user)
     if (path === '/categorias-estabelecimento')
       return json({ data: hostingCategories(seed.categorias_estabelecimento) })

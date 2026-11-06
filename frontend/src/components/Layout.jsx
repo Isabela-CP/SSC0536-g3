@@ -1,11 +1,22 @@
 import React from 'react'
 import logo from '../assets/oto-logo.png'
-
-export default function Layout({ user, children, onNavigate }) {
-  const hotel = user?.perfil === 'HOTEL'
+export default function Layout({ user, children, onNavigate, onLogout, activePath }) {
+  const hotel = user?.perfil === 'HOTEL',
+    path = activePath || (hotel ? '/meu-cadastro' : '/estabelecimentos/novo')
   const items = hotel
-    ? ['Início', 'Meu cadastro', 'Perfil']
-    : ['Início', 'Inventário', 'Convites', 'Pesquisas', 'Auditoria', 'Perfil']
+    ? [
+        ['Início', '/inicio'],
+        ['Meu cadastro', '/meu-cadastro'],
+        ['Perfil', '/perfil'],
+      ]
+    : [
+        ['Início', '/inicio'],
+        ['Inventário', '/inventario'],
+        ...(user?.perfil === 'ADMINISTRADOR' ? [['Convites', '/contas']] : []),
+        ['Pesquisas', '/pesquisas'],
+        ...(user?.perfil === 'ADMINISTRADOR' ? [['Auditoria', '/auditoria']] : []),
+        ['Perfil', '/perfil'],
+      ]
   return (
     <div className="app-shell">
       <a
@@ -29,34 +40,31 @@ export default function Layout({ user, children, onNavigate }) {
         </div>
         <nav>
           <ul>
-            {items.map((label) => {
-              const active = label === (hotel ? 'Meu cadastro' : 'Inventário')
+            {items.map(([label, to]) => {
+              const active =
+                path === to || (to === '/inventario' && path.startsWith('/estabelecimentos'))
               return (
-                <li key={label}>
-                  {active && (hotel || user?.perfil === 'ADMINISTRADOR') ? (
-                    <a
-                      href={hotel ? '#/meu-cadastro' : '#/estabelecimentos/novo'}
-                      aria-current="page"
-                      onClick={(event) => {
-                        if (onNavigate) {
-                          event.preventDefault()
-                          onNavigate(hotel ? '/meu-cadastro' : '/estabelecimentos/novo')
-                        }
-                      }}
-                    >
-                      {label}
-                    </a>
-                  ) : (
-                    <span aria-current={active ? 'page' : undefined}>{label}</span>
-                  )}
+                <li key={to}>
+                  <a
+                    href={`#${to}`}
+                    aria-current={active ? 'page' : undefined}
+                    onClick={(event) => {
+                      if (onNavigate) {
+                        event.preventDefault()
+                        onNavigate(to)
+                      }
+                    }}
+                  >
+                    {label}
+                  </a>
                 </li>
               )
             })}
           </ul>
         </nav>
-        <span className="sidebar-exit" aria-hidden="true">
+        <button className="sidebar-exit" disabled={!onLogout} onClick={onLogout}>
           ↪ Sair
-        </span>
+        </button>
       </aside>
       <main id="main-content" className="main-content" tabIndex={-1}>
         {children}

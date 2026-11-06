@@ -11,11 +11,20 @@ export function createHttpClient({
   baseUrl = '',
   getToken = () => null,
   fetchImpl = globalThis.fetch,
+  onUnauthorized,
+  requireSession = false,
 } = {}) {
   return async function request(path, { body, responseType = 'json', ...options } = {}) {
     const headers = new Headers(options.headers)
     headers.set('Accept', responseType === 'blob' ? 'application/octet-stream' : 'application/json')
     const token = getToken()
+    const publicOperation =
+      ['/auth/login', '/auth/recuperacao-senha'].includes(path) ||
+      /^\/convites\/[^/]+\/aceitacao$/.test(path)
+    if (requireSession && !publicOperation && !token) {
+      onUnauthorized?.()
+      throw new ApiError(401, { code: 'UNAUTHORIZED', message: 'Entre para continuar.' })
+    }
     if (token) headers.set('Authorization', `Bearer ${token}`)
     const multipart = body instanceof FormData
     if (body !== undefined && !multipart) headers.set('Content-Type', 'application/json')
@@ -32,6 +41,7 @@ export function createHttpClient({
       throw new ApiError(0)
     }
     if (!response.ok) {
+      if (response.status === 401 && !publicOperation) onUnauthorized?.()
       const payload = await response.json().catch(() => ({}))
       throw new ApiError(response.status, payload.error)
     }
@@ -50,6 +60,34 @@ export function createInventoryApi(request) {
   const documentPath = (id, doc) => `${itemPath(id)}/documentos/${encodeURIComponent(doc)}`
   return {
     profile: (options) => request('/perfil', options),
+    login: (payload) => request('/auth/login', { method: 'POST', body: payload }),
+    logout: () => request('/auth/logout', { method: 'POST' }),
+    recover: (payload) => request('/auth/recuperacao-senha', { method: 'POST', body: payload }),
+    activate: (id, payload) =>
+      request(`/convites/${encodeURIComponent(id)}/aceitacao`, { method: 'POST', body: payload }),
+    updateProfile: (payload) => request('/perfil', { method: 'PATCH', body: payload }),
+    users: (options) => request('/usuarios', options),
+    createUser: (payload) => request('/usuarios', { method: 'POST', body: payload }),
+    createInvite: (payload) => request('/convites', { method: 'POST', body: payload }),
+    establishments: (params = {}, options = {}) =>
+      request(`/estabelecimentos?${new URLSearchParams(params)}`, options),
+    surveys: (options) => request('/pesquisas-ocupacao', options),
+    createSurvey: (payload) => request('/pesquisas-ocupacao', { method: 'POST', body: payload }),
+    updateSurvey: (id, payload) =>
+      request(`/pesquisas-ocupacao/${encodeURIComponent(id)}`, { method: 'PATCH', body: payload }),
+    closeSurvey: (id) =>
+      request(`/pesquisas-ocupacao/${encodeURIComponent(id)}/encerramento`, { method: 'POST' }),
+    pendingSurveys: (options) => request('/pesquisas-ocupacao/pendentes', options),
+    answerSurvey: (id, payload) =>
+      request(`/pesquisas-ocupacao/${encodeURIComponent(id)}/respostas`, {
+        method: 'POST',
+        body: payload,
+      }),
+    responseHistory: (options) => request('/respostas-ocupacao/historico', options),
+    createReport: (payload) => request('/relatorios', { method: 'POST', body: payload }),
+    report: (id) => request(`/relatorios/${encodeURIComponent(id)}`),
+    downloadReport: (id) =>
+      request(`/relatorios/${encodeURIComponent(id)}/arquivo`, { responseType: 'blob' }),
     categories: (options) => request('/categorias-estabelecimento', options),
     establishment: (id, options) => request(itemPath(id), options),
     documents: (id, options) => request(`${itemPath(id)}/documentos`, options),

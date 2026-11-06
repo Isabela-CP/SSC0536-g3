@@ -50,7 +50,8 @@ test('cadastro reproduz identificação, vencimentos e ações sem módulos alhe
   assert.match(result, /Vencimentos/)
   assert.match(result, /aria-current="page"/)
   assert.match(result, /Observatório de Turismo de Olímpia/)
-  assert.doesNotMatch(result, /Salvar e enviar convite|Pesquisar Nome|<table|canvas|iframe/)
+  assert.match(result, /Salvar e enviar convite/)
+  assert.doesNotMatch(result, /Pesquisar Nome|<table|canvas|iframe/)
   assert.match(result, /type="submit"[^>]*>Salvar</)
 })
 test('campos obrigatórios do contrato estão acessíveis no cadastro', () => {
