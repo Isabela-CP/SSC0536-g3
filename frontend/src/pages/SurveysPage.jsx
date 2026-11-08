@@ -5,6 +5,7 @@ import DataTable from '../components/DataTable.jsx'
 import { OperationFeedback, ResourceState, ConfirmAction } from '../components/OperationsUI.jsx'
 import { useOperation, useResource } from '../hooks/operations.js'
 import { loadRecipients, validateSurvey, surveyPayload } from '../domain/operations.js'
+import { surveyHistory } from '../domain/reading.js'
 import { exportReport } from '../services/reports.js'
 const dates = (value) => value?.split('-').reverse().join('/') || '—'
 function SurveyDialog({ api, survey, recipients, onClose, onSaved }) {
@@ -45,7 +46,8 @@ function SurveyDialog({ api, survey, recipients, onClose, onSaved }) {
       return
     }
     operation.run(
-      () => (survey ? api.updateSurvey(survey.id_pesquisa, payload) : api.createSurvey(payload)),
+      () =>
+        survey ? api.updateSurvey(survey.id_pesquisa, payload) : api.createSurvey(payload),
       () => {
         onSaved()
         onClose()
@@ -71,7 +73,9 @@ function SurveyDialog({ api, survey, recipients, onClose, onSaved }) {
               {draft.tipo === 'CONSOLIDADO' ? 'Consolidado' : 'Expectativa'} ·{' '}
               {dates(draft.periodo_inicio)} a {dates(draft.periodo_fim)}
             </p>
-            <p>A pesquisa ficará disponível para {draft.estabelecimentos.length} hospedagem(ns).</p>
+            <p>
+              A pesquisa ficará disponível para {draft.estabelecimentos.length} hospedagem(ns).
+            </p>
           </div>
         ) : (
           <>
@@ -160,8 +164,15 @@ function SurveyDialog({ api, survey, recipients, onClose, onSaved }) {
           >
             {confirm ? 'Voltar' : 'Cancelar'}
           </button>
-          <button className="button button-primary" disabled={operation.busy || !eligible.length}>
-            {operation.busy ? 'Salvando…' : confirm ? 'Confirmar e disponibilizar' : 'Continuar'}
+          <button
+            className="button button-primary"
+            disabled={operation.busy || !eligible.length}
+          >
+            {operation.busy
+              ? 'Salvando…'
+              : confirm
+                ? 'Confirmar e disponibilizar'
+                : 'Continuar'}
           </button>
         </div>
       </form>
@@ -184,10 +195,18 @@ export default function SurveysPage({ api, user, initialData = null }) {
     [editing, setEditing] = useState(undefined),
     [closing, setClosing] = useState(null),
     operation = useOperation()
+  const [period, setPeriod] = useState(''),
+    [kind, setKind] = useState('')
   const canManage = ['ADMINISTRADOR', 'EDITOR'].includes(user.perfil),
     canReport = ['ADMINISTRADOR', 'GESTOR'].includes(user.perfil)
   const data = resource.data,
-    rows = data?.surveys || []
+    rows = surveyHistory(data?.surveys || [], data?.history || []).filter(
+      (row) =>
+        (!period ||
+          (row.periodo_inicio.slice(0, 7) <= period &&
+            row.periodo_fim.slice(0, 7) >= period)) &&
+        (!kind || row.tipo === kind),
+    )
   const columns = [
     { key: 'titulo', label: 'Nome da Pesquisa' },
     {
@@ -200,12 +219,23 @@ export default function SurveysPage({ api, user, initialData = null }) {
       label: 'Período',
       render: (row) => `${dates(row.periodo_inicio)} a ${dates(row.periodo_fim)}`,
     },
+    {
+      key: 'taxa',
+      label: 'Taxa de Resposta (%)',
+      render: (row) => (row.responseRate == null ? '—' : `${row.responseRate.toFixed(0)}%`),
+    },
     { key: 'status', label: 'Status' },
     {
       key: 'actions',
       label: 'Ações',
       render: (row) => (
         <div className="document-actions">
+          <a
+            className="button button-small button-secondary"
+            href={`#/pesquisas/${row.id_pesquisa}/respostas`}
+          >
+            Ver respostas
+          </a>
           {canManage && row.status === 'ABERTA' && (
             <>
               <button
@@ -276,8 +306,28 @@ export default function SurveysPage({ api, user, initialData = null }) {
             </article>
             <article className="stat-card">
               <h2>Hospedagens destinatárias</h2>
-              <strong>{rows.reduce((total, row) => total + row.estabelecimentos.length, 0)}</strong>
+              <strong>
+                {rows.reduce((total, row) => total + row.estabelecimentos.length, 0)}
+              </strong>
             </article>
+          </div>
+          <div className="survey-filters">
+            <label>
+              Filtrar por Período (Mês/Ano)
+              <input
+                type="month"
+                value={period}
+                onChange={(event) => setPeriod(event.target.value)}
+              />
+            </label>
+            <label>
+              Filtrar por Tipo
+              <select value={kind} onChange={(event) => setKind(event.target.value)}>
+                <option value="">Todos</option>
+                <option value="EXPECTATIVA">Expectativa</option>
+                <option value="CONSOLIDADO">Realizado</option>
+              </select>
+            </label>
           </div>
           <DataTable
             columns={columns}
@@ -302,7 +352,9 @@ export default function SurveysPage({ api, user, initialData = null }) {
               onDone={resource.reload}
               label="Encerrar"
             >
-              <p>Confirma o encerramento de {closing.titulo}? Novas respostas não serão aceitas.</p>
+              <p>
+                Confirma o encerramento de {closing.titulo}? Novas respostas não serão aceitas.
+              </p>
             </ConfirmAction>
           )}
         </>

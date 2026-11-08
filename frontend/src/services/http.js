@@ -16,7 +16,10 @@ export function createHttpClient({
 } = {}) {
   return async function request(path, { body, responseType = 'json', ...options } = {}) {
     const headers = new Headers(options.headers)
-    headers.set('Accept', responseType === 'blob' ? 'application/octet-stream' : 'application/json')
+    headers.set(
+      'Accept',
+      responseType === 'blob' ? 'application/octet-stream' : 'application/json',
+    )
     const token = getToken()
     const publicOperation =
       ['/auth/login', '/auth/recuperacao-senha'].includes(path) ||
@@ -59,12 +62,18 @@ export function createInventoryApi(request) {
   const itemPath = (id) => `/estabelecimentos/${encodeURIComponent(id)}`
   const documentPath = (id, doc) => `${itemPath(id)}/documentos/${encodeURIComponent(doc)}`
   return {
+    dashboard: (options) => request('/dashboard', options),
+    audit: (params = {}, options = {}) =>
+      request(`/auditoria?${new URLSearchParams(params)}`, options),
     profile: (options) => request('/perfil', options),
     login: (payload) => request('/auth/login', { method: 'POST', body: payload }),
     logout: () => request('/auth/logout', { method: 'POST' }),
     recover: (payload) => request('/auth/recuperacao-senha', { method: 'POST', body: payload }),
     activate: (id, payload) =>
-      request(`/convites/${encodeURIComponent(id)}/aceitacao`, { method: 'POST', body: payload }),
+      request(`/convites/${encodeURIComponent(id)}/aceitacao`, {
+        method: 'POST',
+        body: payload,
+      }),
     updateProfile: (payload) => request('/perfil', { method: 'PATCH', body: payload }),
     users: (options) => request('/usuarios', options),
     createUser: (payload) => request('/usuarios', { method: 'POST', body: payload }),
@@ -72,9 +81,13 @@ export function createInventoryApi(request) {
     establishments: (params = {}, options = {}) =>
       request(`/estabelecimentos?${new URLSearchParams(params)}`, options),
     surveys: (options) => request('/pesquisas-ocupacao', options),
-    createSurvey: (payload) => request('/pesquisas-ocupacao', { method: 'POST', body: payload }),
+    createSurvey: (payload) =>
+      request('/pesquisas-ocupacao', { method: 'POST', body: payload }),
     updateSurvey: (id, payload) =>
-      request(`/pesquisas-ocupacao/${encodeURIComponent(id)}`, { method: 'PATCH', body: payload }),
+      request(`/pesquisas-ocupacao/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        body: payload,
+      }),
     closeSurvey: (id) =>
       request(`/pesquisas-ocupacao/${encodeURIComponent(id)}/encerramento`, { method: 'POST' }),
     pendingSurveys: (options) => request('/pesquisas-ocupacao/pendentes', options),
