@@ -18,6 +18,7 @@ from app.inventory_repository import MemoryInventoryRepository
 from app.inventory_writes import create_write_router
 from app.inventory_errors import InventoryError, invalid_field
 from app import operations
+from app.read_views import dashboard_summary, audit_records
 from app.reporting import build_report
 
 
@@ -438,22 +439,13 @@ def occupancy_history(user: dict = Depends(current_user)) -> dict:
 @app.get("/auditoria", tags=["Auditoria"])
 def list_audit_log(acao: str | None = None, id_usuario: int | None = None, data_inicio: str | None = None, data_fim: str | None = None, user: dict = Depends(current_user)) -> dict:
     ensure_role(user, "ADMINISTRADOR")
-    records = AUDIT_LOG
-    if acao:
-        records = [item for item in records if item["acao"] == acao]
-    if id_usuario:
-        records = [item for item in records if item["id_usuario"] == id_usuario]
-    if data_inicio:
-        records = [item for item in records if item["criado_em"] >= data_inicio]
-    if data_fim:
-        records = [item for item in records if item["criado_em"] <= data_fim]
-    return {"data": records}
+    return {"data": audit_records(AUDIT_LOG, acao, id_usuario, data_inicio, data_fim)}
 
 
 @app.get("/dashboard", tags=["Dashboard"])
-def dashboard(user: dict = Depends(current_user)) -> dict:
-    establishments = seed_data()["estabelecimentos"]
-    return {"indicadores": {"estabelecimentos_ativos": sum(item["status"] == "ATIVO" for item in establishments), "pesquisas_abertas": sum(item["status"] == "ABERTA" for item in SURVEYS), "respostas_recebidas": len(OCCUPANCY_RESPONSES)}, "alertas": [{"tipo": "DOCUMENTO_A_VENCER", "id_estabelecimento": "11111111-1111-4111-8111-111111111111", "mensagem": "AVCB vence em breve."}]}
+def dashboard(user: dict = Depends(current_user), repository: InventoryRepository = Depends(inventory_repository)) -> dict:
+    ensure_role(user, "ADMINISTRADOR", "GESTOR", "EDITOR")
+    return dashboard_summary(repository, SURVEYS, OCCUPANCY_RESPONSES)
 
 
 @app.post("/relatorios", status_code=status.HTTP_202_ACCEPTED, tags=["Relatórios"])

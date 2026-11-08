@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -68,10 +69,11 @@ def query_establishments(
         items = [item for item in items if item["id_estabelecimento"] == establishment_scope]
     if query.busca:
         term = query.busca.casefold()
+        digits = re.sub(r"\D", "", term) if re.fullmatch(r"[\d./-]+", term) else ""
         items = [item for item in items if any(
             term in (item.get(field) or "").casefold()
             for field in ("nome_fantasia", "razao_social", "cnpj")
-        )]
+        ) or (digits and digits in re.sub(r"\D", "", item.get("cnpj") or ""))]
     for field in ("id_categoria", "status", "cadastur_status", "aceita_pesquisas"):
         value = getattr(query, field)
         if value is not None:
