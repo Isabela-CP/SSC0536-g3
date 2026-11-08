@@ -224,3 +224,22 @@ Os binários de relatório ficam separados dos metadados, temporariamente na mem
 do processo, até integração com persistência/storage definitivo. A geração local
 é síncrona dentro do endpoint 202; não há fila de jobs nem persistência PostgreSQL.
 Os testes isolam sessões, convites, pesquisas, respostas e arquivos por fixture.
+
+## Consultas do dashboard e auditoria — SCRUM-96
+
+`app/read_views.py` separa as consultas das rotas. O dashboard usa o repositório
+mutável atual e apenas a categoria Meios de hospedagem; não relê o seed para os
+totais. Mantém os indicadores de pesquisas e acrescenta totais de empresas/leitos,
+contagem de leitos não informados, vencimentos Cadastur e data de referência.
+Somente ADMINISTRADOR, EDITOR e GESTOR acessam o dashboard global.
+Os vencimentos são todos os registros Cadastur informados (inclusive vencidos),
+sem inventar janela de vencimento ou substituir por alertas AVCB.
+
+O OpenAPI original não especifica o schema completo do dashboard: a estrutura
+operacional está documentada aqui e no README frontend para alinhamento. Não foi
+modificado o contrato nem o seed. A documentação de 403 HOTEL no dashboard e
+422 para filtros de data inválidos na auditoria deve acompanhar futura revisão.
+A auditoria aplica intervalos inclusivos sobre instantes com fuso horário e
+ordenação determinística decrescente. CNPJ pode ser buscado sem pontuação.
+Testes de consulta usam o repositório isolado de `write_env`; PostgreSQL permanece
+pendente das migrations aplicáveis.
