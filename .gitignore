@@ -11,3 +11,6 @@ README-PLANO-SCRUM-73.md
 .vscode/
 frontend/.env.local
 frontend/.env.*.local
+
+# Capturas locais para o PR
+/prints/
