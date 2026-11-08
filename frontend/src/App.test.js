@@ -273,3 +273,16 @@ test('cadastro não exibe a tag de demonstração', () => {
   })
   assert.doesNotMatch(result, /Demonstração|demo-badge/)
 })
+
+test('resumo de validação identifica cada campo obrigatório pelo nome', () => {
+  const result = html(FormErrors, { errors: {
+    email: 'Campo obrigatório.', senha: 'Campo obrigatório.',
+    'meio_hospedagem.total_leitos': 'Informe um número válido.',
+  } })
+  assert.match(result, /E-mail: Campo obrigatório\./)
+  assert.match(result, /Senha: Campo obrigatório\./)
+  assert.match(result, /Nº Leitos: Informe um número válido\./)
+  assert.match(result, /href="#field-email"/)
+  assert.match(result, /href="#field-senha"/)
+  assert.match(result, /href="#field-meio_hospedagem-total_leitos"/)
+})

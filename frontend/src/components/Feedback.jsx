@@ -1,4 +1,5 @@
 import React from 'react'
+import { labelFor } from '../domain/labels.js'
 export function Feedback({ kind = 'error', message }) {
   if (!message) return null
   return (
@@ -32,7 +33,7 @@ export function FormErrors({ errors = {} }) {
                   }
                 }}
               >
-                {message}
+                {`${labelFor(path)}: ${message}`}
               </a>
             ) : (
               message
