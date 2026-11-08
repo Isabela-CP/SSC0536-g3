@@ -151,12 +151,14 @@ export default function Application({ Workspace }) {
   else if (route.kind === 'dashboard') page = <DashboardPage api={runtime.api} />
   else if (route.kind === 'inventory') page = <InventoryPage api={runtime.api} user={user} />
   else if (route.kind === 'detail')
-    page = <EstablishmentDetail api={runtime.api} user={user} id={route.id} />
+    page = <EstablishmentDetail key={route.id} api={runtime.api} user={user} id={route.id} />
   else if (route.kind === 'audit') page = <AuditPage api={runtime.api} user={user} />
   else if (route.kind === 'history' || route.kind === 'responses')
     page = (
       <ResearchHistoryPage
+        key={`${route.kind}:${route.id}`}
         api={runtime.api}
+        user={user}
         establishmentId={route.kind === 'history' ? route.id : undefined}
         surveyId={route.kind === 'responses' ? route.id : undefined}
       />

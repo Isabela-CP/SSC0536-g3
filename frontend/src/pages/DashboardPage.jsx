@@ -7,7 +7,7 @@ import { loadDashboard } from '../services/reading.js'
 import { dateLabel } from '../domain/reading.js'
 export default function DashboardPage({ api, initialData = null }) {
   const resource = useResource((options) => loadDashboard(api, options), [api], initialData)
-  const data = resource.data
+  const data = resource.error ? null : resource.data
   return (
     <>
       <header className="page-heading">

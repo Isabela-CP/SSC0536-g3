@@ -401,3 +401,27 @@ test('cliente transmite filtros de auditoria nos parâmetros do contrato', async
   await api.dashboard({ signal: controller.signal })
   assert.equal(calls[1].path, '/dashboard')
 })
+
+test('HOTEL retorna ao próprio cadastro na consulta, sem atalho ao inventário global', () => {
+  const item = seed.estabelecimentos[0]
+  const user = { perfil: 'HOTEL', id_estabelecimento: item.id_estabelecimento }
+  const detail = render('EstablishmentDetail', {
+    api: {},
+    user,
+    id: item.id_estabelecimento,
+    initialData: item,
+  })
+  assert.match(detail, /Voltar ao meu cadastro/)
+  assert.doesNotMatch(detail, /Voltar ao inventário/)
+  const history = render('ResearchHistoryPage', {
+    api: {},
+    user,
+    establishmentId: item.id_estabelecimento,
+    initialData: { surveys: [], history: [], subject: item },
+  })
+  assert.match(history, /href="#\/meu-cadastro"/)
+})
+
+test('filtro de autor aceita inteiro zero conforme contrato, sem confundir com ausência', () => {
+  assert.deepEqual(domain.auditQuery({ id_usuario: '0' }), { id_usuario: 0 })
+})

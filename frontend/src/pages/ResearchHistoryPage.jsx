@@ -6,6 +6,7 @@ import { dateLabel, surveyHistory } from '../domain/reading.js'
 import { loadRecipients } from '../domain/operations.js'
 export default function ResearchHistoryPage({
   api,
+  user,
   establishmentId,
   surveyId,
   initialData = null,
@@ -26,7 +27,7 @@ export default function ResearchHistoryPage({
     [api, establishmentId, surveyId],
     initialData,
   )
-  const data = resource.data
+  const data = resource.error ? null : resource.data
   const selected =
     data &&
     surveyHistory(data.surveys, data.history, establishmentId).filter(
@@ -42,7 +43,13 @@ export default function ResearchHistoryPage({
         </h1>
         <a
           className="button button-secondary"
-          href={establishmentId ? '#/inventario' : '#/pesquisas'}
+          href={
+            user?.perfil === 'HOTEL'
+              ? '#/meu-cadastro'
+              : establishmentId
+                ? '#/inventario'
+                : '#/pesquisas'
+          }
         >
           Voltar
         </a>

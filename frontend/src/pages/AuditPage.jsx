@@ -52,7 +52,6 @@ export default function AuditPage({ api, user, initialData = null }) {
             {label}
             <input
               type={type}
-              min={type === 'number' ? '1' : undefined}
               value={draft[key]}
               onChange={(event) =>
                 setDraft((previous) => ({ ...previous, [key]: event.target.value }))
@@ -66,7 +65,8 @@ export default function AuditPage({ api, user, initialData = null }) {
       </form>
       <Feedback message={error} />
       <ResourceState resource={resource} />
-      {resource.data && (
+      <p className="muted">Cada linha representa um campo alterado.</p>
+      {!resource.error && resource.data && (
         <DataTable
           caption="Eventos de auditoria"
           rows={resource.data.data.flatMap((row) => {

@@ -92,7 +92,10 @@ export function auditQuery(draft) {
   const query = {}
   if (draft.acao?.trim()) query.acao = draft.acao.trim()
   if (draft.id_usuario !== '') {
-    if (!/^\d+$/.test(String(draft.id_usuario)) || Number(draft.id_usuario) < 1)
+    if (
+      !/^-?\d+$/.test(String(draft.id_usuario)) ||
+      !Number.isSafeInteger(Number(draft.id_usuario))
+    )
       throw new Error('Informe um ID de usuário válido.')
     query.id_usuario = Number(draft.id_usuario)
   }

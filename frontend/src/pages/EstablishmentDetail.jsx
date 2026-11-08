@@ -11,7 +11,7 @@ export default function EstablishmentDetail({ api, user, id, initialData = null 
     [api, id],
     initialData,
   )
-  const item = resource.data
+  const item = resource.error ? null : resource.data
   const basic =
     item &&
     Object.fromEntries(
@@ -34,8 +34,11 @@ export default function EstablishmentDetail({ api, user, id, initialData = null 
       <header className="page-heading">
         <h1>{item?.nome_fantasia || 'Dados da hospedagem'}</h1>
         <div className="document-actions">
-          <a className="button button-secondary" href="#/inventario">
-            Voltar ao inventário
+          <a
+            className="button button-secondary"
+            href={user.perfil === 'HOTEL' ? '#/meu-cadastro' : '#/inventario'}
+          >
+            {user.perfil === 'HOTEL' ? 'Voltar ao meu cadastro' : 'Voltar ao inventário'}
           </a>
           {item && permissions(user, item).edit && (
             <a className="button button-primary" href={`#/estabelecimentos/${id}/editar`}>
