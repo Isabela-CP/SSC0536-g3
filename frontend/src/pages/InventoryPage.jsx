@@ -17,7 +17,7 @@ export default function InventoryPage({ api, user, initialData = null }) {
     [api, query],
     initialData,
   )
-  const data = resource.data
+  const data = resource.error ? null : resource.data
   const change = (key, value) => {
     setDraft((previous) => ({ ...previous, [key]: value }))
     setErrors({})
@@ -41,6 +41,7 @@ export default function InventoryPage({ api, user, initialData = null }) {
       >
         <div className="inventory-search">
           <Field
+            compact
             path="busca"
             labelOverride="Pesquisar Nome/CNPJ"
             schema={{ type: 'string', maxLength: 120 }}

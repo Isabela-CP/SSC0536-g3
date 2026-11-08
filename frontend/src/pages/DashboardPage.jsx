@@ -23,13 +23,17 @@ export default function DashboardPage({ api, initialData = null }) {
               ['Ativas', data.indicadores.estabelecimentos_ativos],
             ].map(([label, value]) => (
               <article className="stat-card" key={label}>
-                <h2>{label}</h2>
+                <h2>
+                  {label}
+                  {label === 'Leitos' &&
+                    !!data.indicadores.leitos_nao_informados &&
+                    ' (parcial)'}
+                </h2>
                 <strong>{value}</strong>
                 {label === 'Leitos' && !!data.indicadores.leitos_nao_informados && (
-                  <p className="muted">
-                    Total parcial: {data.indicadores.leitos_nao_informados} ficha(s) sem
-                    quantidade informada.
-                  </p>
+                  <small className="stat-note">
+                    {data.indicadores.leitos_nao_informados} ficha(s) sem dado
+                  </small>
                 )}
               </article>
             ))}
@@ -39,6 +43,7 @@ export default function DashboardPage({ api, initialData = null }) {
               <h2>ALERTA DE VENCIMENTOS CADASTUR</h2>
               <DataTable
                 caption="Vencimentos Cadastur"
+                pageSize={3}
                 rows={data.alertas_cadastur}
                 empty="Nenhum vencimento Cadastur informado."
                 columns={[

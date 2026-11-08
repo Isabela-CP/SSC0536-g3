@@ -69,7 +69,14 @@ export default function AuditPage({ api, user, initialData = null }) {
       {resource.data && (
         <DataTable
           caption="Eventos de auditoria"
-          rows={resource.data.data}
+          rows={resource.data.data.flatMap((row) => {
+            const diff = changes(row.antes, row.depois)
+            return (
+              diff.length
+                ? diff
+                : [{ label: 'Sem alteração de dados', before: row.antes, after: row.depois }]
+            ).map((change, index) => ({ ...row, id: `${row.id}:${index}`, change }))
+          })}
           columns={[
             {
               key: 'criado_em',
@@ -82,7 +89,9 @@ export default function AuditPage({ api, user, initialData = null }) {
               label: 'Hotel / registro afetado',
               render: (row) =>
                 row.entidade?.toUpperCase() === 'ESTABELECIMENTO' ? (
-                  <a href={`#/estabelecimentos/${row.id_entidade}`}>{row.id_entidade}</a>
+                  <a href={`#/estabelecimentos/${row.id_entidade}`}>
+                    {row.depois?.nome_fantasia || row.antes?.nome_fantasia || row.id_entidade}
+                  </a>
                 ) : (
                   `${row.entidade}: ${row.id_entidade}`
                 ),
@@ -92,24 +101,21 @@ export default function AuditPage({ api, user, initialData = null }) {
               label: 'O que mudou',
               render: (row) => (
                 <>
-                  <strong>{row.acao}</strong>
-                  <ul className="audit-changes">
-                    {changes(row.antes, row.depois).map((change) => (
-                      <li key={change.path}>
-                        <span>{change.label}</span>
-                        <div>
-                          <span>
-                            Valor anterior: <code>{valueLabel(change.before)}</code>
-                          </span>
-                          <span>
-                            Valor atual: <code>{valueLabel(change.after)}</code>
-                          </span>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
+                  {row.acao}
+                  <br />
+                  {row.change.label}
                 </>
               ),
+            },
+            {
+              key: 'antes',
+              label: 'Valor Anterior',
+              render: (row) => <code>{valueLabel(row.change.before)}</code>,
+            },
+            {
+              key: 'depois',
+              label: 'Valor Atual',
+              render: (row) => <code>{valueLabel(row.change.after)}</code>,
             },
           ]}
         />

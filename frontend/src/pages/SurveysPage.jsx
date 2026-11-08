@@ -5,7 +5,7 @@ import DataTable from '../components/DataTable.jsx'
 import { OperationFeedback, ResourceState, ConfirmAction } from '../components/OperationsUI.jsx'
 import { useOperation, useResource } from '../hooks/operations.js'
 import { loadRecipients, validateSurvey, surveyPayload } from '../domain/operations.js'
-import { surveyHistory } from '../domain/reading.js'
+import { surveyHistory, researchStats } from '../domain/reading.js'
 import { exportReport } from '../services/reports.js'
 const dates = (value) => value?.split('-').reverse().join('/') || '—'
 function SurveyDialog({ api, survey, recipients, onClose, onSaved }) {
@@ -207,6 +207,7 @@ export default function SurveysPage({ api, user, initialData = null }) {
             row.periodo_fim.slice(0, 7) >= period)) &&
         (!kind || row.tipo === kind),
     )
+  const statistics = researchStats(rows)
   const columns = [
     { key: 'titulo', label: 'Nome da Pesquisa' },
     {
@@ -297,20 +298,34 @@ export default function SurveysPage({ api, user, initialData = null }) {
         <>
           <div className="stat-grid">
             <article className="stat-card">
-              <h2>Pesquisas abertas</h2>
-              <strong>{rows.filter((row) => row.status === 'ABERTA').length}</strong>
+              <h2>Pesquisas Ativas</h2>
+              <strong>{statistics.active}</strong>
             </article>
             <article className="stat-card">
-              <h2>Respostas recebidas</h2>
-              <strong>{data.history.length}</strong>
+              <h2>Respostas Coletadas no Mês</h2>
+              <strong>{statistics.month}</strong>
             </article>
             <article className="stat-card">
-              <h2>Hospedagens destinatárias</h2>
+              <h2>Taxa de Resposta</h2>
               <strong>
-                {rows.reduce((total, row) => total + row.estabelecimentos.length, 0)}
+                {statistics.rate == null ? '—' : `${statistics.rate.toFixed(0)}%`}
               </strong>
             </article>
           </div>
+          {canReport && (
+            <button
+              className="button button-primary consolidated-report"
+              disabled={operation.busy || !data.surveys.length}
+              onClick={() =>
+                operation.run(
+                  () => exportReport(api, { tipo: 'OCUPACAO', formato: 'PDF' }),
+                  () => operation.success('Download iniciado.'),
+                )
+              }
+            >
+              Exportar Relatório Consolidado (PDF)
+            </button>
+          )}
           <div className="survey-filters">
             <label>
               Filtrar por Período (Mês/Ano)

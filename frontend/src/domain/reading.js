@@ -76,7 +76,11 @@ export function changes(before, after) {
   const previous = new Map(flatFields(before).map((item) => [item.path, item.value]))
   const current = new Map(flatFields(after).map((item) => [item.path, item.value]))
   return [...new Set([...previous.keys(), ...current.keys()])]
-    .filter((path) => JSON.stringify(previous.get(path)) !== JSON.stringify(current.get(path)))
+    .filter(
+      (path) =>
+        (path !== '' || (previous.size === 1 && current.size === 1)) &&
+        JSON.stringify(previous.get(path)) !== JSON.stringify(current.get(path)),
+    )
     .map((path) => ({
       path,
       label: path ? path.split('.').map(labelFor).join(' / ') : 'Registro',
@@ -123,3 +127,21 @@ export function surveyHistory(surveys, history, establishment) {
 }
 export const dateLabel = (value) =>
   value ? value.slice(0, 10).split('-').reverse().join('/') : 'Não informado'
+
+export function researchStats(rows, now = new Date()) {
+  const responses = rows.flatMap((row) => row.responses)
+  const recipients = rows.reduce((sum, row) => sum + row.estabelecimentos.length, 0)
+  const answered = rows.reduce(
+    (sum, row) =>
+      sum + new Set(row.responses.map((response) => response.id_estabelecimento)).size,
+    0,
+  )
+  return {
+    active: rows.filter((row) => row.status === 'ABERTA').length,
+    month: responses.filter((row) => {
+      const date = new Date(row.enviada_em)
+      return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth()
+    }).length,
+    rate: recipients ? (100 * answered) / recipients : null,
+  }
+}

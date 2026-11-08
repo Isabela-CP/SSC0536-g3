@@ -25,6 +25,7 @@ export default function EstablishmentDetail({ api, user, id, initialData = null 
             'infraestrutura',
             'acessibilidade',
             'documentos',
+            'id_origem',
           ].includes(key),
       ),
     )
@@ -50,13 +51,59 @@ export default function EstablishmentDetail({ api, user, id, initialData = null 
             {item.categoria?.nome_categoria} · {item.status === 'ATIVO' ? 'Ativo' : 'Inativo'}
           </p>
           {[
-            ['Dados básicos e contatos', basic],
+            [
+              'Dados básicos e contatos',
+              Object.fromEntries(
+                Object.entries(basic).filter(([key]) =>
+                  [
+                    'nome_fantasia',
+                    'razao_social',
+                    'cnpj',
+                    'endereco',
+                    'bairro',
+                    'status',
+                    'aceita_pesquisas',
+                    'cadastur_status',
+                    'possui_cadastur',
+                    'vencimento_cadastur',
+                    'email_comercial',
+                    'telefone_comercial',
+                  ].includes(key),
+                ),
+              ),
+            ],
+            [
+              'Contatos e informações complementares',
+              Object.fromEntries(
+                Object.entries(basic).filter(
+                  ([key]) =>
+                    ![
+                      'nome_fantasia',
+                      'razao_social',
+                      'cnpj',
+                      'endereco',
+                      'bairro',
+                      'status',
+                      'aceita_pesquisas',
+                      'cadastur_status',
+                      'possui_cadastur',
+                      'vencimento_cadastur',
+                      'email_comercial',
+                      'telefone_comercial',
+                    ].includes(key),
+                ),
+              ),
+            ],
             ['Dados de hospedagem', item.meio_hospedagem],
             ['Infraestrutura', item.infraestrutura],
             ['Acessibilidade', item.acessibilidade],
           ].map(([label, value]) => (
-            <section className="form-card read-detail" key={label}>
-              <h2>{label}</h2>
+            <details
+              className="form-card read-detail"
+              key={label}
+              open={label === 'Dados básicos e contatos' || label === 'Dados de hospedagem'}
+            >
+              <summary>{label}</summary>
               {value ? (
                 <dl className="detail-fields">
                   {flatFields(value).map((field) => (
@@ -69,7 +116,7 @@ export default function EstablishmentDetail({ api, user, id, initialData = null 
               ) : (
                 <p>Dados ainda não informados.</p>
               )}
-            </section>
+            </details>
           ))}
           <DocumentsPanel establishment={item} api={api} canManage={false} />
           <a className="button button-secondary" href={`#/estabelecimentos/${id}/pesquisas`}>

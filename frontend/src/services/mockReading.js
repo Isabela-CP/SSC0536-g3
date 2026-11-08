@@ -16,6 +16,7 @@ export function mockInventory(items, user, searchParams) {
           value?.toLowerCase().includes(term),
         ) ||
         (/^[\d./-]+$/.test(term) &&
+          term.replace(/\D/g, '').length > 0 &&
           row.cnpj?.replace(/\D/g, '').includes(term.replace(/\D/g, ''))),
     )
   for (const key of ['id_categoria', 'status', 'cadastur_status', 'aceita_pesquisas'])

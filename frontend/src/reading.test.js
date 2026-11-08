@@ -332,3 +332,72 @@ test('histórico combina associação do hotel e mostra ocupação zero como res
   assert.match(result, /Histórico de Pesquisas/)
   assert.match(result, /0%/)
 })
+
+test('indicadores de pesquisa usam apenas respostas e destinatários do conjunto consultado', () => {
+  const rows = [
+    {
+      status: 'ABERTA',
+      estabelecimentos: ['a', 'b'],
+      responses: [{ id_estabelecimento: 'a', enviada_em: '2026-11-08T12:00:00Z' }],
+    },
+  ]
+  assert.deepEqual(domain.researchStats(rows, new Date('2026-11-08T12:00:00Z')), {
+    active: 1,
+    month: 1,
+    rate: 50,
+  })
+  assert.deepEqual(domain.researchStats([], new Date('2026-11-08T12:00:00Z')), {
+    active: 0,
+    month: 0,
+    rate: null,
+  })
+})
+test('sem categoria de hospedagem não consulta outros segmentos turísticos', async () => {
+  const result = await service.loadInventory(
+    {
+      categories: async () => ({
+        data: [{ id_categoria: 9, nome_categoria: 'Outro segmento' }],
+      }),
+      establishments: async () => {
+        throw new Error('Não deve chamar')
+      },
+    },
+    domain.inventoryDefaults,
+  )
+  assert.equal(result.data.length, 0)
+  assert.equal(result.markers.length, 0)
+})
+test('carregamento inicial das telas não apresenta totais fictícios', () => {
+  for (const name of [
+    'DashboardPage',
+    'InventoryPage',
+    'EstablishmentDetail',
+    'AuditPage',
+    'ResearchHistoryPage',
+  ]) {
+    const result = render(name, { api: {}, user: admin, id: 'missing' })
+    assert.match(result, /Carregando/)
+    assert.doesNotMatch(result, />X<|Nenhuma hospedagem encontrada/)
+  }
+})
+test('cliente transmite filtros de auditoria nos parâmetros do contrato', async () => {
+  const { createInventoryApi } = await server.ssrLoadModule('/src/services/http.js')
+  const calls = []
+  const api = createInventoryApi(async (path, options) => {
+    calls.push({ path, options })
+    return {}
+  })
+  const controller = new AbortController()
+  await api.audit(
+    { acao: 'UPDATE', id_usuario: 2, data_inicio: '2026-11-08T12:00:00Z' },
+    { signal: controller.signal },
+  )
+  assert.match(calls[0].path, /^\/auditoria\?/)
+  assert.equal(
+    new URL(calls[0].path, 'http://test').searchParams.get('data_inicio'),
+    '2026-11-08T12:00:00Z',
+  )
+  assert.equal(calls[0].options.signal, controller.signal)
+  await api.dashboard({ signal: controller.signal })
+  assert.equal(calls[1].path, '/dashboard')
+})
