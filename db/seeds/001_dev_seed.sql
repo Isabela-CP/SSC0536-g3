@@ -52,7 +52,7 @@ SELECT setval(
 
 INSERT INTO estabelecimentos (
     id_estabelecimento, id_categoria, nome_fantasia, razao_social, cnpj,
-    cnae, status, motivo_inativacao, data_abertura, endereco, bairro,
+    cnae, status, motivo_inativacao, inativado_em, data_abertura, endereco, bairro,
     latitude, longitude, telefone_comercial, email_comercial,
     telefone_pesquisas, email_pesquisas, aceita_pesquisas,
     cadastur_status, possui_cadastur, numero_cadastur, vencimento_cadastur,
@@ -63,7 +63,7 @@ VALUES
     (
         '11111111-1111-4111-8111-111111111111', 1,
         'Hotel Serra Azul', 'Serra Azul Hospedagem Ltda.', '54.839.271/0001-64',
-        '5510801', 'ATIVO', NULL, '2018-03-15',
+        '5510801', 'ATIVO', NULL, NULL, '2018-03-15',
         'Av. das Palmeiras, 120, Cidade Exemplo - SP', 'Centro',
         -22.0174, -47.8908, '+55 16 3333-1000', 'contato@serra-azul.example',
         '+55 16 99999-1000', 'pesquisas@serra-azul.example', TRUE,
@@ -75,7 +75,7 @@ VALUES
     (
         '22222222-2222-4222-8222-222222222222', 1,
         'Pousada Ipê Amarelo', 'Ipê Amarelo Hospedagem Ltda.', '67.294.153/0001-60',
-        '5590601', 'ATIVO', NULL, '2021-06-10',
+        '5590601', 'ATIVO', NULL, NULL, '2021-06-10',
         'Rua do Lago, 45, Cidade Exemplo - SP', 'Jardim das Flores',
         -22.0111, -47.9012, '+55 16 3333-2000', 'contato@ipe-amarelo.example',
         '+55 16 98888-2000', 'pesquisas@ipe-amarelo.example', TRUE,
@@ -87,7 +87,7 @@ VALUES
     (
         '33333333-3333-4333-8333-333333333333', 1,
         'Hotel Vale do Sol', 'Vale do Sol Turismo Ltda.', '81.937.462/0001-31',
-        '5510801', 'INATIVO', 'Encerramento de atividades informado pela administração.', '2012-09-20',
+        '5510801', 'INATIVO', 'Encerramento de atividades informado pela administração.', '2026-09-15 16:45:00+00', '2012-09-20',
         'Rodovia Municipal, km 4, Cidade Exemplo - SP', 'Zona Rural',
         -22.0350, -47.8650, '+55 16 3333-3000', 'contato@vale-sol.example',
         '+55 16 97777-3000', 'pesquisas@vale-sol.example', FALSE,
@@ -99,7 +99,7 @@ VALUES
     (
         '44444444-4444-4444-8444-444444444444', 1,
         'Hospedagem em Cadastro', 'Hospedagem em Cadastro Ltda.', '12.345.678/0001-95',
-        NULL, 'ATIVO', NULL, NULL,
+        NULL, 'ATIVO', NULL, NULL, NULL,
         'Rua de Exemplo, 10, Cidade Exemplo - SP', NULL,
         NULL, NULL, NULL, NULL,
         NULL, NULL, TRUE,
@@ -240,11 +240,11 @@ ON CONFLICT (email) DO NOTHING;
 INSERT INTO usuarios (id, email, senha_hash, perfil, status, nome, id_estabelecimento)
 VALUES
     -- hotéis (vínculo obrigatório com estabelecimento)
-    (7,  'hotel.serraazul@example.test',
+    (7,  'responsavel@serra-azul.example',
          'DEV_PLACEHOLDER_HASH_007',
          'HOTEL', 'ATIVO',    'Responsável Serra Azul',
          '11111111-1111-4111-8111-111111111111'),
-    (8,  'hotel.ipeamarelo@example.test',
+    (8,  'responsavel@ipe-amarelo.example',
          'DEV_PLACEHOLDER_HASH_008',
          'HOTEL', 'ATIVO',    'Responsável Ipê Amarelo',
          '22222222-2222-4222-8222-222222222222'),
@@ -270,14 +270,14 @@ INSERT INTO convites (
 VALUES
     -- convites aceitos → deram origem aos usuários HOTEL 7, 8 e 9
     (1, 'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2',
-        'hotel.serraazul@example.test', 'HOTEL',
+        'responsavel@serra-azul.example', 'HOTEL',
         1, '11111111-1111-4111-8111-111111111111',
         'ACEITO',
         '2026-02-10 23:59:59-03',
         '2026-02-05 14:32:00-03'),
 
     (2, 'b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3',
-        'hotel.ipeamarelo@example.test', 'HOTEL',
+        'responsavel@ipe-amarelo.example', 'HOTEL',
         1, '22222222-2222-4222-8222-222222222222',
         'ACEITO',
         '2026-03-05 23:59:59-03',
@@ -497,7 +497,7 @@ VALUES
     -- envio de convites
     (6,  1, 'CRIAR_CONVITE', 'convites', '1',
          NULL,
-         '{"email":"hotel.serraazul@example.test","perfil":"HOTEL"}',
+         '{"email":"responsavel@serra-azul.example","perfil":"HOTEL"}',
          '192.168.1.10', '2026-01-30 08:00:00-03'),
 
     (7,  1, 'CRIAR_CONVITE', 'convites', '5',

@@ -3,7 +3,7 @@
   "info": {
     "title": "Inventário OTO — API de Gestão de Estabelecimentos",
     "version": "0.1.0",
-    "description": "Contrato inicial da API REST do Inventário OTO. O escopo principal é a gestão de meios de hospedagem: listagem, pesquisa, cadastro, consulta, edição, inativação lógica e gestão de documentos com upload de arquivo.\n\nPerfis definidos para o MVP: ADMINISTRADOR (acesso total); GESTOR (consulta); EDITOR (edição de cadastros); CONTA_EMPRESARIO mapeado para o perfil de aplicação HOTEL (acesso apenas à hospedagem vinculada). Somente ADMINISTRADOR pode alterar CNPJ e razão social.\n\nO cadastro inicial pode ficar incompleto nos dados operacionais e de infraestrutura, mas exige categoria de meios de hospedagem, nome fantasia, razão social, CNPJ e endereço. As categorias fora de meios de hospedagem não são expostas pelo contrato deste MVP. Uploads são enviados como multipart/form-data; limites de tamanho e lista final de tipos MIME devem ser definidos pela equipe antes da implementação em produção."
+    "description": "Contrato inicial da API REST do Inventário OTO. O escopo principal é a gestão de meios de hospedagem: listagem, pesquisa, cadastro, consulta, edição, inativação lógica e gestão de documentos com upload de arquivo.\n\nPerfis definidos para o MVP: ADMINISTRADOR (acesso total); GESTOR (consulta); EDITOR (edição de cadastros); CONTA_EMPRESARIO mapeado para o perfil de aplicação HOTEL (acesso apenas à hospedagem vinculada). Somente ADMINISTRADOR pode alterar CNPJ e razão social.\n\nO cadastro inicial pode ficar incompleto nos dados operacionais e de infraestrutura, mas exige categoria de meios de hospedagem, nome fantasia, razão social, CNPJ e endereço. As categorias fora de meios de hospedagem não são expostas pelo contrato deste MVP. Uploads são enviados como multipart/form-data; limites de tamanho e lista final de tipos MIME devem ser definidos pela equipe antes da implementação em produção.\nAutenticação real: Bearer opaco com hash persistido, expiração no servidor e revogação no logout/troca de senha/inativação. As operações de senha exigem 8–128 caracteres e confirmação fica na interface."
   },
   "servers": [
     {
@@ -2204,6 +2204,442 @@
             "$ref": "#/components/responses/Unauthorized"
           }
         }
+      }
+    },
+    "/auth/redefinicao-senha": {
+      "post": {
+        "summary": "Redefinir senha por token de uso único",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Operação concluída.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MensagemOperacao"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requisição ou token inválido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente, expirada ou revogada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Permissão insuficiente ou senha atual inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Conta não encontrada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Transição de estado não permitida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Persistência indisponível.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Autenticação"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RedefinicaoSenha"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/perfil/senha": {
+      "put": {
+        "summary": "Alterar a própria senha e revogar sessões",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operação concluída.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MensagemOperacao"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requisição ou token inválido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente, expirada ou revogada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Permissão insuficiente ou senha atual inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Conta não encontrada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Transição de estado não permitida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Persistência indisponível.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Perfil"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlteracaoSenha"
+              }
+            }
+          }
+        },
+        "x-role-permissions": {
+          "roles": [
+            "ADMINISTRADOR",
+            "GESTOR",
+            "EDITOR",
+            "HOTEL"
+          ]
+        }
+      }
+    },
+    "/usuarios/{id_usuario}/inativacao": {
+      "post": {
+        "summary": "Inativar conta sem excluir histórico",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operação concluída.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsuarioPublico"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requisição ou token inválido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente, expirada ou revogada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Permissão insuficiente ou senha atual inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Conta não encontrada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Transição de estado não permitida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Persistência indisponível.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Usuários"
+        ],
+        "x-role-permissions": {
+          "roles": [
+            "ADMINISTRADOR"
+          ]
+        },
+        "parameters": [
+          {
+            "name": "id_usuario",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/usuarios/{id_usuario}/reativacao": {
+      "post": {
+        "summary": "Reativar conta",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operação concluída.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsuarioPublico"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requisição ou token inválido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão ausente, expirada ou revogada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Permissão insuficiente ou senha atual inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Conta não encontrada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Transição de estado não permitida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Persistência indisponível.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Usuários"
+        ],
+        "x-role-permissions": {
+          "roles": [
+            "ADMINISTRADOR"
+          ]
+        },
+        "parameters": [
+          {
+            "name": "id_usuario",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
       }
     }
   },
@@ -7718,6 +8154,109 @@
               {
                 "type": "null"
               }
+            ]
+          }
+        }
+      },
+      "RedefinicaoSenha": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "token",
+          "senha"
+        ],
+        "properties": {
+          "token": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "senha": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "format": "password"
+          }
+        }
+      },
+      "AlteracaoSenha": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "senha_atual",
+          "senha"
+        ],
+        "properties": {
+          "senha_atual": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "format": "password"
+          },
+          "senha": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "format": "password"
+          }
+        }
+      },
+      "MensagemOperacao": {
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "properties": {
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "UsuarioPublico": {
+        "type": "object",
+        "required": [
+          "id_usuario",
+          "nome",
+          "email",
+          "perfil",
+          "ativo"
+        ],
+        "properties": {
+          "id_usuario": {
+            "type": "integer"
+          },
+          "nome": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "perfil": {
+            "type": "string",
+            "enum": [
+              "ADMINISTRADOR",
+              "GESTOR",
+              "EDITOR",
+              "HOTEL"
+            ]
+          },
+          "ativo": {
+            "type": "boolean"
+          },
+          "id_estabelecimento": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ATIVO",
+              "INATIVO",
+              "PENDENTE"
             ]
           }
         }

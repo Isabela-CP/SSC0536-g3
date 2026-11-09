@@ -17,7 +17,11 @@ from app.inventory_http import InventoryRoute
 from app.inventory_repository import MemoryInventoryRepository
 from app.inventory_writes import create_write_router
 from app.inventory_errors import InventoryError, invalid_field
+from app.inventory_models import contract_model
 from app import operations
+from app.database import persistent, database
+from app.postgres_inventory import PostgresInventoryRepository
+from app.postgres_portal import PostgresPortal
 from app.read_views import dashboard_summary, audit_records
 from app.reporting import build_report
 
@@ -83,10 +87,12 @@ def error_response(status_code: int, code: str, message: str, details: list[dict
 
 @app.exception_handler(InventoryError)
 async def operation_error(request, exc):
-    return JSONResponse(status_code=exc.status_code, content={"error": exc.error})
+    return JSONResponse(status_code=exc.status_code, headers={"WWW-Authenticate":"Bearer"} if exc.status_code==401 else None, content={"error": exc.error})
 
 
 def current_user(authorization: str | None = Header(default=None)) -> dict:
+    if persistent():
+        return portal().current_user(authorization)
     scheme, _, token = (authorization or "").partition(" ")
     email = TOKENS.get(token) if scheme.casefold() == "bearer" else None
     user = DEMO_USERS.get(email) if email else None
@@ -97,6 +103,8 @@ def current_user(authorization: str | None = Header(default=None)) -> dict:
 
 
 def audit(actor: dict, action: str, entity: str, entity_id: str, before: Any = None, after: Any = None) -> None:
+    if persistent():
+        return portal().audit(actor, action, entity, entity_id, before, after)
     AUDIT_LOG.append({
         "id": str(uuid4()), "criado_em": datetime.now(timezone.utc).isoformat(),
         "id_usuario": actor["id_usuario"], "usuario": actor["email"], "acao": action,
@@ -127,6 +135,9 @@ for account in seed_data()["contas_empresario"]:
 
 @app.get("/health", tags=["Sistema"])
 def health() -> dict[str, str]:
+    if persistent():
+        with database().transaction() as conn:
+            conn.execute("SELECT 1 FROM schema_migrations LIMIT 1")
     return {"status": "ok"}
 
 
@@ -134,8 +145,14 @@ inventory_router = APIRouter(route_class=InventoryRoute)
 
 
 @lru_cache
-def inventory_repository() -> MemoryInventoryRepository:
+def inventory_repository():
+    if persistent():
+        return PostgresInventoryRepository(database())
     return MemoryInventoryRepository(JsonInventoryRepository(SEED_FILE))
+
+
+def portal():
+    return PostgresPortal(database(), inventory_repository())
 
 
 def inventory_user(user: dict = Depends(current_user)) -> dict:
@@ -206,6 +223,8 @@ app.include_router(create_write_router(inventory_repository, inventory_user, aud
 
 @app.post("/auth/login", tags=["Autenticação"])
 def login(payload: dict = Body(...)) -> Any:
+    if persistent():
+        return portal().login(payload)
     email = payload.get("email")
     user = DEMO_USERS.get(email.strip().casefold()) if isinstance(email, str) else None
     if not user or not isinstance(payload.get("senha"), str) or not payload["senha"] or user["senha"] != payload["senha"] or not user["ativo"]:
@@ -219,12 +238,16 @@ def login(payload: dict = Body(...)) -> Any:
 
 @app.post("/auth/logout", status_code=status.HTTP_204_NO_CONTENT, tags=["Autenticação"])
 def logout(authorization: str = Header(...), _: dict = Depends(current_user)) -> None:
+    if persistent():
+        return portal().logout(authorization)
     TOKENS.pop(authorization.partition(" ")[2], None)
     return None
 
 
 @app.post("/auth/recuperacao-senha", status_code=status.HTTP_202_ACCEPTED, tags=["Autenticação"])
 def recover_password(payload: dict = Body(...)) -> dict:
+    if persistent():
+        return portal().recover(payload)
     operations.email(payload.get("email"))
     return {"message": "Se o e-mail estiver cadastrado, as instruções de recuperação serão enviadas."}
 
@@ -243,6 +266,8 @@ def get_profile(user: dict = Depends(current_user)) -> dict:
 
 @app.patch("/perfil", tags=["Perfil"])
 def update_profile(payload: dict = Body(...), user: dict = Depends(current_user)) -> Any:
+    if persistent():
+        return portal().update_profile(user, payload)
     operations.fields(payload, {"nome", "email"})
     if not payload:
         raise invalid_field("body", "Altere pelo menos um campo.")
@@ -267,12 +292,16 @@ def update_profile(payload: dict = Body(...), user: dict = Depends(current_user)
 
 @app.get("/usuarios", tags=["Usuários"])
 def list_users(user: dict = Depends(current_user)) -> dict:
+    if persistent():
+        return portal().users(user)
     ensure_role(user, "ADMINISTRADOR")
     return {"data": [public_user(item) for item in DEMO_USERS.values()]}
 
 
 @app.post("/usuarios", status_code=status.HTTP_201_CREATED, tags=["Usuários"])
 def create_user(payload: dict = Body(...), user: dict = Depends(current_user)) -> Any:
+    if persistent():
+        return portal().create_user(user, payload)
     ensure_role(user, "ADMINISTRADOR")
     operations.fields(payload, {"nome", "email", "perfil", "id_estabelecimento"}, {"nome", "email", "perfil"})
     email = operations.email(payload["email"])
@@ -298,6 +327,8 @@ def create_user(payload: dict = Body(...), user: dict = Depends(current_user)) -
 
 @app.post("/convites", status_code=status.HTTP_201_CREATED, tags=["Convites"])
 def create_invite(payload: dict = Body(...), user: dict = Depends(current_user)) -> Any:
+    if persistent():
+        return portal().invite(user, payload)
     ensure_role(user, "ADMINISTRADOR")
     email = operations.email(payload.get("email"))
     if email not in DEMO_USERS:
@@ -313,6 +344,8 @@ def create_invite(payload: dict = Body(...), user: dict = Depends(current_user))
 
 @app.post("/convites/{id_convite}/aceitacao", tags=["Convites"])
 def accept_invite(id_convite: str, payload: dict = Body(...)) -> Any:
+    if persistent():
+        return portal().activate(id_convite, payload)
     invite = next((item for item in INVITES if item["id_convite"] == id_convite), None)
     if not invite or invite["token"] != payload.get("token") or datetime.fromisoformat(invite["expira_em"].replace("Z", "+00:00")) <= datetime.now(timezone.utc):
         return error_response(404, "INVITE_NOT_FOUND", "Convite não encontrado ou expirado.")
@@ -338,6 +371,8 @@ def validate_survey_recipients(ids):
 
 @app.get("/pesquisas-ocupacao", tags=["Pesquisas de ocupação"])
 def list_surveys(user: dict = Depends(current_user)) -> dict:
+    if persistent():
+        return portal().surveys(user)
     ensure_role(user, "ADMINISTRADOR", "GESTOR", "EDITOR", "HOTEL")
     if user["perfil"] == "HOTEL":
         association = user.get("id_estabelecimento")
@@ -349,6 +384,8 @@ def list_surveys(user: dict = Depends(current_user)) -> dict:
 
 @app.post("/pesquisas-ocupacao", status_code=status.HTTP_201_CREATED, tags=["Pesquisas de ocupação"])
 def create_survey(payload: dict = Body(...), user: dict = Depends(current_user)) -> Any:
+    if persistent():
+        return portal().save_survey(user, payload)
     ensure_role(user, "ADMINISTRADOR", "EDITOR")
     data = operations.survey(payload)
     validate_survey_recipients(data["estabelecimentos"])
@@ -360,6 +397,8 @@ def create_survey(payload: dict = Body(...), user: dict = Depends(current_user))
 
 @app.patch("/pesquisas-ocupacao/{id_pesquisa}", tags=["Pesquisas de ocupação"])
 def update_survey(id_pesquisa: str, payload: dict = Body(...), user: dict = Depends(current_user)) -> Any:
+    if persistent():
+        return portal().save_survey(user, payload, id_pesquisa)
     ensure_role(user, "ADMINISTRADOR", "EDITOR")
     survey = next((item for item in SURVEYS if item["id_pesquisa"] == id_pesquisa), None)
     if not survey:
@@ -380,6 +419,8 @@ def update_survey(id_pesquisa: str, payload: dict = Body(...), user: dict = Depe
 
 @app.post("/pesquisas-ocupacao/{id_pesquisa}/encerramento", tags=["Pesquisas de ocupação"])
 def close_survey(id_pesquisa: str, user: dict = Depends(current_user)) -> Any:
+    if persistent():
+        return portal().close_survey(user, id_pesquisa)
     ensure_role(user, "ADMINISTRADOR", "EDITOR")
     survey = next((item for item in SURVEYS if item["id_pesquisa"] == id_pesquisa), None)
     if not survey:
@@ -394,6 +435,8 @@ def close_survey(id_pesquisa: str, user: dict = Depends(current_user)) -> Any:
 
 @app.get("/pesquisas-ocupacao/pendentes", tags=["Respostas de ocupação"])
 def pending_surveys(user: dict = Depends(current_user)) -> dict:
+    if persistent():
+        return portal().pending(user)
     ensure_role(user, "HOTEL")
     association = user.get("id_estabelecimento")
     if not association:
@@ -404,6 +447,8 @@ def pending_surveys(user: dict = Depends(current_user)) -> dict:
 
 @app.post("/pesquisas-ocupacao/{id_pesquisa}/respostas", status_code=status.HTTP_201_CREATED, tags=["Respostas de ocupação"])
 def submit_occupancy_response(id_pesquisa: str, payload: dict = Body(...), user: dict = Depends(current_user)) -> Any:
+    if persistent():
+        return portal().answer(user, id_pesquisa, payload)
     ensure_role(user, "HOTEL")
     association = user.get("id_estabelecimento")
     survey = next((item for item in SURVEYS if item["id_pesquisa"] == id_pesquisa), None)
@@ -427,6 +472,8 @@ def submit_occupancy_response(id_pesquisa: str, payload: dict = Body(...), user:
 
 @app.get("/respostas-ocupacao/historico", tags=["Respostas de ocupação"])
 def occupancy_history(user: dict = Depends(current_user)) -> dict:
+    if persistent():
+        return portal().history(user)
     ensure_role(user, "ADMINISTRADOR", "GESTOR", "EDITOR", "HOTEL")
     if user["perfil"] != "HOTEL":
         return {"data": OCCUPANCY_RESPONSES}
@@ -438,18 +485,24 @@ def occupancy_history(user: dict = Depends(current_user)) -> dict:
 
 @app.get("/auditoria", tags=["Auditoria"])
 def list_audit_log(acao: str | None = None, id_usuario: int | None = None, data_inicio: str | None = None, data_fim: str | None = None, user: dict = Depends(current_user)) -> dict:
+    if persistent():
+        return portal().audit_log(user, acao, id_usuario, data_inicio, data_fim)
     ensure_role(user, "ADMINISTRADOR")
     return {"data": audit_records(AUDIT_LOG, acao, id_usuario, data_inicio, data_fim)}
 
 
 @app.get("/dashboard", tags=["Dashboard"])
 def dashboard(user: dict = Depends(current_user), repository: InventoryRepository = Depends(inventory_repository)) -> dict:
+    if persistent():
+        return portal().dashboard(user)
     ensure_role(user, "ADMINISTRADOR", "GESTOR", "EDITOR")
     return dashboard_summary(repository, SURVEYS, OCCUPANCY_RESPONSES)
 
 
 @app.post("/relatorios", status_code=status.HTTP_202_ACCEPTED, tags=["Relatórios"])
 def generate_report(payload: dict = Body(...), user: dict = Depends(current_user)) -> Any:
+    if persistent():
+        return portal().generate_report(user, payload)
     ensure_role(user, "ADMINISTRADOR", "GESTOR")
     report_type, report_format = payload.get("tipo"), payload.get("formato")
     if report_type != "OCUPACAO" or report_format not in ("PDF", "CSV"):
@@ -476,6 +529,8 @@ def generate_report(payload: dict = Body(...), user: dict = Depends(current_user
 
 @app.get("/relatorios/{id_relatorio}", tags=["Relatórios"])
 def get_report(id_relatorio: str, user: dict = Depends(current_user)) -> Any:
+    if persistent():
+        return portal().report(user, id_relatorio)
     ensure_role(user, "ADMINISTRADOR", "GESTOR")
     report = next((item for item in REPORTS if item["id_relatorio"] == id_relatorio), None)
     if not report:
@@ -485,6 +540,8 @@ def get_report(id_relatorio: str, user: dict = Depends(current_user)) -> Any:
 
 @app.get("/relatorios/{id_relatorio}/arquivo", tags=["Relatórios"])
 def download_report(id_relatorio: str, user: dict = Depends(current_user)) -> Any:
+    if persistent():
+        return portal().download_report(user, id_relatorio)
     report = get_report(id_relatorio, user)
     if isinstance(report, JSONResponse):
         return report
@@ -492,3 +549,43 @@ def download_report(id_relatorio: str, user: dict = Depends(current_user)) -> An
         return error_response(404, "NOT_FOUND", "Arquivo não encontrado.")
     content, mime = REPORT_FILES[id_relatorio]
     return Response(content=content, media_type=mime, headers={"Content-Disposition": f'attachment; filename="relatorio.{report["formato"].lower()}"'})
+
+
+@app.post('/auth/redefinicao-senha', tags=['Autenticação'])
+def reset_password(payload: contract_model('RedefinicaoSenha')):
+    if not persistent():
+        raise InventoryError(503,'MOCK_NOT_AVAILABLE','Este fluxo exige PostgreSQL.')
+    return portal().reset_password(payload.model_dump())
+
+
+@app.put('/perfil/senha', tags=['Perfil'])
+def change_password(payload: contract_model('AlteracaoSenha'), user: dict = Depends(current_user)):
+    if not persistent():
+        raise InventoryError(503,'MOCK_NOT_AVAILABLE','Este fluxo exige PostgreSQL.')
+    return portal().change_password(user,payload.model_dump())
+
+
+@app.post('/usuarios/{id_usuario}/inativacao', tags=['Usuários'])
+def inactivate_user(id_usuario: int, user: dict = Depends(current_user)):
+    if not persistent():
+        raise InventoryError(503,'MOCK_NOT_AVAILABLE','Este fluxo exige PostgreSQL.')
+    return portal().user_status(user,id_usuario,False)
+
+
+@app.post('/usuarios/{id_usuario}/reativacao', tags=['Usuários'])
+def reactivate_user(id_usuario: int, user: dict = Depends(current_user)):
+    if not persistent():
+        raise InventoryError(503,'MOCK_NOT_AVAILABLE','Este fluxo exige PostgreSQL.')
+    return portal().user_status(user,id_usuario,True)
+
+
+from fastapi.exceptions import RequestValidationError
+
+
+@app.exception_handler(RequestValidationError)
+async def request_validation_error(request, exc):
+    errors = exc.errors()
+    malformed = any(error['type']=='json_invalid' for error in errors)
+    return JSONResponse(status_code=400 if malformed else 422,content={'error':{
+        'code':'BAD_REQUEST' if malformed else 'VALIDATION_ERROR','message':'Verifique os campos informados.',
+        'details':[{'field':error.get('ctx',{}).get('field') or '.'.join(str(part) for part in error['loc'][1:]) or 'body','issue':error.get('ctx',{}).get('issue') or error['msg']} for error in errors]}})
