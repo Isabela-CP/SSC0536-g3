@@ -48,9 +48,8 @@ sessão, restaurando os exemplos ao recarregar a página. Arquivos fictícios do
 seed retornam 404 até um arquivo real ser anexado. Nenhum binário é serializado
 em JSON. A etiqueta visual de demonstração foi removida do cabeçalho.
 
-A API real atual também usa um repositório temporário em memória, mas no servidor:
-as alterações sobrevivem à atualização do navegador e são perdidas ao reiniciar
-o backend. A conexão real não representa uma integração PostgreSQL concluída.
+A API real agora usa PostgreSQL e storage persistente. Alterações, sessões, auditoria
+e arquivos sobrevivem ao reinício. O modo memória é exclusivo de testes explícitos.
 
 Rotas de entrada:
 
@@ -237,19 +236,15 @@ Em produção, avaliar provedor de tiles conforme volume e disponibilidade.
 ### Dashboard e lacunas contratuais
 
 O servidor calcula totais sobre todas as fichas de hospedagem do repositório atual,
-incluindo alterações em memória. Leitos desconhecidos não são inventados: o card
+incluindo alterações persistidas no PostgreSQL. Leitos desconhecidos não são inventados: o card
 indica total parcial e a quantidade de fichas incompletas. A tabela Cadastur usa
 vencimentos efetivamente informados, ordenados do mais antigo ao mais recente;
 valores negativos indicam vencidos. Não foi inventada uma janela de alerta de 30/60 dias.
 A janela e eventual restrição por status ainda exigem alinhamento de negócio.
 
-`GET /dashboard` não possui schema de resposta completo no OpenAPI. A resposta
-local foi complementada com `total_empresas`, `total_leitos`,
-`leitos_nao_informados`, `alertas_cadastur` e `referencia`; o cliente rejeita a
-resposta antiga incompleta. O antigo alerta AVCB fixo foi removido. O contrato e
-os arquivos de mocks originais não foram alterados. Schema definitivo, 403 HOTEL
-no dashboard e 422 para intervalos inválidos de auditoria ficam registrados para
-alinhamento antes de uma revisão contratual.
+`GET /dashboard` tem resposta definida no OpenAPI, incluindo totais, leitos não
+informados, alertas Cadastur e referência temporal. HOTEL não acessa o dashboard
+administrativo; intervalos inválidos de auditoria retornam 422.
 
 A auditoria compara instantes com fuso horário, ordena do mais recente e mostra
 cada campo alterado, com distinção entre ausente, `null`, `false` e zero. O intervalo
@@ -266,3 +261,31 @@ A suíte adicional `src/reading.test.js` cobre parâmetros, busca, combinações
 ordenação/paginação, mapa completo, cancelamento, dados ausentes, permissões,
 renderização dos estados, histórico e valores de auditoria. Mantém `node:test`,
 `node:assert/strict` e Vite SSR; não adiciona biblioteca de DOM.
+
+## Finalização #37 — Docker e persistência real
+
+Execute `docker compose up -d --build --wait` na raiz após copiar `.env.example`
+para `.env`. O frontend Nginx é servido em `OTO_WEB_PORT` (padrão 8080; nesta máquina
+8081 por conflito prévio). A API fica em `/api`; documentação em `/api/docs`.
+Migrations, PostgreSQL e worker são iniciados pelo Compose; volumes preservam banco
+/arquivos. Mailpit captura e-mails em `http://localhost:8025`, sem envio externo.
+
+Para o Vite, `OTO_API_TARGET=http://127.0.0.1:8080/api` encaminha à stack real
+(ajuste para a porta configurada). O proxy continua fora do build. Não configure
+`OTO_DEV_BEARER_TOKEN` para substituir o login da aplicação.
+
+Com alinhamento do usuário, agora estão disponíveis alteração da própria senha,
+redefinição por token e inativação/reativação de contas. O perfil abre um modal de
+senha atual/nova/confirmada. Novas senhas têm 8–128 caracteres; sucesso encerra a
+sessão e exige novo login. O link de recuperação abre `/#/redefinir-senha?token=...`.
+Ativação e recuperação devem ser abertas a partir das mensagens capturadas no
+Mailpit. Tokens ficam no fragmento da URL e no corpo do pedido, não na query HTTP.
+
+Contas mostram ATIVO/INATIVO/PENDENTE corretamente. ADMIN confirma inativação ou
+reativação; a própria conta não recebe o botão e o servidor protege o último
+administrador. Contas pendentes recebem reenvio de convite. Nenhum DELETE é usado.
+O frontend trata 401 sem fallback; expiração/revogação também são verificadas no SQL.
+
+Avatar permanece por iniciais e preferências são locais por usuário: não há
+upload ou sincronização remota dessas duas funções no MVP. Backend e contrato
+detalham os schemas, regras de token e parâmetros SMTP.

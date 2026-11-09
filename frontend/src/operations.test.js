@@ -93,7 +93,10 @@ test('login inválido não dispara o tratamento de expiração', async () => {
 test('valida login, convite, senha confirmada e recuperação', () => {
   assert.ok(domain.validateAccess({ email: 'errado', senha: '' }).email)
   assert.ok(domain.validateAccess({ senha: 'a', confirmacao: 'b' }, 'activate').confirmacao)
-  assert.deepEqual(domain.validateAccess({ senha: 'abc', confirmacao: 'abc' }, 'activate'), {})
+  assert.deepEqual(
+    domain.validateAccess({ senha: 'senha-abc123', confirmacao: 'senha-abc123' }, 'activate'),
+    {},
+  )
   assert.deepEqual(domain.validateAccess({ email: 'usuario@example.test' }, 'recover'), {})
 })
 test('perfil envia somente nome/email alterados e ignora cargo', () => {
@@ -248,7 +251,7 @@ test('perfil renderiza cargo protegido e preferências do protótipo', () => {
   assert.match(result.match(/<input[^>]*name="perfil"[^>]*>/)[0], /disabled/)
   assert.doesNotMatch(result, /name="senha"/)
 })
-test('painel de contas preserva equipe, hospedagens e limita remoção indisponível', () => {
+test('painel de contas preserva equipe, hospedagens e histórico na inativação', () => {
   const result = render('AccountsPage', {
     api: {},
     initialData: {
@@ -259,7 +262,7 @@ test('painel de contas preserva equipe, hospedagens e limita remoção indispon�
   assert.match(result, /Equipe Interna/)
   assert.match(result, /Hospedagens/)
   assert.match(result, /Reenviar convite/)
-  assert.match(result, /Remoção de acesso ainda não disponível/)
+  assert.match(result, /As contas são inativadas para preservar o histórico/)
 })
 test('GESTOR consulta pesquisas sem receber ações de gestão', () => {
   const survey = {
@@ -378,4 +381,83 @@ test('novas operações reutilizam o cliente HTTP e os caminhos existentes', asy
       '/auth/logout',
     ],
   )
+})
+
+test('novas senhas seguem o limite do contrato e exigem confirmação', () => {
+  assert.ok(domain.validateAccess({ senha: 'curta', confirmacao: 'curta' }, 'reset').senha)
+  assert.ok(
+    domain.validateAccess({ senha: 'x'.repeat(129), confirmacao: 'x'.repeat(129) }, 'reset')
+      .senha,
+  )
+  assert.ok(
+    domain.validateAccess(
+      { senha_atual: 'anterior', senha: 'nova-senha-123', confirmacao: 'diferente' },
+      'change',
+    ).confirmacao,
+  )
+  assert.deepEqual(
+    domain.validateAccess(
+      { senha_atual: 'anterior', senha: 'nova-senha-123', confirmacao: 'nova-senha-123' },
+      'change',
+    ),
+    {},
+  )
+})
+test('redefinição aceita token sem sessão e envia somente campos do contrato', async () => {
+  let called
+  const api = createInventoryApi(
+    createHttpClient({
+      requireSession: true,
+      fetchImpl: async (path, options) => {
+        called = { path, options }
+        return Response.json({ message: 'Senha redefinida' })
+      },
+    }),
+  )
+  await api.resetPassword({ token: 'teste', senha: 'nova-senha-123' })
+  assert.equal(called.path, '/auth/redefinicao-senha')
+  assert.equal(called.options.headers.has('Authorization'), false)
+  assert.deepEqual(JSON.parse(called.options.body), { token: 'teste', senha: 'nova-senha-123' })
+})
+test('tela de redefinição oculta e-mail e senha fica protegida', () => {
+  const result = render('AccessPage', {
+    api: {},
+    kind: 'reset',
+    invitation: { token: 'teste' },
+    onNavigate() {},
+  })
+  assert.match(result, /Redefinir senha/)
+  assert.match(result, /type="password"/)
+  assert.doesNotMatch(result, /name="email"/)
+  const invalid = render('AccessPage', {
+    api: {},
+    kind: 'reset',
+    invitation: {},
+    onNavigate() {},
+  })
+  assert.match(invalid, /Link de recuperação inválido/)
+})
+test('contas ativas e inativas oferecem transições, pendentes oferecem reenvio', () => {
+  const result = render('AccountsPage', {
+    api: {},
+    user: { id_usuario: 1 },
+    initialData: {
+      recipients: [],
+      users: [
+        { ...user, id_usuario: 1, ativo: true, status: 'ATIVO' },
+        { ...user, id_usuario: 2, ativo: false, status: 'INATIVO' },
+        { ...user, id_usuario: 3, ativo: false, status: 'PENDENTE' },
+      ],
+    },
+  })
+  assert.match(result, /disabled="">Inativar/)
+  assert.match(result, />Reativar</)
+  assert.match(result, /Reenviar convite/)
+  assert.doesNotMatch(result, />Remover</)
+})
+test('sessão sem expiração válida não é reutilizada', () => {
+  const store = storage()
+  store.setItem('oto.accessToken', 'token')
+  assert.equal(createSession(store).token(), null)
+  assert.equal(store.getItem('oto.accessToken'), null)
 })

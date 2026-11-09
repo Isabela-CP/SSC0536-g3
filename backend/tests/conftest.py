@@ -1,3 +1,5 @@
+import os
+os.environ["OTO_DATA_BACKEND"] = "memory"
 import json
 from types import SimpleNamespace
 

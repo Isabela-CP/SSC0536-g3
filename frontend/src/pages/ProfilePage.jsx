@@ -1,13 +1,17 @@
+import PasswordDialog from '../components/PasswordDialog.jsx'
 import React, { useState } from 'react'
 import { Field } from '../components/FormFields.jsx'
 import { OperationFeedback } from '../components/OperationsUI.jsx'
 import { useOperation } from '../hooks/operations.js'
 import { profilePayload, validateProfile, roles } from '../domain/operations.js'
 import { readPreferences, savePreferences, applyPreferences } from '../services/preferences.js'
-export default function ProfilePage({ user, api, onUpdated }) {
+export default function ProfilePage({ user, api, onUpdated, onPasswordChanged }) {
+  const [passwordDialog, setPasswordDialog] = useState(false)
   const [draft, setDraft] = useState({ nome: user.nome, email: user.email }),
     [errors, setErrors] = useState({}),
-    [preferences, setPreferences] = useState(() => readPreferences(globalThis.localStorage, user)),
+    [preferences, setPreferences] = useState(() =>
+      readPreferences(globalThis.localStorage, user),
+    ),
     operation = useOperation()
   const change = (path, value) => {
     setDraft((previous) => ({ ...previous, [path]: value }))
@@ -103,7 +107,12 @@ export default function ProfilePage({ user, api, onUpdated }) {
         >
           Solicitar recuperação de senha
         </button>
-        <p className="file-hint">A troca direta de senha ainda não está disponível.</p>
+        <button
+          className="button button-secondary button-small"
+          onClick={() => setPasswordDialog(true)}
+        >
+          Alterar Senha de Acesso
+        </button>
         <h2>Preferências</h2>
         <div className="preference-groups">
           <fieldset>
@@ -141,6 +150,16 @@ export default function ProfilePage({ user, api, onUpdated }) {
           </fieldset>
         </div>
       </section>
+      {passwordDialog && (
+        <PasswordDialog
+          api={api}
+          onClose={() => setPasswordDialog(false)}
+          onChanged={() => {
+            setPasswordDialog(false)
+            onPasswordChanged?.()
+          }}
+        />
+      )}
     </>
   )
 }

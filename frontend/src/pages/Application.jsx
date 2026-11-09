@@ -96,7 +96,12 @@ export default function Application({ Workspace }) {
     )
   const { runtime, user } = state,
     path = hash.replace(/^#/, '').split('?')[0],
-    publicRoute = ['/login', '/recuperar-senha', '/ativar-convite'].includes(path)
+    publicRoute = [
+      '/login',
+      '/recuperar-senha',
+      '/ativar-convite',
+      '/redefinir-senha',
+    ].includes(path)
   if (!user || publicRoute) {
     const params = new URLSearchParams(hash.split('?')[1] || '')
     return (
@@ -104,11 +109,13 @@ export default function Application({ Workspace }) {
         key={path}
         api={runtime.api}
         kind={
-          path === '/recuperar-senha'
-            ? 'recover'
-            : path === '/ativar-convite'
-              ? 'activate'
-              : 'login'
+          path === '/redefinir-senha'
+            ? 'reset'
+            : path === '/recuperar-senha'
+              ? 'recover'
+              : path === '/ativar-convite'
+                ? 'activate'
+                : 'login'
         }
         invitation={{ id: params.get('id'), token: params.get('token') }}
         onNavigate={navigate}
@@ -142,10 +149,15 @@ export default function Application({ Workspace }) {
       <ProfilePage
         user={user}
         api={runtime.api}
+        onPasswordChanged={() => {
+          runtime.session.clear()
+          setState((previous) => ({ ...previous, user: null }))
+          navigate('/login')
+        }}
         onUpdated={(result) => setState((previous) => ({ ...previous, user: result }))}
       />
     )
-  else if (route.kind === 'accounts') page = <AccountsPage api={runtime.api} />
+  else if (route.kind === 'accounts') page = <AccountsPage api={runtime.api} user={user} />
   else if (route.kind === 'surveys') page = <SurveysPage api={runtime.api} user={user} />
   else if (route.kind === 'hotel') page = <HotelHome api={runtime.api} />
   else if (route.kind === 'dashboard') page = <DashboardPage api={runtime.api} />

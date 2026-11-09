@@ -22,7 +22,7 @@ export function createHttpClient({
     )
     const token = getToken()
     const publicOperation =
-      ['/auth/login', '/auth/recuperacao-senha'].includes(path) ||
+      ['/auth/login', '/auth/recuperacao-senha', '/auth/redefinicao-senha'].includes(path) ||
       /^\/convites\/[^/]+\/aceitacao$/.test(path)
     if (requireSession && !publicOperation && !token) {
       onUnauthorized?.()
@@ -74,6 +74,13 @@ export function createInventoryApi(request) {
         method: 'POST',
         body: payload,
       }),
+    resetPassword: (payload) =>
+      request('/auth/redefinicao-senha', { method: 'POST', body: payload }),
+    changePassword: (payload) => request('/perfil/senha', { method: 'PUT', body: payload }),
+    inactivateUser: (id) =>
+      request(`/usuarios/${encodeURIComponent(id)}/inativacao`, { method: 'POST' }),
+    reactivateUser: (id) =>
+      request(`/usuarios/${encodeURIComponent(id)}/reativacao`, { method: 'POST' }),
     updateProfile: (payload) => request('/perfil', { method: 'PATCH', body: payload }),
     users: (options) => request('/usuarios', options),
     createUser: (payload) => request('/usuarios', { method: 'POST', body: payload }),

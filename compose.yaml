@@ -1,0 +1,80 @@
+name: oto
+x-backend: &backend
+  build:
+    context: .
+    dockerfile: backend/Dockerfile
+  environment: &environment
+    OTO_ROOT_PATH: /api
+    OTO_DATA_BACKEND: postgres
+    PGHOST: db
+    PGDATABASE: oto
+    PGUSER: oto_app
+    PGPASSWORD: ${OTO_APP_PASSWORD:-oto_local_app}
+    OTO_ENV: development
+    OTO_STORAGE_DIR: /data/documentos
+    OTO_PUBLIC_URL: ${OTO_PUBLIC_URL:-http://localhost:8080}
+    OTO_SMTP_HOST: mailpit
+    OTO_SMTP_PORT: "1025"
+    OTO_MAIL_FROM: no-reply@oto.example.test
+  volumes:
+    - files:/data/documentos
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: oto
+      POSTGRES_USER: oto_owner
+      POSTGRES_PASSWORD: ${OTO_DB_PASSWORD:-oto_local_owner}
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U oto_owner -d oto"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+  migrate:
+    <<: *backend
+    environment:
+      <<: *environment
+      PGUSER: oto_owner
+      PGPASSWORD: ${OTO_DB_PASSWORD:-oto_local_owner}
+      OTO_APP_USER: oto_app
+      OTO_APP_PASSWORD: ${OTO_APP_PASSWORD:-oto_local_app}
+    command: [python, -m, app.migrate, --seed]
+    depends_on:
+      db:
+        condition: service_healthy
+  api:
+    <<: *backend
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  mailpit:
+    image: axllent/mailpit:v1.27
+    ports:
+      - "127.0.0.1:${OTO_MAIL_PORT:-8025}:8025"
+  worker:
+    <<: *backend
+    command: [python, -m, app.mailer]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      mailpit:
+        condition: service_started
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    ports:
+      - "127.0.0.1:${OTO_WEB_PORT:-8080}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+volumes:
+  postgres:
+  files:

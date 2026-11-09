@@ -1,6 +1,7 @@
 const labels = {
   email: 'E-mail',
   senha: 'Senha',
+  senha_atual: 'Senha atual',
   confirmacao: 'Repetir Senha',
   nome: 'Nome',
   perfil: 'Tipo',
