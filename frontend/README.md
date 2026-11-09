@@ -1,8 +1,9 @@
-# Interface de cadastro e manutenção — SCRUM-97
+# Interface OTO — SCRUM-96 e SCRUM-97
 
 Telas de cadastro, edição e manutenção dos meios de hospedagem, com componentes
 reutilizáveis e integração com os oito endpoints de escrita/documentos do OpenAPI.
-Listagem, filtros, paginação, consulta completa e mapa pertencem à SCRUM-96.
+Listagem, filtros, paginação, consulta completa, mapa, dashboards e auditoria
+estão implementados pela SCRUM-96, compartilhando o cliente e a sessão da SCRUM-97.
 
 ## Executar conectado ao backend
 
@@ -69,14 +70,14 @@ explícita no modo mock.
 
 `services/http.js` centraliza URL, Bearer, JSON, multipart, erros HTTP, cancelamento
 e download binário. `services/runtime.js` concentra a configuração da sessão.
-A SCRUM-96 pode reutilizar esses módulos e adicionar seus métodos de consulta à
+A SCRUM-96 reutiliza esses módulos e acrescenta seus métodos de consulta à
 mesma fábrica `createInventoryApi`. Não crie outra configuração de URL/token.
 Respostas 401/403 nunca ativam fallback para mocks.
 
 Os métodos de cadastro, PATCH, inativação, reativação, upload, edição de metadados,
 download e substituição utilizam os caminhos e métodos do OpenAPI. GET de perfil,
-categorias e ficha são dependências para inicializar a edição, sem construir a
-listagem ou o mapa da outra issue.
+categorias e ficha são dependências para inicializar a edição, compartilhadas com a
+listagem e o mapa da SCRUM-96.
 
 ## Campos, validações e permissões
 
@@ -139,7 +140,7 @@ Diferenças necessárias entre a referência visual e o escopo/contrato:
   da conta HOTEL vinculada. Falha no convite permite tentar novamente sem criar
   outra hospedagem ou duplicar uma conta já criada.
 - Dashboards ADMIN/FUNCIONARIO, inventário, mapa e auditoria pertencem à SCRUM-96.
-  Suas entradas apresentam indisponibilidade explícita até essa implementação.
+  Suas entradas abrem as telas de consulta implementadas nesta etapa.
 - O campo “Justificativa de Remoção” mantém o rótulo do protótipo, mas envia
   `motivo_inativacao` e executa uma transição lógica, sem apagar o registro.
 
@@ -198,3 +199,70 @@ Os testes adicionais cobrem sessão/expiração, isolamento de rotas e preferên
 payloads, validação de acesso, convites com falha parcial, paginação de destinatários,
 pesquisas, ocupação, exportação e renderização SSR dos novos módulos. Nenhuma
 biblioteca de interação DOM ou dependência frontend foi adicionada.
+
+## Consultas e dashboards — SCRUM-96
+
+Plano executado: completar consultas do servidor, implementar dashboard/inventário/mapa,
+adicionar detalhe/histórico/auditoria, testar combinações/permissões e conferir no navegador.
+As operações de escrita existentes foram reutilizadas; scripts e prints seguem ignorados.
+
+Rotas adicionais:
+
+- `/#/inicio`: dashboard ADMINISTRADOR, EDITOR e GESTOR; HOTEL mantém seu início próprio.
+- `/#/inventario`: busca por nome/razão social/CNPJ com ou sem pontuação; categoria,
+  status, Cadastur, aceite de pesquisas, tamanho de página, ordenação e direção.
+- `/#/estabelecimentos/<uuid>`: consulta de dados básicos, hospedagem, infraestrutura,
+  acessibilidade e documentos; grupos expansíveis preservam a ficha completa.
+- `/#/estabelecimentos/<uuid>/pesquisas`: histórico e pesquisas sem resposta da hospedagem.
+- `/#/pesquisas/<uuid>/respostas`: respostas por hospedagem, incluindo taxa zero.
+- `/#/auditoria`: filtros de ação, ID do autor e intervalo de data/hora, exclusivo ADMIN.
+
+A tabela do inventário usa paginação e filtros no servidor. O mapa consulta todas as
+páginas dos mesmos filtros, sem resumir o conjunto à página visível. A categoria
+é restrita ao segmento de hospedagem. HOTEL continua isolado pelo backend e pelas
+rotas da interface; GESTOR recebe somente ações de consulta e exportação.
+
+### Mapa
+
+Leaflet 1.9.4 foi escolhido antes da instalação por oferecer navegação, zoom e
+marcadores sem adicionar outro framework React. A importação JS é dinâmica no
+cliente, preservando renderização SSR dos testes. Tiles HTTPS do OpenStreetMap,
+com atribuição visível e sem prefetch/download em massa, seguem a
+[política do provedor](https://operations.osmfoundation.org/policies/tiles/).
+Marcadores usam coordenadas reais da API, inclusive zero; não há geolocalização
+do navegador. O seed aponta para São Carlos, portanto o mapa não força Olímpia.
+Ausência de coordenadas e falha de rede têm estados explícitos e lista alternativa.
+Em produção, avaliar provedor de tiles conforme volume e disponibilidade.
+
+### Dashboard e lacunas contratuais
+
+O servidor calcula totais sobre todas as fichas de hospedagem do repositório atual,
+incluindo alterações em memória. Leitos desconhecidos não são inventados: o card
+indica total parcial e a quantidade de fichas incompletas. A tabela Cadastur usa
+vencimentos efetivamente informados, ordenados do mais antigo ao mais recente;
+valores negativos indicam vencidos. Não foi inventada uma janela de alerta de 30/60 dias.
+A janela e eventual restrição por status ainda exigem alinhamento de negócio.
+
+`GET /dashboard` não possui schema de resposta completo no OpenAPI. A resposta
+local foi complementada com `total_empresas`, `total_leitos`,
+`leitos_nao_informados`, `alertas_cadastur` e `referencia`; o cliente rejeita a
+resposta antiga incompleta. O antigo alerta AVCB fixo foi removido. O contrato e
+os arquivos de mocks originais não foram alterados. Schema definitivo, 403 HOTEL
+no dashboard e 422 para intervalos inválidos de auditoria ficam registrados para
+alinhamento antes de uma revisão contratual.
+
+A auditoria compara instantes com fuso horário, ordena do mais recente e mostra
+cada campo alterado, com distinção entre ausente, `null`, `false` e zero. O intervalo
+`datetime-local` é convertido para ISO no cliente. Pesquisas permitem consulta por
+mês/tipo, taxa de resposta calculada, histórico individual e exportação PDF/CSV
+existente. Exportação consolidada inclui todas as pesquisas, independentemente do
+filtro visual; XLS não é oferecido porque o backend não o gera.
+
+No modo mock explícito, inventário, detalhe, dashboard e mapa reutilizam o seed;
+a auditoria começa vazia e as operações de pesquisa continuam exigindo o backend.
+O modo real nunca troca automaticamente para mock após 401/403.
+
+A suíte adicional `src/reading.test.js` cobre parâmetros, busca, combinações,
+ordenação/paginação, mapa completo, cancelamento, dados ausentes, permissões,
+renderização dos estados, histórico e valores de auditoria. Mantém `node:test`,
+`node:assert/strict` e Vite SSR; não adiciona biblioteca de DOM.

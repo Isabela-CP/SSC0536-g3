@@ -4,9 +4,10 @@ export default function DataTable({
   rows,
   caption,
   empty = 'Nenhum registro encontrado.',
+  pageSize = 5,
 }) {
   const [page, setPage] = useState(1),
-    total = Math.max(1, Math.ceil(rows.length / 5)),
+    total = Math.max(1, Math.ceil(rows.length / pageSize)),
     current = Math.min(page, total)
   return (
     <div className="data-table">
@@ -23,8 +24,17 @@ export default function DataTable({
             </tr>
           </thead>
           <tbody>
-            {rows.slice((current - 1) * 5, current * 5).map((row, index) => (
-              <tr key={row.id_usuario || row.id_pesquisa || row.id_resposta || index}>
+            {rows.slice((current - 1) * pageSize, current * pageSize).map((row, index) => (
+              <tr
+                key={
+                  row.id ||
+                  row.id_estabelecimento ||
+                  row.id_usuario ||
+                  row.id_pesquisa ||
+                  row.id_resposta ||
+                  index
+                }
+              >
                 {columns.map((column) => (
                   <td key={column.key}>
                     {column.render ? column.render(row) : (row[column.key] ?? '—')}

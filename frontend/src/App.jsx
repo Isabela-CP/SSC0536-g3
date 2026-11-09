@@ -61,7 +61,12 @@ export function EstablishmentWorkspace({
           runtime.api.categories({ signal: controller.signal }),
           route.id ? runtime.api.establishment(route.id, { signal: controller.signal }) : null,
         ])
-        if (active)
+        if (active) {
+          if (
+            route.id &&
+            new URLSearchParams(location.split('?')[1] || '').get('status') === 'confirmar'
+          )
+            setDialog(true)
           setState({
             status: 'ready',
             user,
@@ -71,6 +76,7 @@ export function EstablishmentWorkspace({
             api: runtime.api,
             mock: runtime.mock,
           })
+        }
       } catch (error) {
         if (active && error.name !== 'AbortError')
           setState((previous) => ({

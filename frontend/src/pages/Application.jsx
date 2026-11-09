@@ -1,3 +1,8 @@
+import DashboardPage from './DashboardPage.jsx'
+import InventoryPage from './InventoryPage.jsx'
+import EstablishmentDetail from './EstablishmentDetail.jsx'
+import AuditPage from './AuditPage.jsx'
+import ResearchHistoryPage from './ResearchHistoryPage.jsx'
 import React, { useEffect, useState } from 'react'
 import { applicationRuntime } from '../services/runtime.js'
 import { homeFor, portalRoute } from '../domain/navigation.js'
@@ -37,7 +42,8 @@ export default function Application({ Workspace }) {
         if (active) setState({ loading: false, user, runtime, error: '' })
       })
       .catch((error) => {
-        if (active) setState((previous) => ({ ...previous, loading: false, error: error.message }))
+        if (active)
+          setState((previous) => ({ ...previous, loading: false, error: error.message }))
       })
     return () => {
       active = false
@@ -142,21 +148,20 @@ export default function Application({ Workspace }) {
   else if (route.kind === 'accounts') page = <AccountsPage api={runtime.api} />
   else if (route.kind === 'surveys') page = <SurveysPage api={runtime.api} user={user} />
   else if (route.kind === 'hotel') page = <HotelHome api={runtime.api} />
-  else if (route.kind === 'reading')
+  else if (route.kind === 'dashboard') page = <DashboardPage api={runtime.api} />
+  else if (route.kind === 'inventory') page = <InventoryPage api={runtime.api} user={user} />
+  else if (route.kind === 'detail')
+    page = <EstablishmentDetail key={route.id} api={runtime.api} user={user} id={route.id} />
+  else if (route.kind === 'audit') page = <AuditPage api={runtime.api} user={user} />
+  else if (route.kind === 'history' || route.kind === 'responses')
     page = (
-      <>
-        <header className="page-heading">
-          <h1>{route.title}</h1>
-        </header>
-        <section className="form-card">
-          <p>Esta área de consulta ainda não está disponível.</p>
-          {user.perfil === 'ADMINISTRADOR' && (
-            <a className="button button-primary" href="#/estabelecimentos/novo">
-              Cadastrar Estabelecimento
-            </a>
-          )}
-        </section>
-      </>
+      <ResearchHistoryPage
+        key={`${route.kind}:${route.id}`}
+        api={runtime.api}
+        user={user}
+        establishmentId={route.kind === 'history' ? route.id : undefined}
+        surveyId={route.kind === 'responses' ? route.id : undefined}
+      />
     )
   else
     page = (
@@ -169,7 +174,12 @@ export default function Application({ Workspace }) {
       />
     )
   return (
-    <Layout user={user} activePath={route.path} onNavigate={navigate} onLogout={logout}>
+    <Layout
+      user={user}
+      activePath={route.kind === 'responses' ? '/pesquisas' : route.path}
+      onNavigate={navigate}
+      onLogout={logout}
+    >
       {page}
     </Layout>
   )

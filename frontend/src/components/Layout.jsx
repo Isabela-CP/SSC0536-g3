@@ -17,6 +17,10 @@ export default function Layout({ user, children, onNavigate, onLogout, activePat
         ...(user?.perfil === 'ADMINISTRADOR' ? [['Auditoria', '/auditoria']] : []),
         ['Perfil', '/perfil'],
       ]
+  const reading =
+    ['/inicio', '/inventario', '/auditoria', '/pesquisas'].some(
+      (root) => path === root || path.startsWith(root + '/'),
+    ) || /^\/estabelecimentos\/[^/]+(?:\/pesquisas)?$/.test(path)
   return (
     <div className="app-shell">
       <a
@@ -42,7 +46,9 @@ export default function Layout({ user, children, onNavigate, onLogout, activePat
           <ul>
             {items.map(([label, to]) => {
               const active =
-                path === to || (to === '/inventario' && path.startsWith('/estabelecimentos'))
+                path === to ||
+                (to === '/inventario' && path.startsWith('/estabelecimentos')) ||
+                (to === '/pesquisas' && path.startsWith('/pesquisas/'))
               return (
                 <li key={to}>
                   <a
@@ -66,7 +72,11 @@ export default function Layout({ user, children, onNavigate, onLogout, activePat
           ↪ Sair
         </button>
       </aside>
-      <main id="main-content" className="main-content" tabIndex={-1}>
+      <main
+        id="main-content"
+        className={`main-content${reading ? ' read-content' : ''}`}
+        tabIndex={-1}
+      >
         {children}
       </main>
     </div>

@@ -214,7 +214,7 @@ test('navegação bloqueia contas e fichas alheias por perfil', () => {
     'forbidden',
   )
   assert.equal(navigation.portalRoute('#/inicio', { perfil: 'HOTEL' }).kind, 'hotel')
-  assert.equal(navigation.portalRoute('#/inicio', user).kind, 'reading')
+  assert.equal(navigation.portalRoute('#/inicio', user).kind, 'dashboard')
   assert.equal(navigation.portalRoute('#/auditoria', { perfil: 'EDITOR' }).kind, 'forbidden')
 })
 test('acesso usa campos de senha protegidos e link de recuperação', () => {

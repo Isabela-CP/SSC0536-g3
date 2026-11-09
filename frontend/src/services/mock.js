@@ -1,3 +1,4 @@
+import { mockInventory, mockDashboard } from './mockReading.js'
 import seed from '../../../contratos_api_oto/mocks/seed-data.json'
 import {
   permissions,
@@ -49,7 +50,8 @@ export function createMockFetch(user = mockUser()) {
   }
   return async function mockFetch(url, options = {}) {
     if (options.signal?.aborted) throw new DOMException('Cancelado', 'AbortError')
-    const path = new URL(url, 'http://mock.local').pathname
+    const requestUrl = new URL(url, 'http://mock.local')
+    const path = requestUrl.pathname
     const method = options.method || 'GET'
     if (path === '/auth/login') {
       const data = JSON.parse(options.body || '{}')
@@ -69,7 +71,8 @@ export function createMockFetch(user = mockUser()) {
         : fail(401, 'INVALID_CREDENTIALS', 'E-mail ou senha inválidos.')
     }
     if (path === '/auth/logout') return new Response(null, { status: 204 })
-    if (path === '/auth/recuperacao-senha') return json({ message: 'Solicitação recebida.' }, 202)
+    if (path === '/auth/recuperacao-senha')
+      return json({ message: 'Solicitação recebida.' }, 202)
     if (path === '/perfil' && method === 'PATCH') {
       const data = JSON.parse(options.body || '{}')
       if (Object.keys(data).some((key) => !['nome', 'email'].includes(key)))
@@ -91,9 +94,22 @@ export function createMockFetch(user = mockUser()) {
     if (path === '/perfil') return json(user)
     if (path === '/categorias-estabelecimento')
       return json({ data: hostingCategories(seed.categorias_estabelecimento) })
+    if (path === '/estabelecimentos' && method === 'GET') {
+      const result = mockInventory(items, user, requestUrl.searchParams)
+      return result.errors ? invalid(result.errors) : json(result)
+    }
+    if (path === '/dashboard')
+      return user.perfil === 'HOTEL'
+        ? fail(403, 'FORBIDDEN', 'Seu perfil não pode acessar o dashboard.')
+        : json(mockDashboard(items, seed.categorias_estabelecimento))
+    if (path === '/auditoria')
+      return user.perfil === 'ADMINISTRADOR'
+        ? json({ data: [] })
+        : fail(403, 'FORBIDDEN', 'Auditoria exclusiva de administrador.')
     const payload = typeof options.body === 'string' ? JSON.parse(options.body) : options.body
     if (path === '/estabelecimentos' && method === 'POST') {
-      if (!permissions(user).create) return fail(403, 'FORBIDDEN', 'Seu perfil não pode cadastrar.')
+      if (!permissions(user).create)
+        return fail(403, 'FORBIDDEN', 'Seu perfil não pode cadastrar.')
       const errors = validateEstablishment(payload)
       if (
         !hostingCategories(seed.categorias_estabelecimento).some(
@@ -103,7 +119,9 @@ export function createMockFetch(user = mockUser()) {
         errors.id_categoria = 'Categoria inválida.'
       if (Object.keys(errors).length) return invalid(errors)
       if (
-        items.some((item) => item.cnpj && normalizeCnpj(item.cnpj) === normalizeCnpj(payload.cnpj))
+        items.some(
+          (item) => item.cnpj && normalizeCnpj(item.cnpj) === normalizeCnpj(payload.cnpj),
+        )
       )
         return fail(409, 'CONFLICT', 'Já existe uma hospedagem com este CNPJ.')
       const item = {
