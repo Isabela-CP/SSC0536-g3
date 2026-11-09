@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { Field } from '../components/FormFields.jsx'
 import Modal from '../components/Modal.jsx'
 import DataTable from '../components/DataTable.jsx'
-import { OperationFeedback, ResourceState } from '../components/OperationsUI.jsx'
+import { OperationFeedback, ResourceState, ConfirmAction } from '../components/OperationsUI.jsx'
 import { useOperation, useResource } from '../hooks/operations.js'
 import {
   roles,
@@ -99,7 +99,8 @@ export function AccountDialog({
           ))}
         </div>
         <p className="file-hint">
-          O servidor local registra o convite. A entrega de e-mail depende do serviço de envio.
+          O convite será colocado na fila de envio. Em desenvolvimento, consulte a caixa de
+          e-mail local (Mailpit).
         </p>
         <div className="form-actions">
           <button
@@ -122,7 +123,7 @@ export function AccountDialog({
     </Modal>
   )
 }
-export default function AccountsPage({ api, initialData = null }) {
+export default function AccountsPage({ api, user: actor, initialData = null }) {
   const resource = useResource(
       async (options) => {
         const [users, recipients] = await Promise.all([
@@ -135,6 +136,7 @@ export default function AccountsPage({ api, initialData = null }) {
       initialData,
     ),
     [dialog, setDialog] = useState(false),
+    [changing, setChanging] = useState(null),
     operation = useOperation()
   const columns = [
     { key: 'nome', label: 'Nome' },
@@ -143,14 +145,15 @@ export default function AccountsPage({ api, initialData = null }) {
     {
       key: 'ativo',
       label: 'Status',
-      render: (user) => (user.ativo ? 'Ativa' : 'Pendente'),
+      render: (user) =>
+        user.status === 'INATIVO' ? 'Inativa' : user.ativo ? 'Ativa' : 'Pendente',
     },
     {
       key: 'actions',
       label: 'Ações',
       render: (user) => (
         <div className="document-actions">
-          {!user.ativo && (
+          {!user.ativo && user.status !== 'INATIVO' && (
             <button
               className="button button-small button-secondary"
               disabled={operation.busy}
@@ -164,13 +167,15 @@ export default function AccountsPage({ api, initialData = null }) {
               Reenviar convite
             </button>
           )}
-          <button
-            className="button button-small button-secondary"
-            disabled
-            title="Remoção de acesso ainda não disponível"
-          >
-            Remover
-          </button>
+          {(user.ativo || user.status === 'INATIVO') && (
+            <button
+              className="button button-small button-secondary"
+              disabled={operation.busy || user.id_usuario === actor?.id_usuario}
+              onClick={() => setChanging(user)}
+            >
+              {user.ativo ? 'Inativar' : 'Reativar'}
+            </button>
+          )}
         </div>
       ),
     },
@@ -200,7 +205,29 @@ export default function AccountsPage({ api, initialData = null }) {
               />
             </section>
           ))}
-          <p className="muted">Remoção de acesso ainda não disponível.</p>
+          <p className="muted">As contas são inativadas para preservar o histórico.</p>
+          {changing && (
+            <ConfirmAction
+              title={changing.ativo ? 'Inativar conta' : 'Reativar conta'}
+              onClose={() => setChanging(null)}
+              action={() =>
+                changing.ativo
+                  ? api.inactivateUser(changing.id_usuario)
+                  : api.reactivateUser(changing.id_usuario)
+              }
+              onDone={resource.reload}
+              label={changing.ativo ? 'Inativar' : 'Reativar'}
+            >
+              <p>
+                {changing.nome} — {changing.email}
+              </p>
+              <p>
+                {changing.ativo
+                  ? 'A conta perderá acesso e suas sessões serão encerradas. O histórico será preservado.'
+                  : 'A conta poderá entrar novamente com a senha já definida.'}
+              </p>
+            </ConfirmAction>
+          )}
           {dialog && (
             <AccountDialog
               api={api}

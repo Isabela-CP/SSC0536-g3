@@ -1,4 +1,4 @@
-import { validateSchema } from './establishment.js'
+import { validateSchema, schemas } from './establishment.js'
 export const roles = {
   ADMINISTRADOR: 'Administrador',
   GESTOR: 'Funcionário — consulta',
@@ -9,11 +9,17 @@ const email = { type: 'string', format: 'email', minLength: 1 }
 const requiredText = { type: 'string', minLength: 1 }
 export function validateAccess(draft, kind = 'login') {
   const properties =
-    kind === 'activate'
-      ? { senha: requiredText, confirmacao: requiredText }
-      : kind === 'recover'
-        ? { email }
-        : { email, senha: requiredText }
+    kind === 'change'
+      ? {
+          senha_atual: requiredText,
+          senha: schemas.AlteracaoSenha.properties.senha,
+          confirmacao: requiredText,
+        }
+      : ['activate', 'reset'].includes(kind)
+        ? { senha: schemas.RedefinicaoSenha.properties.senha, confirmacao: requiredText }
+        : kind === 'recover'
+          ? { email }
+          : { email, senha: requiredText }
   const errors = validateSchema(draft, {
     type: 'object',
     properties,
@@ -21,7 +27,7 @@ export function validateAccess(draft, kind = 'login') {
   })
   for (const field of Object.keys(properties))
     if (!draft[field]?.trim()) errors[field] = 'Campo obrigatório.'
-  if (kind === 'activate' && draft.senha !== draft.confirmacao)
+  if (['activate', 'reset', 'change'].includes(kind) && draft.senha !== draft.confirmacao)
     errors.confirmacao = 'As senhas não conferem.'
   return errors
 }

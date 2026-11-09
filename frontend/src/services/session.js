@@ -8,7 +8,7 @@ export function createSession(storage, now = () => Date.now()) {
     token() {
       const token = storage?.getItem('oto.accessToken')
       const expiration = Number(storage?.getItem('oto.expiresAt'))
-      if (token && expiration && expiration <= now()) {
+      if (token && (!Number.isFinite(expiration) || expiration <= now())) {
         clear()
         return null
       }
