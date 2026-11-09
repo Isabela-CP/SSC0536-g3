@@ -1,0 +1,11 @@
+.git
+**/node_modules
+**/.venv
+**/dist
+**/__pycache__
+**/.pytest_cache
+**/.env
+**/.env.*
+prints
+scripts
+pr_reviewing

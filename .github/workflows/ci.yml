@@ -14,6 +14,22 @@ jobs:
   backend-tests:
     name: Testes do Backend (FastAPI)
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    env:
+      OTO_TEST_ADMIN_URL: postgresql://postgres:postgres@localhost:5432/postgres
     defaults:
       run:
         working-directory: backend
@@ -56,10 +72,26 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Instalar dependências do frontend
-        run: npm ci || npm install
+        run: npm ci
 
       - name: Executar testes do frontend
         run: npm test
 
       - name: Buildar o frontend
         run: npm run build
+
+  docker-smoke:
+    name: Docker e persistência após reinício
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Subir stack isolada
+        run: docker compose up -d --build --wait
+      - name: Exercitar API e reiniciar processos
+        run: python backend/tests/stack_smoke.py
+      - name: Diagnóstico
+        if: failure()
+        run: docker compose logs --no-color
+      - name: Encerrar recursos descartáveis do CI
+        if: always()
+        run: docker compose down --volumes
