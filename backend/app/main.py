@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import json
+from contextlib import asynccontextmanager
+import asyncio
+from threading import Event, Thread
 import os
 from copy import deepcopy
 from functools import lru_cache
@@ -32,16 +35,34 @@ ROOT_DIR = Path(__file__).resolve().parents[2]
 SEED_FILE = ROOT_DIR / "contratos_api_oto" / "mocks" / "seed-data.json"
 OPENAPI_FILE = ROOT_DIR / "contratos_api_oto" / "openapi.json"
 
+@asynccontextmanager
+async def lifespan(app):
+    stop = Event()
+    worker = None
+    if os.getenv('OTO_MAILER_EMBEDDED', 'false').lower() == 'true' and persistent():
+        from app.mailer import run_dispatcher
+        worker = Thread(target=run_dispatcher, args=(stop,), daemon=True, name='oto-mailer')
+        worker.start()
+    try:
+        yield
+    finally:
+        stop.set()
+        if worker:
+            await asyncio.to_thread(worker.join, 20)
+
+
 app = FastAPI(
+    lifespan=lifespan,
     root_path=os.getenv('OTO_ROOT_PATH',''),
     title="Inventário OTO",
     version="0.1.0",
-    description="Base FastAPI que entrega respostas mockadas do contrato OTO.",
+    description="API de inventário e operações OTO.",
 )
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
-    allow_credentials=True,
+    allow_origins=[origin.strip() for origin in os.getenv("OTO_CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173").split(",") if origin.strip()],
+    allow_credentials=False,
+    expose_headers=["Content-Disposition"],
     allow_methods=["*"],
     allow_headers=["*"],
 )

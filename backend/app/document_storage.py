@@ -73,6 +73,12 @@ class LocalDocumentStorage:
 
 @lru_cache
 def document_storage() -> DocumentStorage:
+    provider = os.getenv('OTO_STORAGE_PROVIDER', 'local')
+    if provider == 'supabase':
+        from app.cloud_storage import cloud_storage
+        return cloud_storage('documentos', int(os.getenv('OTO_UPLOAD_MAX_BYTES', '10485760')))
+    if provider != 'local':
+        raise RuntimeError('OTO_STORAGE_PROVIDER deve ser local ou supabase.')
     return LocalDocumentStorage(
         Path(os.environ.get("OTO_STORAGE_DIR", Path.home() / ".local/share/oto/documentos")),
         int(os.environ.get("OTO_UPLOAD_MAX_BYTES", 10 * 1024 * 1024)),
@@ -81,6 +87,13 @@ def document_storage() -> DocumentStorage:
 
 @lru_cache
 def report_storage() -> DocumentStorage:
+    provider = os.getenv('OTO_STORAGE_PROVIDER', 'local')
+    if provider == 'supabase':
+        from app.cloud_storage import cloud_storage
+        return cloud_storage('relatorios', int(os.getenv('OTO_REPORT_MAX_BYTES', '52428800')),
+                             {'application/pdf': {'.pdf'}, 'text/csv': {'.csv'}})
+    if provider != 'local':
+        raise RuntimeError('OTO_STORAGE_PROVIDER deve ser local ou supabase.')
     root = Path(os.getenv('OTO_REPORT_STORAGE_DIR') or str(Path(os.getenv('OTO_STORAGE_DIR', str(Path.home()/'.local/share/oto/documentos')))/'relatorios'))
     storage = LocalDocumentStorage(root, max_bytes=int(os.getenv('OTO_REPORT_MAX_BYTES','52428800')))
     storage.TYPES = {'application/pdf':{'.pdf'},'text/csv':{'.csv'}}

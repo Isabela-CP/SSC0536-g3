@@ -66,7 +66,7 @@ def test_pg_seed_and_repositories(pg):
         response=client.get('/estabelecimentos/'+row['id_estabelecimento'])
         assert response.status_code==200,response.text
     with db.transaction() as conn:
-        assert conn.execute('SELECT count(*) AS n FROM schema_migrations').fetchone()['n']==3
+        assert conn.execute('SELECT count(*) AS n FROM schema_migrations').fetchone()['n']==4
         assert conn.execute('SELECT count(*) AS n FROM usuarios').fetchone()['n']==10
         assert conn.execute("SELECT count(*) AS n FROM usuarios WHERE senha_hash NOT LIKE '$argon2id$%'").fetchone()['n']==0
 
@@ -349,3 +349,57 @@ def test_pg_operational_responses_follow_contract(pg):
         assert response.status_code==200,response.text
         schema=contract['paths'][path]['get']['responses']['200']['content']['application/json']['schema']
         Draft202012Validator({**schema,'components':contract['components']},format_checker=FormatChecker()).validate(response.json())
+
+
+def test_pg_bootstrap_creates_first_admin_once(pg, monkeypatch):
+    from app.start import bootstrap_admin
+    client, db = pg
+    with db.transaction() as conn:
+        conn.execute('TRUNCATE usuarios CASCADE')
+    monkeypatch.setenv('OTO_BOOTSTRAP_ADMIN_EMAIL', 'initial@example.test')
+    monkeypatch.setenv('OTO_BOOTSTRAP_ADMIN_PASSWORD', 'initial-secret-123')
+    bootstrap_admin(db)
+    monkeypatch.setenv('OTO_BOOTSTRAP_ADMIN_PASSWORD', 'ignored-restart-secret')
+    bootstrap_admin(db)
+    response = client.post('/auth/login', json={'email': 'initial@example.test', 'senha': 'initial-secret-123'})
+    assert response.status_code == 200
+    assert response.json()['usuario']['perfil'] == 'ADMINISTRADOR'
+    with db.transaction() as conn:
+        assert conn.execute('SELECT count(*) AS n FROM usuarios').fetchone()['n'] == 1
+
+
+def test_pg_rls_blocks_non_owner_access(pg):
+    client, db = pg
+    role = 'oto_test_anon_' + uuid4().hex[:12]
+    with db.transaction() as conn:
+        conn.execute(sql.SQL('CREATE ROLE {}').format(sql.Identifier(role)))
+        try:
+            conn.execute(sql.SQL('GRANT USAGE ON SCHEMA public TO {}').format(sql.Identifier(role)))
+            conn.execute(sql.SQL('GRANT SELECT ON usuarios,sessoes,email_outbox TO {}').format(sql.Identifier(role)))
+            conn.execute(sql.SQL('SET LOCAL ROLE {}').format(sql.Identifier(role)))
+            for table in ('usuarios', 'sessoes', 'email_outbox'):
+                assert not conn.execute(sql.SQL('SELECT * FROM {}').format(sql.Identifier(table))).fetchall()
+            conn.execute('RESET ROLE')
+        finally:
+            conn.execute(sql.SQL('DROP OWNED BY {}').format(sql.Identifier(role)))
+            conn.execute(sql.SQL('DROP ROLE {}').format(sql.Identifier(role)))
+
+
+def test_pg_brevo_failure_retry_and_delivery(pg, monkeypatch):
+    import httpx
+    from app.mailer import dispatch_one
+    client, db = pg
+    monkeypatch.setenv('OTO_MAIL_PROVIDER', 'brevo')
+    client.post('/auth/recuperacao-senha', json={'email': 'marina.admin@example.test'})
+    def failure(row):
+        raise httpx.ConnectError('sensitive-provider-response')
+    assert dispatch_one(db, brevo_sender=failure)
+    with db.transaction() as conn:
+        row = conn.execute('SELECT * FROM email_outbox ORDER BY id DESC LIMIT 1').fetchone()
+        assert row['tentativas'] == 1 and row['enviado_em'] is None
+        assert 'sensitive' not in row['ultimo_erro']
+    assert dispatch_one(db, brevo_sender=lambda row: None)
+    with db.transaction() as conn:
+        row = conn.execute('SELECT * FROM email_outbox ORDER BY id DESC LIMIT 1').fetchone()
+        assert row['tentativas'] == 2 and row['enviado_em']
+        assert row['corpo'] == '' and row['ultimo_erro'] is None

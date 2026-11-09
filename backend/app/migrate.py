@@ -61,6 +61,15 @@ def configure_application_role(db):
         for table in ('auditoria_logs','schema_migrations','application_seeds'):
             conn.execute(sql.SQL('REVOKE UPDATE,DELETE,TRUNCATE ON {} FROM {}').format(sql.Identifier(table),sql.Identifier(name)))
         conn.execute(sql.SQL('REVOKE INSERT ON schema_migrations,application_seeds FROM {}').format(sql.Identifier(name)))
+        # O papel da aplicação mantém acesso SQL; anon/authenticated do Supabase
+        # não recebem políticas nem acesso às tabelas pela Data API.
+        tables = ('categorias_estabelecimento', 'estabelecimentos', 'meio_hospedagem',
+                  'documentos_controle', 'usuarios', 'convites', 'pesquisas_ocupacao',
+                  'respostas_ocupacao', 'auditoria_logs', 'relatorios', 'recuperacao_senha',
+                  'pesquisa_destinatarios', 'sessoes', 'email_outbox', 'schema_migrations')
+        for table in tables:
+            conn.execute(sql.SQL('DROP POLICY IF EXISTS oto_application ON {}').format(sql.Identifier(table)))
+            conn.execute(sql.SQL('CREATE POLICY oto_application ON {} TO {} USING (true) WITH CHECK (true)').format(sql.Identifier(table), sql.Identifier(name)))
 
 
 if __name__=='__main__':
