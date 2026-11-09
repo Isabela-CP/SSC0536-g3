@@ -658,7 +658,18 @@
             "HOTEL"
           ],
           "restriction": "HOTEL só pode acessar o estabelecimento vinculado à própria conta."
-        }
+        },
+        "parameters": [
+          {
+            "name": "id_estabelecimento",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
       },
       "patch": {
         "tags": [
@@ -805,7 +816,18 @@
           "GESTOR": "Somente leitura.",
           "EDITOR": "Pode editar campos do estabelecimento, exceto cnpj e razao_social.",
           "HOTEL": "Pode editar a própria ficha, exceto cnpj e razao_social."
-        }
+        },
+        "parameters": [
+          {
+            "name": "id_estabelecimento",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
       }
     },
     "/estabelecimentos/{id_estabelecimento}/inativacao": {
@@ -980,6 +1002,17 @@
         },
         "x-allowed-roles": [
           "ADMINISTRADOR"
+        ],
+        "parameters": [
+          {
+            "name": "id_estabelecimento",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
         ]
       }
     },
@@ -1074,6 +1107,17 @@
         "description": "Reativação reservada ao ADMINISTRADOR. A transição permitida é INATIVO para ATIVO; define status=ATIVO, limpa motivo_inativacao e registra a alteração no log de auditoria.",
         "x-allowed-roles": [
           "ADMINISTRADOR"
+        ],
+        "parameters": [
+          {
+            "name": "id_estabelecimento",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
         ]
       }
     },
@@ -1207,6 +1251,36 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         },
         "description": "Lista documentos de controle, incluindo metadados do arquivo armazenado. HOTEL só pode consultar documentos da hospedagem vinculada à própria conta.",
@@ -1218,7 +1292,18 @@
             "HOTEL"
           ],
           "restriction": "HOTEL só pode acessar o estabelecimento vinculado à própria conta."
-        }
+        },
+        "parameters": [
+          {
+            "name": "id_estabelecimento",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
       },
       "post": {
         "tags": [
@@ -1353,6 +1438,26 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         },
         "requestBody": {
@@ -1390,7 +1495,18 @@
             "HOTEL"
           ],
           "restriction": "HOTEL só pode gerenciar documentos do estabelecimento vinculado à própria conta."
-        }
+        },
+        "parameters": [
+          {
+            "name": "id_estabelecimento",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
       }
     },
     "/estabelecimentos/{id_estabelecimento}/documentos/{id_documento}": {
@@ -1494,6 +1610,26 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         },
         "requestBody": {
@@ -1514,7 +1650,18 @@
             "HOTEL"
           ],
           "restriction": "HOTEL só pode gerenciar documentos do estabelecimento vinculado à própria conta."
-        }
+        },
+        "parameters": [
+          {
+            "name": "id_estabelecimento",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
       }
     },
     "/estabelecimentos/{id_estabelecimento}/documentos/{id_documento}/arquivo": {
@@ -1615,8 +1762,49 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "id_estabelecimento",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
       },
       "put": {
         "tags": [
@@ -1738,8 +1926,49 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "id_estabelecimento",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
       }
     },
     "/auth/login": {
@@ -1752,10 +1981,87 @@
         "security": [],
         "responses": {
           "200": {
-            "description": "Token de sessão."
+            "description": "Resposta da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "400": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
           }
         }
       }
@@ -1787,7 +2093,94 @@
         "security": [],
         "responses": {
           "202": {
-            "description": "Solicitação recebida."
+            "description": "Resposta da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MensagemOperacao"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailRequest"
+              }
+            }
           }
         }
       }
@@ -1801,10 +2194,77 @@
         "summary": "Consultar usuário autenticado",
         "responses": {
           "200": {
-            "description": "Perfil."
+            "description": "Resposta da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsuarioPublico"
+                }
+              }
+            }
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "400": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         }
       },
@@ -1816,7 +2276,14 @@
         "summary": "Editar usuário autenticado",
         "responses": {
           "200": {
-            "description": "Perfil atualizado."
+            "description": "Resposta da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsuarioPublico"
+                }
+              }
+            }
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
@@ -1826,6 +2293,56 @@
           },
           "422": {
             "$ref": "#/components/responses/ValidationError"
+          },
+          "400": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PerfilUpdate"
+              }
+            }
           }
         }
       }
@@ -1839,13 +2356,70 @@
         "summary": "Listar usuários",
         "responses": {
           "200": {
-            "description": "Usuários."
+            "description": "Resposta da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsuariosList"
+                }
+              }
+            }
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "400": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         }
       },
@@ -1857,7 +2431,14 @@
         "summary": "Criar conta pendente",
         "responses": {
           "201": {
-            "description": "Usuário criado."
+            "description": "Resposta da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsuarioPublico"
+                }
+              }
+            }
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
@@ -1870,6 +2451,46 @@
           },
           "422": {
             "$ref": "#/components/responses/ValidationError"
+          },
+          "400": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UsuarioCreate"
+              }
+            }
           }
         }
       }
@@ -1883,7 +2504,14 @@
         "summary": "Enviar convite de acesso",
         "responses": {
           "201": {
-            "description": "Convite criado."
+            "description": "Resposta da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConvitePublico"
+                }
+              }
+            }
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
@@ -1893,6 +2521,56 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          },
+          "400": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailRequest"
+              }
+            }
           }
         }
       }
@@ -1907,7 +2585,26 @@
         "security": [],
         "responses": {
           "200": {
-            "description": "Acesso ativado."
+            "description": "Conta ativada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "usuario": {
+                      "$ref": "#/components/schemas/UsuarioPublico"
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "usuario"
+                  ]
+                }
+              }
+            }
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
@@ -1915,7 +2612,28 @@
           "409": {
             "$ref": "#/components/responses/Conflict"
           }
-        }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AceitacaoConvite"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id_convite",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Identificador opaco da API; no PostgreSQL corresponde ao BIGINT serializado como texto. O modo mock legado pode usar UUID."
+            }
+          }
+        ]
       }
     },
     "/pesquisas-ocupacao": {
@@ -1927,10 +2645,77 @@
         "summary": "Listar pesquisas",
         "responses": {
           "200": {
-            "description": "Pesquisas."
+            "description": "Resposta da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PesquisasList"
+                }
+              }
+            }
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "400": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         }
       },
@@ -1942,7 +2727,14 @@
         "summary": "Criar e distribuir pesquisa",
         "responses": {
           "201": {
-            "description": "Pesquisa aberta."
+            "description": "Resposta da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PesquisaPublica"
+                }
+              }
+            }
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
@@ -1952,6 +2744,56 @@
           },
           "422": {
             "$ref": "#/components/responses/ValidationError"
+          },
+          "400": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PesquisaCreate"
+              }
+            }
           }
         }
       }
@@ -1965,10 +2807,77 @@
         "summary": "Consultar pendências",
         "responses": {
           "200": {
-            "description": "Pesquisas pendentes."
+            "description": "Resposta da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PesquisasList"
+                }
+              }
+            }
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "400": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -1982,7 +2891,14 @@
         "summary": "Editar pesquisa aberta",
         "responses": {
           "200": {
-            "description": "Pesquisa atualizada."
+            "description": "Resposta da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PesquisaPublica"
+                }
+              }
+            }
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
@@ -1998,8 +2914,49 @@
           },
           "422": {
             "$ref": "#/components/responses/ValidationError"
+          },
+          "400": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
-        }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PesquisaUpdate"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id_pesquisa",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Identificador opaco da API; no PostgreSQL corresponde ao BIGINT serializado como texto. O modo mock legado pode usar UUID."
+            }
+          }
+        ]
       }
     },
     "/pesquisas-ocupacao/{id_pesquisa}/encerramento": {
@@ -2011,7 +2968,14 @@
         "summary": "Encerrar pesquisa",
         "responses": {
           "200": {
-            "description": "Pesquisa encerrada."
+            "description": "Resposta da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PesquisaPublica"
+                }
+              }
+            }
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
@@ -2024,8 +2988,49 @@
           },
           "409": {
             "$ref": "#/components/responses/Conflict"
+          },
+          "400": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "id_pesquisa",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Identificador opaco da API; no PostgreSQL corresponde ao BIGINT serializado como texto. O modo mock legado pode usar UUID."
+            }
+          }
+        ]
       }
     },
     "/pesquisas-ocupacao/{id_pesquisa}/respostas": {
@@ -2037,7 +3042,14 @@
         "summary": "Enviar resposta de ocupação",
         "responses": {
           "201": {
-            "description": "Resposta enviada."
+            "description": "Resposta da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaPublica"
+                }
+              }
+            }
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
@@ -2047,8 +3059,69 @@
           },
           "409": {
             "$ref": "#/components/responses/Conflict"
+          },
+          "400": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
-        }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RespostaCreate"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id_pesquisa",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Identificador opaco da API; no PostgreSQL corresponde ao BIGINT serializado como texto. O modo mock legado pode usar UUID."
+            }
+          }
+        ]
       }
     },
     "/respostas-ocupacao/historico": {
@@ -2060,10 +3133,77 @@
         "summary": "Consultar histórico de respostas",
         "responses": {
           "200": {
-            "description": "Histórico."
+            "description": "Resposta da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostasList"
+                }
+              }
+            }
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "400": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -2077,7 +3217,14 @@
         "summary": "Gerar relatório PDF ou CSV",
         "responses": {
           "202": {
-            "description": "Geração aceita."
+            "description": "Resposta da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RelatorioPublico"
+                }
+              }
+            }
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
@@ -2087,6 +3234,56 @@
           },
           "422": {
             "$ref": "#/components/responses/ValidationError"
+          },
+          "400": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RelatorioCreate"
+              }
+            }
           }
         }
       }
@@ -2100,7 +3297,14 @@
         "summary": "Consultar estado de relatório",
         "responses": {
           "200": {
-            "description": "Relatório."
+            "description": "Resposta da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RelatorioPublico"
+                }
+              }
+            }
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
@@ -2110,8 +3314,59 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          },
+          "400": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "id_relatorio",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Identificador opaco da API; no PostgreSQL corresponde ao BIGINT serializado como texto. O modo mock legado pode usar UUID."
+            }
+          }
+        ]
       }
     },
     "/relatorios/{id_relatorio}/arquivo": {
@@ -2134,7 +3389,17 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "id_relatorio",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
       }
     },
     "/auditoria": {
@@ -2178,13 +3443,70 @@
         ],
         "responses": {
           "200": {
-            "description": "Eventos de auditoria."
+            "description": "Resposta da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditoriaList"
+                }
+              }
+            }
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "400": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -2198,10 +3520,77 @@
         "summary": "Consultar indicadores e alertas",
         "responses": {
           "200": {
-            "description": "Indicadores e alertas."
+            "description": "Resposta da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardResponse"
+                }
+              }
+            }
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "400": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Erro da operação.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -2312,7 +3701,7 @@
         "summary": "Alterar a própria senha e revogar sessões",
         "security": [
           {
-            "bearerAuth": []
+            "BearerAuth": []
           }
         ],
         "responses": {
@@ -2425,7 +3814,7 @@
         "summary": "Inativar conta sem excluir histórico",
         "security": [
           {
-            "bearerAuth": []
+            "BearerAuth": []
           }
         ],
         "responses": {
@@ -2536,7 +3925,7 @@
         "summary": "Reativar conta",
         "security": [
           {
-            "bearerAuth": []
+            "BearerAuth": []
           }
         ],
         "responses": {
@@ -2648,7 +4037,8 @@
       "BearerAuth": {
         "type": "http",
         "scheme": "bearer",
-        "bearerFormat": "JWT"
+        "bearerFormat": "opaque",
+        "description": "Bearer opaco com hash persistido, expiração e revogação verificadas no servidor."
       }
     },
     "parameters": {
@@ -3547,7 +4937,8 @@
             "format": "date"
           },
           "status": {
-            "$ref": "#/components/schemas/StatusDocumento"
+            "$ref": "#/components/schemas/StatusDocumento",
+            "description": "Calculado pela data UTC: vencido antes de hoje; a vencer de hoje até 30 dias; regular acima de 30 dias."
           },
           "arquivo": {
             "$ref": "#/components/schemas/ArquivoDocumento"
@@ -8260,6 +9651,610 @@
             ]
           }
         }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 254
+          },
+          "senha": {
+            "type": "string",
+            "format": "password",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "email",
+          "senha"
+        ],
+        "additionalProperties": false
+      },
+      "LoginResponse": {
+        "type": "object",
+        "properties": {
+          "access_token": {
+            "type": "string"
+          },
+          "token_type": {
+            "type": "string",
+            "enum": [
+              "Bearer",
+              "bearer"
+            ]
+          },
+          "expires_in": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "usuario": {
+            "$ref": "#/components/schemas/UsuarioPublico"
+          }
+        },
+        "required": [
+          "access_token",
+          "token_type",
+          "expires_in",
+          "usuario"
+        ]
+      },
+      "PerfilUpdate": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 254
+          }
+        },
+        "additionalProperties": false,
+        "minProperties": 1
+      },
+      "UsuarioCreate": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 254
+          },
+          "perfil": {
+            "type": "string",
+            "enum": [
+              "ADMINISTRADOR",
+              "GESTOR",
+              "EDITOR",
+              "HOTEL"
+            ]
+          },
+          "id_estabelecimento": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "nome",
+          "email",
+          "perfil"
+        ],
+        "additionalProperties": false
+      },
+      "EmailRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 254
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "additionalProperties": false
+      },
+      "ConvitePublico": {
+        "type": "object",
+        "properties": {
+          "id_convite": {
+            "type": "string",
+            "description": "Identificador opaco da API; no PostgreSQL corresponde ao BIGINT serializado como texto. O modo mock legado pode usar UUID."
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDENTE",
+              "ACEITO",
+              "EXPIRADO",
+              "CANCELADO"
+            ]
+          },
+          "expira_em": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id_convite",
+          "email",
+          "status",
+          "expira_em"
+        ]
+      },
+      "AceitacaoConvite": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "senha": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "format": "password"
+          }
+        },
+        "required": [
+          "token",
+          "senha"
+        ],
+        "additionalProperties": false
+      },
+      "PesquisaCreate": {
+        "type": "object",
+        "properties": {
+          "titulo": {
+            "type": "string",
+            "minLength": 1
+          },
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "CONSOLIDADO",
+              "EXPECTATIVA"
+            ]
+          },
+          "periodo_inicio": {
+            "type": "string",
+            "format": "date"
+          },
+          "periodo_fim": {
+            "type": "string",
+            "format": "date"
+          },
+          "estabelecimentos": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        },
+        "required": [
+          "titulo",
+          "tipo",
+          "periodo_inicio",
+          "periodo_fim",
+          "estabelecimentos"
+        ],
+        "additionalProperties": false
+      },
+      "PesquisaUpdate": {
+        "type": "object",
+        "properties": {
+          "titulo": {
+            "type": "string",
+            "minLength": 1
+          },
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "CONSOLIDADO",
+              "EXPECTATIVA"
+            ]
+          },
+          "periodo_inicio": {
+            "type": "string",
+            "format": "date"
+          },
+          "periodo_fim": {
+            "type": "string",
+            "format": "date"
+          },
+          "estabelecimentos": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "minProperties": 1
+      },
+      "PesquisaPublica": {
+        "type": "object",
+        "properties": {
+          "titulo": {
+            "type": "string",
+            "minLength": 1
+          },
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "CONSOLIDADO",
+              "EXPECTATIVA"
+            ]
+          },
+          "periodo_inicio": {
+            "type": "string",
+            "format": "date"
+          },
+          "periodo_fim": {
+            "type": "string",
+            "format": "date"
+          },
+          "estabelecimentos": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "id_pesquisa": {
+            "type": "string",
+            "description": "Identificador opaco da API; no PostgreSQL corresponde ao BIGINT serializado como texto. O modo mock legado pode usar UUID."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "RASCUNHO",
+              "ABERTA",
+              "ENCERRADA"
+            ]
+          },
+          "criada_por": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id_pesquisa",
+          "titulo",
+          "tipo",
+          "periodo_inicio",
+          "periodo_fim",
+          "estabelecimentos",
+          "status"
+        ]
+      },
+      "RespostaCreate": {
+        "type": "object",
+        "properties": {
+          "taxa_ocupacao": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "taxa_ocupacao"
+        ],
+        "additionalProperties": false
+      },
+      "RespostaPublica": {
+        "type": "object",
+        "properties": {
+          "id_resposta": {
+            "type": "string",
+            "description": "Identificador opaco da API; no PostgreSQL corresponde ao BIGINT serializado como texto. O modo mock legado pode usar UUID."
+          },
+          "id_pesquisa": {
+            "type": "string",
+            "description": "Identificador opaco da API; no PostgreSQL corresponde ao BIGINT serializado como texto. O modo mock legado pode usar UUID."
+          },
+          "id_estabelecimento": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "id_usuario": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "dados": {
+            "$ref": "#/components/schemas/RespostaCreate"
+          },
+          "enviada_em": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id_resposta",
+          "id_pesquisa",
+          "id_estabelecimento",
+          "dados",
+          "enviada_em"
+        ]
+      },
+      "AuditoriaEvento": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Identificador opaco da API; no PostgreSQL corresponde ao BIGINT serializado como texto. O modo mock legado pode usar UUID."
+          },
+          "id_usuario": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "usuario": {
+            "type": "string"
+          },
+          "acao": {
+            "type": "string"
+          },
+          "entidade": {
+            "type": "string"
+          },
+          "id_entidade": {
+            "type": "string"
+          },
+          "antes": {},
+          "depois": {},
+          "criado_em": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "acao",
+          "entidade",
+          "id_entidade",
+          "criado_em"
+        ]
+      },
+      "DashboardResponse": {
+        "type": "object",
+        "properties": {
+          "indicadores": {
+            "type": "object",
+            "properties": {
+              "total_empresas": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "total_leitos": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "leitos_nao_informados": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "estabelecimentos_ativos": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "pesquisas_abertas": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "respostas_recebidas": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "total_empresas",
+              "total_leitos",
+              "leitos_nao_informados",
+              "estabelecimentos_ativos"
+            ]
+          },
+          "referencia": {
+            "type": "string",
+            "format": "date"
+          },
+          "alertas_cadastur": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id_estabelecimento": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "nome_fantasia": {
+                  "type": "string"
+                },
+                "data": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "dias_ate_vencimento": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "id_estabelecimento",
+                "nome_fantasia",
+                "data",
+                "dias_ate_vencimento"
+              ]
+            }
+          }
+        },
+        "required": [
+          "indicadores",
+          "referencia",
+          "alertas_cadastur"
+        ]
+      },
+      "RelatorioCreate": {
+        "type": "object",
+        "properties": {
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "OCUPACAO"
+            ]
+          },
+          "formato": {
+            "type": "string",
+            "enum": [
+              "PDF",
+              "CSV"
+            ]
+          },
+          "id_pesquisa": {
+            "type": "string",
+            "description": "Identificador opaco da API; no PostgreSQL corresponde ao BIGINT serializado como texto. O modo mock legado pode usar UUID."
+          }
+        },
+        "required": [
+          "tipo",
+          "formato"
+        ],
+        "additionalProperties": false
+      },
+      "RelatorioPublico": {
+        "type": "object",
+        "properties": {
+          "id_relatorio": {
+            "type": "string",
+            "description": "Identificador opaco da API; no PostgreSQL corresponde ao BIGINT serializado como texto. O modo mock legado pode usar UUID."
+          },
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "OCUPACAO"
+            ]
+          },
+          "formato": {
+            "type": "string",
+            "enum": [
+              "PDF",
+              "CSV"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDENTE",
+              "PROCESSANDO",
+              "CONCLUIDO",
+              "ERRO"
+            ]
+          },
+          "criado_em": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "arquivo": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "nome_arquivo": {
+                "type": "string"
+              },
+              "tamanho_bytes": {
+                "type": "integer"
+              }
+            }
+          }
+        },
+        "required": [
+          "id_relatorio",
+          "formato",
+          "status"
+        ]
+      },
+      "UsuariosList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UsuarioPublico"
+            }
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "PesquisasList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PesquisaPublica"
+            }
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "RespostasList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RespostaPublica"
+            }
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "AuditoriaList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditoriaEvento"
+            }
+          }
+        },
+        "required": [
+          "data"
+        ]
       }
     }
   }

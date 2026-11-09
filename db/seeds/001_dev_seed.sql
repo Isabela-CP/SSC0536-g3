@@ -214,26 +214,26 @@ INSERT INTO usuarios (id, email, senha_hash, perfil, status, nome)
 VALUES
     -- administrador
     (1,  'marina.admin@example.test',
-         'DEV_PLACEHOLDER_HASH_001',
+         '$argon2id$v=19$m=65536,t=3,p=4$S5bVApVpPHZC0nGldoIF+w$6SzLIl5nSGKyRIRRcBSEQUmw4bZ/kCLm6R/i9iH7RXs',
          'ADMINISTRADOR', 'ATIVO',   'Marina Administradora'),
 
     -- gestores
     (2,  'rafael.consulta@example.test',
-         'DEV_PLACEHOLDER_HASH_002',
+         '$argon2id$v=19$m=65536,t=3,p=4$q0E6vTL2Sdo72lB3LLpSWQ$LzoxEScoJSp/lDjxMzg7kUq3do+QfrrMlEpTmltzRto',
          'GESTOR',        'ATIVO',   'Rafael Consulta'),
     (3,  'fernanda.gestora@example.test',
-         'DEV_PLACEHOLDER_HASH_003',
+         '$argon2id$v=19$m=65536,t=3,p=4$JiD8g1HN87xm4VgxxDi0uA$oymEEpGEoI+e1KUW7D9l+5Ok/UtlYAuGO/N21eiO/bk',
          'GESTOR',        'INATIVO', 'Fernanda Gestora'),   -- desligada
 
     -- editores
     (4,  'camila.editora@example.test',
-         'DEV_PLACEHOLDER_HASH_004',
+         '$argon2id$v=19$m=65536,t=3,p=4$mM9XgOMhc4UOg+05ecgpOw$r9uz79iFW+l9XxuBz3f0X6pcIhNyg8e5s4viDUYhpEI',
          'EDITOR',        'ATIVO',   'Camila Editora'),
     (5,  'bruno.editor@example.test',
-         'DEV_PLACEHOLDER_HASH_005',
+         '$argon2id$v=19$m=65536,t=3,p=4$JwP85CimiNcgZLt4V+4r0w$nc3oErqW00gWMtdWUMWDq5IXZ4S+OzTImOZTIZm0Fvc',
          'EDITOR',        'ATIVO',   'Bruno Editor'),
     (6,  'juliana.editor@example.test',
-         'DEV_PLACEHOLDER_HASH_006',
+         '$argon2id$v=19$m=65536,t=3,p=4$vUA5PBmaE4R7SYMOu73bQg$8P/dPpqx/GpRm6ZueR9Cz2QcaPMSBdjJ/mJV1bcnPsI',
          'EDITOR',        'PENDENTE', 'Juliana Editora')    -- convite pendente
 ON CONFLICT (email) DO NOTHING;
 
@@ -241,19 +241,19 @@ INSERT INTO usuarios (id, email, senha_hash, perfil, status, nome, id_estabeleci
 VALUES
     -- hotéis (vínculo obrigatório com estabelecimento)
     (7,  'responsavel@serra-azul.example',
-         'DEV_PLACEHOLDER_HASH_007',
+         '$argon2id$v=19$m=65536,t=3,p=4$lhxXXlAIGhQX9FAOwOxMfQ$vYo7Nrtn5GxlrC2B5cAOHnsFfmgJTT0wGi+oI7BHXds',
          'HOTEL', 'ATIVO',    'Responsável Serra Azul',
          '11111111-1111-4111-8111-111111111111'),
     (8,  'responsavel@ipe-amarelo.example',
-         'DEV_PLACEHOLDER_HASH_008',
+         '$argon2id$v=19$m=65536,t=3,p=4$tuPL/GxOjrrFgwG6FNgYcA$YIVbkQ+qY/vJCOOnSSULGw1HiwChTcL2lAtu/ayRNJk',
          'HOTEL', 'ATIVO',    'Responsável Ipê Amarelo',
          '22222222-2222-4222-8222-222222222222'),
     (9,  'hotel.valedosol@example.test',
-         'DEV_PLACEHOLDER_HASH_009',
+         '$argon2id$v=19$m=65536,t=3,p=4$rc9RmVeq4fG1/ZoiqjGEfA$TBaWpYy03+0eX0fFc024nza6ENHTb1xrQKtU29lsYz0',
          'HOTEL', 'ATIVO',    'Responsável Vale do Sol',
          '33333333-3333-4333-8333-333333333333'),
     (10, 'hotel.cadastro@example.test',
-         'DEV_PLACEHOLDER_HASH_010',
+         '$argon2id$v=19$m=65536,t=3,p=4$gyVF0yMiq6DxB/fdWvI4xg$RhKskBwu9iv6qQ1hVWQAiF2Sn7ShCEqunjSnGuXdbxI',
          'HOTEL', 'PENDENTE', 'Responsável Hospedagem Cadastro',
          '44444444-4444-4444-8444-444444444444')  -- convite ainda pendente
 ON CONFLICT (email) DO NOTHING;

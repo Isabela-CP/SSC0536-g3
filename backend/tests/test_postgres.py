@@ -208,3 +208,144 @@ def test_pg_audit_append_only(pg):
     with pytest.raises(psycopg.errors.RaiseException):
         with db.transaction() as conn:
             conn.execute("UPDATE auditoria_logs SET acao='MODIFICADA'")
+
+
+def test_pg_roles_and_protected_fields(pg):
+    client,db=pg
+    for email,password in [('rafael.consulta@example.test','gestor-demo'),('camila.editora@example.test','editor-demo'),('responsavel@serra-azul.example','hotel-demo')]:
+        response=client.post('/auth/login',json={'email':email,'senha':password})
+        assert response.status_code==200,response.text
+        headers={'Authorization':'Bearer '+response.json()['access_token']}
+        assert client.get('/auditoria',headers=headers).status_code==403
+        assert client.post('/usuarios',json={'nome':'Outra','email':'outra@example.test','perfil':'GESTOR'},headers=headers).status_code==403
+        assert client.patch('/estabelecimentos/11111111-1111-4111-8111-111111111111',json={'razao_social':'Alterada'},headers=headers).status_code==403
+    assert client.get('/perfil',headers={'Authorization':'Bearer admin-token'}).status_code==401
+
+
+def test_pg_status_and_validation(pg):
+    client,db=pg
+    path='/estabelecimentos/11111111-1111-4111-8111-111111111111'
+    assert client.post(path+'/inativacao',json={'motivo_inativacao':'ab'}).status_code==422
+    assert client.post(path+'/inativacao',json={'motivo_inativacao':'Reforma temporária'}).status_code==200
+    assert client.post(path+'/inativacao',json={'motivo_inativacao':'Reforma temporária'}).status_code==409
+    assert client.post(path+'/reativacao').status_code==200
+    assert client.post(path+'/reativacao').status_code==409
+    assert client.get('/estabelecimentos/99999999-9999-4999-8999-999999999999').status_code==404
+    assert client.post('/usuarios/1/inativacao').status_code==409
+
+
+def test_pg_invitation_resend_and_expiration(pg):
+    client,db=pg
+    client.post('/usuarios',json={'nome':'Convidado','email':'convite@example.test','perfil':'EDITOR'})
+    first=client.post('/convites',json={'email':'convite@example.test'}).json()
+    second=client.post('/convites',json={'email':'convite@example.test'}).json()
+    with db.transaction() as conn:
+        assert conn.execute('SELECT estado FROM convites WHERE id=%s',(first['id_convite'],)).fetchone()['estado']=='CANCELADO'
+        conn.execute("UPDATE convites SET expira_em=now()-interval '1 second' WHERE id=%s",(second['id_convite'],))
+        body=conn.execute("SELECT corpo FROM email_outbox WHERE destinatario='convite@example.test' ORDER BY id DESC LIMIT 1").fetchone()['corpo']
+    import re
+    token=re.search(r'token=([^\s]+)',body).group(1)
+    assert client.post('/convites/'+second['id_convite']+'/aceitacao',json={'token':token,'senha':'senha-valida-123'}).status_code==404
+
+
+def test_pg_password_change_revokes_all_sessions(pg):
+    client,db=pg
+    assert client.put('/perfil/senha',json={'senha_atual':'errada','senha':'senha-nova-123'}).status_code==403
+    assert client.put('/perfil/senha',json={'senha_atual':'admin-demo','senha':'curta'}).status_code==422
+    second=client.post('/auth/login',json={'email':'marina.admin@example.test','senha':'admin-demo'}).json()['access_token']
+    assert client.put('/perfil/senha',json={'senha_atual':'admin-demo','senha':'senha-nova-123'}).status_code==200
+    assert client.get('/perfil').status_code==401
+    assert client.get('/perfil',headers={'Authorization':'Bearer '+second}).status_code==401
+    assert client.post('/auth/login',json={'email':'marina.admin@example.test','senha':'admin-demo'}).status_code==401
+    assert client.post('/auth/login',json={'email':'marina.admin@example.test','senha':'senha-nova-123'}).status_code==200
+
+
+def test_pg_email_worker_clears_token_after_delivery(pg,monkeypatch):
+    client,db=pg
+    client.post('/auth/recuperacao-senha',json={'email':'marina.admin@example.test'})
+    from app.mailer import dispatch_one
+    monkeypatch.setenv('OTO_SMTP_HOST','smtp.test')
+    delivered=[]
+    class SMTP:
+        def __init__(self,*args,**kwargs):pass
+        def __enter__(self):return self
+        def __exit__(self,*args):pass
+        def send_message(self,message):delivered.append(message)
+    assert dispatch_one(db,SMTP)
+    assert len(delivered)==1
+    assert 'token=' in delivered[0].get_content()
+    with db.transaction() as conn:
+        row=conn.execute('SELECT * FROM email_outbox ORDER BY id LIMIT 1').fetchone()
+        assert row['corpo']=='' and row['enviado_em'] is not None
+        assert conn.execute("SELECT count(*) AS n FROM recuperacao_senha WHERE length(token_hash)=64").fetchone()['n']>0
+
+
+def test_pg_recovery_unknown_account_is_generic(pg):
+    client,db=pg
+    known=client.post('/auth/recuperacao-senha',json={'email':'marina.admin@example.test'})
+    unknown=client.post('/auth/recuperacao-senha',json={'email':'inexistente@example.test'})
+    assert known.status_code==unknown.status_code==202
+    assert known.json()==unknown.json()
+    with db.transaction() as conn:
+        assert conn.execute("SELECT count(*) AS n FROM email_outbox WHERE destinatario='inexistente@example.test'").fetchone()['n']==0
+
+
+def test_pg_storage_limits_and_metadata(pg):
+    client,db=pg
+    path='/estabelecimentos/11111111-1111-4111-8111-111111111111/documentos'
+    body={'tipo_documento':'ALVARA','data_vencimento':'2030-01-01'}
+    assert client.post(path,data=body,files={'arquivo':('x.txt',b'teste','text/plain')}).status_code==415
+    response=client.post(path,data=body,files={'arquivo':('ok.pdf',b'%PDF-1.4 arquivo','application/pdf')})
+    assert response.status_code==201
+    document=response.json()['id_documento']
+    assert client.patch(path+'/'+str(document),json={'numero':'SQL-001'}).status_code==200
+    assert client.get(path).json()['data'][-1]['numero']=='SQL-001'
+    with db.transaction() as conn:
+        row=conn.execute('SELECT * FROM documentos_controle WHERE id_documento=%s',(document,)).fetchone()
+        assert row['caminho_storage'] and row['nome_arquivo']=='ok.pdf'
+
+
+def test_pg_database_failure_has_no_fallback(pg,monkeypatch):
+    client,db=pg
+    monkeypatch.setenv('DATABASE_URL','postgresql://invalid@127.0.0.1:1/absent')
+    database.cache_clear();main.inventory_repository.cache_clear()
+    result=client.get('/perfil')
+    assert result.status_code==503
+    assert result.json()['error']['code']=='DATABASE_UNAVAILABLE'
+
+
+def test_pg_filter_combinations_pagination_and_literal_search(pg):
+    client,db=pg
+    query={'id_categoria':1,'status':'ATIVO','aceita_pesquisas':'true','page_size':1,'ordem':'desc'}
+    first=client.get('/estabelecimentos',params=query).json()
+    second=client.get('/estabelecimentos',params={**query,'page':2}).json()
+    assert first['pagination']['total']>=2
+    assert len(first['data'])==len(second['data'])==1
+    assert first['data'][0]['id_estabelecimento']!=second['data'][0]['id_estabelecimento']
+    for term in ['54839271000164','Serra Azul Hospedagem Ltda.','Hotel Serra Azul']:
+        result=client.get('/estabelecimentos',params={'busca':term}).json()
+        assert result['pagination']['total']==1
+    for term in ['%',"' OR true --"]:
+        assert client.get('/estabelecimentos',params={'busca':term}).json()['pagination']['total']==0
+
+
+def test_pg_inactive_timestamp_is_preserved_on_edit(pg):
+    client,db=pg
+    identifier='33333333-3333-4333-8333-333333333333'
+    with db.transaction() as conn:
+        before=conn.execute('SELECT inativado_em FROM estabelecimentos WHERE id_estabelecimento=%s',(identifier,)).fetchone()['inativado_em']
+    assert client.patch('/estabelecimentos/'+identifier,json={'observacoes':'Edição posterior à inativação'}).status_code==200
+    with db.transaction() as conn:
+        assert conn.execute('SELECT inativado_em FROM estabelecimentos WHERE id_estabelecimento=%s',(identifier,)).fetchone()['inativado_em']==before
+
+
+def test_pg_operational_responses_follow_contract(pg):
+    import json
+    from jsonschema import Draft202012Validator,FormatChecker
+    client,db=pg
+    contract=json.loads(main.OPENAPI_FILE.read_text())
+    for path in ('/perfil','/usuarios','/pesquisas-ocupacao','/respostas-ocupacao/historico','/auditoria','/dashboard'):
+        response=client.get(path)
+        assert response.status_code==200,response.text
+        schema=contract['paths'][path]['get']['responses']['200']['content']['application/json']['schema']
+        Draft202012Validator({**schema,'components':contract['components']},format_checker=FormatChecker()).validate(response.json())

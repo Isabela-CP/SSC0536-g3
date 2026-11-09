@@ -77,7 +77,8 @@ class PostgresInventoryRepository:
             excluded = {'categoria','meio_hospedagem','infraestrutura','acessibilidade','documentos'}
             payload = {key:value for key,value in establishment.items() if key in columns}
             payload['dados_complementares'] = {key:value for key,value in establishment.items() if key not in columns and key not in excluded}
-            payload['inativado_em'] = establishment['atualizado_em'] if establishment['status']=='INATIVO' else None
+            previous = conn.execute('SELECT status,inativado_em FROM estabelecimentos WHERE id_estabelecimento=%s FOR UPDATE',(establishment['id_estabelecimento'],)).fetchone()
+            payload['inativado_em'] = (previous['inativado_em'] if previous and previous['status']=='INATIVO' else establishment['atualizado_em']) if establishment['status']=='INATIVO' else None
             self._upsert(conn,'estabelecimentos',payload,'id_estabelecimento')
             hosting = establishment.get('meio_hospedagem')
             if hosting is not None or establishment.get('infraestrutura') is not None or establishment.get('acessibilidade') is not None:
@@ -99,3 +100,31 @@ class PostgresInventoryRepository:
     def set_file_reference(self, document_id, key):
         with self.transaction() as conn:
             conn.execute('UPDATE documentos_controle SET caminho_storage=%s WHERE id_documento=%s',(key,document_id))
+
+    def query(self, query, establishment_scope=None):
+        import re
+        from app.inventory import SUMMARY_FIELDS
+        clauses,params = [],[]
+        if establishment_scope is not None:
+            clauses.append('id_estabelecimento=%s');params.append(establishment_scope)
+        if query.busca:
+            term=query.busca.casefold()
+            escaped=term.replace('\\','\\\\').replace('%','\\%').replace('_','\\_')
+            conditions=['lower(nome_fantasia) LIKE %s','lower(razao_social) LIKE %s','lower(cnpj) LIKE %s']
+            params.extend(['%'+escaped+'%']*3)
+            digits=re.sub(r'\D','',term) if re.fullmatch(r'[\d./-]+',term) else ''
+            if digits:
+                conditions.append("regexp_replace(cnpj,'[^0-9]','','g') LIKE %s");params.append('%'+digits+'%')
+            clauses.append('('+' OR '.join(conditions)+')')
+        for field in ('id_categoria','status','cadastur_status','aceita_pesquisas'):
+            value=getattr(query,field)
+            if value is not None:clauses.append(field+'=%s');params.append(value)
+        where=sql.SQL(' WHERE '+' AND '.join(clauses)) if clauses else sql.SQL('')
+        field=query.ordenar_por
+        if field not in ('nome_fantasia','criado_em','atualizado_em') or query.ordem not in ('asc','desc'):raise ValueError('Ordenação inválida.')
+        ordering=sql.SQL('lower(nome_fantasia) COLLATE "C"') if field=='nome_fantasia' else sql.Identifier(field)
+        with self.transaction() as conn:
+            total=conn.execute(sql.SQL('SELECT count(*) AS total FROM estabelecimentos')+where,params).fetchone()['total']
+            statement=sql.SQL('SELECT {} FROM estabelecimentos').format(sql.SQL(',').join(map(sql.Identifier,SUMMARY_FIELDS)))+where+sql.SQL(' ORDER BY {} {},id_estabelecimento ASC LIMIT %s OFFSET %s').format(ordering,sql.SQL(query.ordem.upper()))
+            rows=conn.execute(statement,[*params,query.page_size,(query.page-1)*query.page_size]).fetchall()
+            return {'data':public(rows),'pagination':{'page':query.page,'page_size':query.page_size,'total':total,'total_pages':max(1,(total+query.page_size-1)//query.page_size)}}

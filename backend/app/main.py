@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from copy import deepcopy
 from functools import lru_cache
 from datetime import datetime, timedelta, timezone
@@ -8,6 +9,7 @@ from pathlib import Path
 from typing import Annotated, Any, Literal
 from uuid import UUID, uuid4
 
+from fastapi import Path as APIPath
 from fastapi import APIRouter, Body, Depends, FastAPI, Header, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
@@ -31,6 +33,7 @@ SEED_FILE = ROOT_DIR / "contratos_api_oto" / "mocks" / "seed-data.json"
 OPENAPI_FILE = ROOT_DIR / "contratos_api_oto" / "openapi.json"
 
 app = FastAPI(
+    root_path=os.getenv('OTO_ROOT_PATH',''),
     title="Inventário OTO",
     version="0.1.0",
     description="Base FastAPI que entrega respostas mockadas do contrato OTO.",
@@ -48,7 +51,7 @@ def custom_openapi() -> dict[str, Any]:
     """Expõe o contrato completo de contratos_api_oto/openapi.json no /docs."""
     with OPENAPI_FILE.open(encoding="utf-8") as file:
         spec = json.load(file)
-    spec["servers"] = [{"url": "/", "description": "Servidor local"}]
+    spec["servers"] = [{"url": os.getenv("OTO_ROOT_PATH") or "/", "description": "Servidor local"}]
     return spec
 
 
@@ -204,6 +207,8 @@ def list_establishments(
         page=page, page_size=page_size, ordenar_por=ordenar_por, ordem=ordem,
     )
     scope = user["id_estabelecimento"] if user["perfil"] == "HOTEL" else None
+    if isinstance(repository, PostgresInventoryRepository):
+        return repository.query(query,scope)
     return query_establishments(repository, query, scope)
 
 
@@ -566,14 +571,14 @@ def change_password(payload: contract_model('AlteracaoSenha'), user: dict = Depe
 
 
 @app.post('/usuarios/{id_usuario}/inativacao', tags=['Usuários'])
-def inactivate_user(id_usuario: int, user: dict = Depends(current_user)):
+def inactivate_user(id_usuario: Annotated[int, APIPath(ge=1)], user: dict = Depends(current_user)):
     if not persistent():
         raise InventoryError(503,'MOCK_NOT_AVAILABLE','Este fluxo exige PostgreSQL.')
     return portal().user_status(user,id_usuario,False)
 
 
 @app.post('/usuarios/{id_usuario}/reativacao', tags=['Usuários'])
-def reactivate_user(id_usuario: int, user: dict = Depends(current_user)):
+def reactivate_user(id_usuario: Annotated[int, APIPath(ge=1)], user: dict = Depends(current_user)):
     if not persistent():
         raise InventoryError(503,'MOCK_NOT_AVAILABLE','Este fluxo exige PostgreSQL.')
     return portal().user_status(user,id_usuario,True)
