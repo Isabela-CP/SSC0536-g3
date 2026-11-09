@@ -1,245 +1,153 @@
-# Backend — Inventário OTO
+# API OTO — FastAPI e PostgreSQL
 
-API FastAPI do Inventário OTO. Leitura e escrita compartilham um repositório
-em memória inicializado de `../contratos_api_oto/mocks/seed-data.json`, seguindo
-`../contratos_api_oto/openapi.json`.
+O modo real usa PostgreSQL por padrão. `DATABASE_URL` é obrigatório fora do Docker;
+alternativamente configure `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, `PGPASSWORD`.
+Falha de conexão retorna 503, sem trocar para JSON. `OTO_DATA_BACKEND=memory` é
+exclusivo de testes/mocks explícitos e é rejeitado com `OTO_ENV=production`.
 
 ## Executar
+
+A forma recomendada é `docker compose up -d --build --wait` na raiz do projeto.
+O serviço `migrate` aplica as migrations e o seed de desenvolvimento; a API só sobe
+quando ele termina com sucesso. O Swagger está em `/api/docs` do frontend Docker.
+
+Para PostgreSQL local, em um banco destinado ao OTO:
 
 ```bash
 cd backend
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+export DATABASE_URL='postgresql://usuario:senha@localhost:5432/oto_dev'
+python -m app.migrate --seed
 uvicorn app.main:app --reload
 ```
 
-API: `http://localhost:8000`; documentação: `http://localhost:8000/docs`.
+Não aponte esses comandos para outro projeto/banco de produção. Um banco legado
+criado manualmente precisa de verificação/baseline assistido antes do runner;
+não há adoção silenciosa de schemas pré-existentes nem exclusão automática de dados.
 
-## Consultas do inventário
+## Persistência e transações
 
-- `GET /health` (pública)
-- `GET /categorias-estabelecimento`
-- `GET /estabelecimentos`
-- `GET /estabelecimentos/{id_estabelecimento}`
-- `GET /estabelecimentos/{id_estabelecimento}/documentos`
+- `database.py`: conexões psycopg e unidade de trabalho compartilhada; nenhum pool
+  global guarda transações abertas entre requisições. O DSN não é devolvido em erros.
+- `postgres_inventory.py`: adaptador do protocolo de inventário existente. Usa
+  tabelas relacionais, JSONB dos checklists, busca/filtros/ordenação/paginação SQL
+  e locks para alterações concorrentes. CNPJ normalizado tem índice único no banco.
+- `postgres_portal.py`: usuários, convites, sessões, pesquisas, destinatários,
+  respostas, auditoria e relatórios SQL, com DTOs públicos compatíveis com a interface.
+- `inventory_service.py`: continua responsável por validação de CNPJ, PATCH,
+  autorização por campo, status e documentos. A auditoria SQL participa da mesma
+  transação; falhas não deixam alteração/log de sucesso parcialmente gravados.
+- `read_views.py`: agregações e validações compartilhadas das consultas.
 
-As quatro rotas de inventário exigem `Authorization: Bearer <token>`.
-ADMINISTRADOR, GESTOR e EDITOR consultam todo o inventário; HOTEL consulta apenas
-o estabelecimento vinculado à conta. Contas inativas recebem `401`; perfis não
-autorizados e HOTEL sem vínculo recebem `403`. O escopo é aplicado no servidor
-antes de filtros e paginação, e antes de consultar ficha/documentos de outra
-hospedagem.
+As migrations são rastreadas em `schema_migrations`, com checksum e lock PostgreSQL.
+Cada arquivo e seu registro são atômicos. Alterar migration já aplicada gera erro;
+use migration incremental. O seed gerenciado usa `application_seeds` e só é aplicado
+uma vez; não redefine senhas ou estado de fichas ao reiniciar os containers.
 
-A listagem aceita todos os parâmetros do contrato:
+## Autenticação e contas
 
-- `busca`: substring em nome fantasia, razão social ou CNPJ, sem diferenciar
-  maiúsculas/minúsculas, até 120 caracteres. CNPJ mantém a máscara do seed.
-- `id_categoria`: inteiro a partir de 1.
-- `status`: `ATIVO` ou `INATIVO`.
-- `cadastur_status`: `OBRIGATORIO`, `OPCIONAL` ou `NAO_CONSTA`.
-- `aceita_pesquisas`: booleano, incluindo filtro por `false`.
-- `page`: a partir de 1, padrão 1; `page_size`: de 1 a 100, padrão 20.
-- `ordenar_por`: `nome_fantasia` (padrão), `criado_em` ou `atualizado_em`;
-  `ordem`: `asc` (padrão) ou `desc`.
+Senhas são verificadas com Argon2id (`pwdlib`). Os hashes do seed SQL correspondem
+às contas públicas de desenvolvimento descritas no README da raiz. A API SQL não
+aceita `admin-token`/outros tokens fixos dos mocks.
 
-Os filtros são combinados por interseção. A ordenação ocorre antes da paginação,
-com desempate pelo UUID ascendente. Datas são comparadas como instantes com
-fuso horário. Nomes usam comparação Unicode sem distinção de caixa.
-A paginação preserva o comportamento anterior: `total_pages` mínimo de 1,
-mesmo sem resultados; páginas além do total retornam `data: []`.
-A ficha preserva os campos do seed, incluindo hospedagem, infraestrutura,
-acessibilidade e documentos com metadados de arquivo. Cadastros incompletos
-preservam campos nulos e seções opcionais ausentes.
+Cada login gera um Bearer opaco aleatório de 256 bits. Apenas SHA-256 desse token
+fica em `sessoes`. `OTO_SESSION_SECONDS` configura validade (padrão 900; permitido
+60–86400 segundos). O servidor verifica expiração/revogação e status do usuário
+em toda requisição, independentemente do relógio/sessionStorage do navegador.
+Não há refresh automático: ao expirar, faça login novamente.
 
-`app/inventory.py` contém o protocolo de leitura e o adaptador JSON.
-`app/inventory_repository.py` adiciona `WritableInventoryRepository` e o
-repositório em memória compartilhado entre leitura e escrita. As rotas recebem
-o repositório via `inventory_repository`; uma implementação PostgreSQL pode
-substituí-lo sem alterar o contrato HTTP. O mock usa lock e rollback por
-transação; a implementação SQL deverá usar transações e unicidade do CNPJ
-normalizado, além de persistir a auditoria junto da operação.
+Logout revoga a sessão apresentada. Alteração/redefinição de senha e inativação
+de conta revogam todas as sessões do usuário. Reativar não restaura sessões antigas.
+A API impede auto-inativação e preserva ao menos um administrador ativo. Contas
+pendentes são ativadas por convite; não se tornam ativas pelo endpoint de reativação.
 
-O mock é inicializado no primeiro acesso e preserva o arquivo seed original.
-O estado é por processo: use um único worker em desenvolvimento. Reiniciar a
-API restaura o seed e perde alterações e referências de arquivos em memória.
-Arquivos locais permanecem no storage. A persistência PostgreSQL e seus testes
-de integração devem ser validados com SCRUM-85 e as migrations operacionais.
+Perfis:
 
-## Escrita de estabelecimentos
+- ADMINISTRADOR: gestão de contas, campos protegidos, status, inventário e auditoria.
+- EDITOR: edição da ficha, exceto CNPJ/razão social; gestão de pesquisas.
+- GESTOR: consultas e exportação; escrita de negócio bloqueada.
+- HOTEL: apenas a própria ficha/respostas, com vínculo lido da sessão SQL.
 
-- `POST /estabelecimentos`: ADMINISTRADOR, resposta `201`.
-- `PATCH /estabelecimentos/{id_estabelecimento}`: ADMINISTRADOR, EDITOR ou HOTEL.
-- `POST /estabelecimentos/{id_estabelecimento}/inativacao`: ADMINISTRADOR.
-- `POST /estabelecimentos/{id_estabelecimento}/reativacao`: ADMINISTRADOR.
+Perfil pessoal pode ser atualizado por seu titular. Nenhum campo de perfil/conta
+pode aumentar as permissões de quem solicita a operação.
 
-Cadastro exige categoria existente, nome fantasia, razão social, CNPJ e endereço.
-Capacidade, infraestrutura e checklists são opcionais. CNPJ aceita a máscara do
-contrato ou apenas dígitos; valida dígitos verificadores e rejeita duplicidade
-com `409 CONFLICT`, comparando os dígitos independentemente da máscara.
+## E-mail, ativação e senhas
 
-Os modelos de entrada e saída são Pydantic, derivados dos schemas do OpenAPI
-em `app/inventory_models.py`. A validação anterior à conversão também verifica
-formatos, campos extras, `minProperties` e `uniqueItems` pelo JSON Schema.
+O contrato foi ampliado com alinhamento explícito da issue #37:
 
-PATCH usa `exclude_unset=True`: campo ausente é preservado; `null` explícito
-limpa apenas campos anuláveis. Objetos aninhados são atualizados parcialmente;
-listas são substituídas integralmente. CNPJ e razão social são exclusivos de
-ADMINISTRADOR, inclusive tentativas com valor nulo ou inválido. HOTEL só edita
-a própria ficha; GESTOR não escreve. Status é alterado apenas nas rotas próprias.
+- `POST /auth/redefinicao-senha`: token e nova senha, sem autenticação prévia.
+- `PUT /perfil/senha`: senha atual e nova senha; exige sessão.
+- `POST /usuarios/{id_usuario}/inativacao` e `/reativacao`: somente ADMINISTRADOR.
 
-Inativação faz `ATIVO -> INATIVO` e exige `motivo_inativacao` com 3 a 500
-caracteres. Reativação faz `INATIVO -> ATIVO` e limpa o motivo da ficha atual,
-preservando o motivo anterior nos snapshots da auditoria. Transições repetidas
-retornam `409 ESTABELECIMENTO_JA_INATIVO` ou `ESTABELECIMENTO_JA_ATIVO`.
+Novas senhas têm 8–128 caracteres. A confirmação é validada na interface e não é
+enviada como campo extra à API. Os endpoints existentes de ativação/recuperação,
+perfil, usuários, pesquisas, auditoria, dashboard e relatórios ganharam schemas.
+IDs operacionais são strings opacas na API, mapeadas aos BIGINTs SQL; UUIDs são
+mantidos para estabelecimentos. SQL `estado` é traduzido para DTO `status`.
 
-## Documentos e arquivos
+Convite: sete dias, hash persistido, uso único, reenvio cancela o anterior. Recuperação:
+30 minutos, hash persistido, novo pedido invalida tokens anteriores ainda válidos.
+A resposta da recuperação é igual para conta conhecida/desconhecida. Tokens e senhas
+não entram na auditoria nem nas respostas públicas de criação de convite.
 
-- `POST /estabelecimentos/{id_estabelecimento}/documentos`: multipart, resposta `201`.
-- `PATCH /estabelecimentos/{id_estabelecimento}/documentos/{id_documento}`: metadados JSON.
-- `GET /estabelecimentos/{id_estabelecimento}/documentos/{id_documento}/arquivo`: download.
-- `PUT /estabelecimentos/{id_estabelecimento}/documentos/{id_documento}/arquivo`: substituição multipart.
+A fila `email_outbox` é criada na mesma transação da operação. `python -m app.mailer`
+envia por SMTP com locks `SKIP LOCKED`, tentativas limitadas e limpeza do corpo após
+envio. A mensagem contém temporariamente o link até ser entregue. SMTP tem semântica
+**ao menos uma vez**: falha entre envio e commit pode causar e-mail duplicado, mas não
+reutilização de token. Mensagens que atingem dez falhas exigem inspeção/reprocessamento.
+A fila não afirma sucesso de entrega na interface; no Docker o Mailpit captura o envio.
 
-Escrita de documentos permite ADMINISTRADOR, EDITOR e HOTEL; download também
-permite GESTOR. HOTEL permanece limitado à hospedagem vinculada, e o documento
-sempre é buscado dentro do estabelecimento indicado na URL.
+Configuração: `OTO_SMTP_HOST`, `OTO_SMTP_PORT`, `OTO_MAIL_FROM`, opcionais
+`OTO_SMTP_STARTTLS=true`, `OTO_SMTP_USER`, `OTO_SMTP_PASSWORD`. Sem host, o worker
+não envia. `OTO_PUBLIC_URL` define a origem dos links de ativação/redefinição.
 
-Upload exige `tipo_documento`, `data_vencimento` e `arquivo`; `numero` e
-`data_emissao` são opcionais. PUT recebe somente `arquivo`. Os formatos são
-`multipart/form-data`, sem base64 em JSON. Campos extras ou repetidos são
-rejeitados. O status é calculado na criação e ao alterar o vencimento: vencido
-antes da data UTC atual, a vencer entre hoje e 30 dias, regular após esse prazo.
-Esse intervalo de 30 dias é uma decisão de desenvolvimento a confirmar.
+## Arquivos e relatórios
 
-`app/document_storage.py` define `DocumentStorage` e `LocalDocumentStorage`.
-Os limites adotados para desenvolvimento são:
+`DocumentStorage` separa binários do registro SQL. A implementação local usa chaves
+UUID geradas pelo servidor; nomes e referências internas não são aceitos do cliente.
+SQL preserva metadados e associações ao arquivo. `OTO_STORAGE_DIR` configura a raiz
+(padrão `~/.local/share/oto/documentos`); Docker usa o volume em `/data/documentos`.
+Relatórios têm storage próprio via o mesmo protocolo, em `relatorios/`, configurável
+por `OTO_REPORT_STORAGE_DIR`. Binários não são serializados em JSON/colunas do banco.
 
-- MIME `application/pdf`, `image/jpeg` e `image/png`, conforme o encoding do contrato.
-- Extensões correspondentes `.pdf`, `.jpg`/`.jpeg` e `.png`.
-- Limite padrão **10 MiB por arquivo**, configurável por `OTO_UPLOAD_MAX_BYTES`.
-- Nome de arquivo de até 255 caracteres; caminhos enviados pelo cliente são removidos.
-- Storage padrão `~/.local/share/oto/documentos`, configurável por `OTO_STORAGE_DIR`.
+Upload: um único POST multipart com arquivo e metadados. PATCH altera metadados;
+PUT `/arquivo` substitui o binário. São aceitos PDF/JPEG/PNG, MIME e extensão
+correspondentes, máximo padrão de 10 MiB (`OTO_UPLOAD_MAX_BYTES`). Arquivo vazio
+é rejeitado. Nginx limita a requisição completa a 12 MiB e retorna JSON em 413.
+Substituição preserva o arquivo anterior quando persistência/auditoria falham.
+Relatórios PDF/CSV reais têm limite próprio de 50 MiB (`OTO_REPORT_MAX_BYTES`).
 
-MIME declarado e extensão são verificados; tamanho é contado durante a cópia
-em blocos. Arquivo vazio retorna `422`; tipo não permitido, `415`; tamanho acima
-do limite, `413`. O parser multipart do framework usa arquivos temporários
-antes da validação do storage. Os testes usam storage isolado em `tmp_path`.
+O seed contém exemplos de metadados de documentos/relatórios; binários fictícios
+não são fabricados. Seu download retorna 404 até haver conteúdo real no storage.
+Upload/substituição e relatórios gerados pela aplicação sobrevivem a reinícios.
+A geração de relatório é síncrona (resposta 202 já concluída neste adaptador local).
 
-Cada arquivo recebe uma chave UUID gerada pelo servidor. A referência fica
-separada da ficha e dos metadados públicos: nome, MIME, tamanho e envio. Binários
-ficam apenas no storage. Download usa `application/octet-stream` com attachment.
-Documentos do seed têm metadados fictícios; sem upload de um arquivo real,
-o download retorna `404`. PUT permite anexar o arquivo a esses documentos.
+## Decisões do MVP
 
-Substituição mantém o ID do documento, grava um arquivo novo e remove o anterior
-após atualizar a referência. Falhas de persistência desfazem a alteração no mock
-e removem o arquivo novo; o anterior é preservado.
+- Documento vence antes de hoje: VENCIDO; de hoje até 30 dias: A_VENCER;
+  além disso: REGULAR. O cálculo usa a data UTC; exemplos antigos não fixam a janela.
+- Dashboard Cadastur lista todos os vencimentos informados, inclusive vencidos,
+  ordenados por data; não aplica uma janela inventada nem usa alertas AVCB fixos.
+- Leitos desconhecidos são indicados como total parcial; zeros não são tratados
+  como ausentes. Histórico e auditoria preservam nulo/false/zero.
+- Conta é inativada, sem DELETE; avatar por iniciais e preferências locais de
+  tema/fonte permanecem fora da sincronização remota do MVP.
+- PostgreSQL é obrigatório para os novos fluxos de senha/contas. O modo mock legado
+  cobre inventário e testes, sem simular entrega externa ou persistência SQL.
 
-`app/inventory_service.py` concentra regras e operações. Cadastro, edição,
-transições, upload, edição de metadados e substituição chamam `audit()`, com
-snapshots independentes antes/depois, sem expor chave ou caminho de storage.
-
-## Credenciais e demais módulos de demonstração
-
-As credenciais locais são `marina.admin@example.test` / `admin-demo`,
-`rafael.consulta@example.test` / `gestor-demo` e
-`camila.editora@example.test` / `editor-demo`. Use `POST /auth/login` para obter
-o token Bearer.
-
-Para testar HOTEL, use os e-mails de `contas_empresario` do seed (por exemplo,
-`responsavel@serra-azul.example`) com senha `hotel-demo`. O vínculo é carregado
-do seed no servidor, sem aceitar o estabelecimento enviado pelo cliente no login.
-Essas contas e os tokens estáticos são exclusivamente de demonstração, assim
-como as demais credenciais locais; não implementam sessões de produção.
-
-A base também inclui autenticação, perfil, usuários, convites, pesquisas de
-ocupação, respostas, relatórios, auditoria e dashboard. Esses módulos mantêm
-seus dados em memória, assim como o repositório temporário do inventário.
-
-## Decisões e pontos do contrato para discussão
-
-O arquivo `../contratos_api_oto/openapi.json` e os mocks não foram alterados.
-Os testes validam respostas diretamente contra seus schemas e formatos.
-
-- A listagem documenta `400`, mas não `422`: parâmetros inválidos retornam
-  `400` com `ErrorResponse`, em vez do erro padrão do FastAPI.
-- O contrato declara IDs no formato UUID, mas não documenta resposta para UUID
-  malformado na ficha/documentos. A implementação usa `400` com `ErrorResponse`;
-  documentar essa resposta depende de discussão com a equipe.
-- O contrato não define desempate, colação de nomes nem mínimo de `total_pages`.
-  Os critérios descritos acima explicitam essas decisões sem modificar o contrato.
-- Alguns exemplos antigos de ficha omitem `arquivo` dos documentos, embora
-  `DocumentoControle` o exija. As respostas seguem o schema e o seed atual,
-  que já fornece os metadados. Ajustes nos exemplos ficam para discussão.
-
-- O schema de cadastro aceita CNPJ e razão social nulos, mas a descrição e a
-  issue #30 exigem esses dados. No cadastro a implementação rejeita `null` com
-  `422`; no PATCH o ADMINISTRADOR pode usar `null`, conforme o schema. A equipe
-  deve decidir se o contrato de criação deve deixar de ser anulável.
-- O PUT de arquivo não documenta `422` para multipart ausente/inválido. A API
-  retorna `422 VALIDATION_ERROR` nesses casos. JSON/multipart malformado e IDs
-  inválidos usam `400 BAD_REQUEST`, que também está ausente em algumas operações.
-  São lacunas a discutir antes de alterar o contrato.
-- O tamanho máximo e a janela de documento a vencer ficam configuráveis ou
-  documentados como padrões de desenvolvimento; a equipe deve confirmar os valores.
-
-## Plano executado e validação
-
-1. Comparar parâmetros, perfis e estruturas de resposta com o OpenAPI.
-2. Separar repositório JSON e consultas das rotas HTTP.
-3. Completar filtros, ordenação, validações e autorização, incluindo HOTEL.
-4. Validar contratos e comportamentos com fixtures independentes baseadas no seed.
-5. Adicionar modelos Pydantic e repositório mutável substituível.
-6. Implementar escrita, autorização por campo e transições com auditoria.
-7. Implementar documentos, storage, download e substituição com rollback.
-8. Testar casos positivos, negativos, concorrência de CNPJ e falhas de persistência.
-
-Execute a mesma suíte usada pelo CI:
+## Testes
 
 ```bash
-cd backend
 python -m pytest -v
+OTO_TEST_ADMIN_URL='postgresql://usuario:senha@localhost:5432/postgres' python -m pytest -v
 ```
 
-Os testes usam `pytest`, `TestClient` e `jsonschema`; cobrem filtros combinados,
-busca nos três campos, limites, paginação, ordenação com empates e fusos horários,
-fichas completas/incompletas, escrita, documentos, autenticação e isolamento de
-HOTEL. As fixtures de escrita reutilizam o seed, injetam um repositório por teste
-e storage em `tmp_path`, sem modificar os mocks nem criar arquivos no repositório.
-
-## Integração das operações do portal
-
-Login/saída, atualização do perfil, contas/convites e pesquisas usam os endpoints
-existentes, com autorização no servidor. HOTEL obtém seu vínculo da sessão e só
-responde pesquisas destinadas à própria hospedagem; uma resposta por hospedagem.
-Convites expiram em sete dias e o reenvio invalida os anteriores ainda pendentes.
-A saída revoga o token apresentado. Dados, sessões e convites continuam em memória.
-Recuperação apenas registra a solicitação; não há SMTP nem fluxo de redefinição
-final neste contrato. Não há endpoint de exclusão de conta ou upload de avatar.
-
-Relatórios OCUPACAO são gerados como PDF (ReportLab) ou CSV UTF-8 com BOM a partir
-das respostas registradas. O filtro opcional `id_pesquisa` seleciona uma pesquisa.
-O download retorna bytes e MIME apropriados; não retorna JSON no lugar do arquivo.
-Os binários de relatório ficam separados dos metadados, temporariamente na memória
-do processo, até integração com persistência/storage definitivo. A geração local
-é síncrona dentro do endpoint 202; não há fila de jobs nem persistência PostgreSQL.
-Os testes isolam sessões, convites, pesquisas, respostas e arquivos por fixture.
-
-## Consultas do dashboard e auditoria — SCRUM-96
-
-`app/read_views.py` separa as consultas das rotas. O dashboard usa o repositório
-mutável atual e apenas a categoria Meios de hospedagem; não relê o seed para os
-totais. Mantém os indicadores de pesquisas e acrescenta totais de empresas/leitos,
-contagem de leitos não informados, vencimentos Cadastur e data de referência.
-Somente ADMINISTRADOR, EDITOR e GESTOR acessam o dashboard global.
-Os vencimentos são todos os registros Cadastur informados (inclusive vencidos),
-sem inventar janela de vencimento ou substituir por alertas AVCB.
-
-O OpenAPI original não especifica o schema completo do dashboard: a estrutura
-operacional está documentada aqui e no README frontend para alinhamento. Não foi
-modificado o contrato nem o seed. A documentação de 403 HOTEL no dashboard e
-422 para filtros de data inválidos na auditoria deve acompanhar futura revisão.
-A auditoria aplica intervalos inclusivos sobre instantes com fuso horário e
-ordenação determinística decrescente. CNPJ pode ser buscado sem pontuação.
-Testes de consulta usam o repositório isolado de `write_env`; PostgreSQL permanece
-pendente das migrations aplicáveis.
+Sem `OTO_TEST_ADMIN_URL`, casos SQL são explicitamente pulados; isso não comprova
+integração. O CI usa PostgreSQL 17 e executa a suíte com essa variável. Fixtures SQL
+criam bancos aleatórios `oto_test_*`, aplicam migrations/seed e descartam somente
+suas bases isoladas. Há testes de concorrência, rollback, sessões/expiração/revogação,
+perfis, convites, recuperação, e-mail capturado, documentos e relatórios.
+O job Docker também executa `tests/stack_smoke.py`, que escreve dados fictícios e
+reinicia processos para verificar persistência. Nunca execute esse smoke em produção.

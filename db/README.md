@@ -62,7 +62,7 @@ psql -d oto_db -f db/seeds/001_dev_seed.sql
   * Permite que um estabelecimento seja criado em etapas (cadastro inicial apenas com dados de identificação/endereço, sem linha correspondente em `meio_hospedagem` ou com campos operacionais nulos).
 
 ### [M3] Unicidade e Validação de CNPJ
-* `estabelecimentos.cnpj` possui restrição `UNIQUE (cnpj)` e `NOT NULL`.
+* `estabelecimentos.cnpj` possui unicidade também pelo valor normalizado, sem pontuação. A migration 003 permite nulo em PATCH conforme contrato; o cadastro exige CNPJ válido.
 * O contrato OpenAPI exige CNPJ no payload mínimo de criação (`EstabelecimentoCreate.required: [cnpj, ...]`), garantindo que não haja duplicidades de pessoas jurídicas na base.
 
 ### [M4] Inativação Lógica (*Soft Delete*)
@@ -74,7 +74,7 @@ psql -d oto_db -f db/seeds/001_dev_seed.sql
 * **Checklists extensos (Infraestrutura e Acessibilidade)**:
   * Acessibilidade física/sensorial, facilidades de lazer, recepção e alimentação possuem dezenas de itens detalhados.
   * Modelar cada item como coluna booleana tornaria a tabela excessivamente larga e rígida a alterações de formulário.
-  * Adotou-se `infraestrutura JSONB NOT NULL DEFAULT '{}'::jsonb` e `acessibilidade JSONB NOT NULL DEFAULT '{}'::jsonb`, com índices `GIN` para consultas flexíveis e `CHECK (jsonb_typeof(...) = 'object')`.
+  * Adotou-se `infraestrutura JSONB DEFAULT '{}'::jsonb` e `acessibilidade JSONB DEFAULT '{}'::jsonb` (anuláveis após 003), com índices `GIN` para consultas flexíveis e `CHECK (jsonb_typeof(...) = 'object')`.
 * **Colunas Relacionais Dedicadas (Métricas e Relatórios)**:
   * `tipo_hospedagem`, `total_uh`, `total_leitos`, `uh_pcd`, `func_fixos`, `func_temporarios`, `diaria_media`, `cadastur_status`, `latitude`, `longitude` e `bairro` são colunas relacionais nativas.
   * Permitem índices B-Tree, agregações (`SUM`, `AVG`), filtros de faixa (`BETWEEN`, `>=`, `<=`) e ordenação com alta performance em relatórios da prefeitura/OTO.
@@ -84,10 +84,9 @@ psql -d oto_db -f db/seeds/001_dev_seed.sql
 * Modelado como `formas_pagamento JSONB NOT NULL DEFAULT '[]'::jsonb` com `CHECK (jsonb_typeof(formas_pagamento) = 'array')` e índice `GIN`.
 
 ### [M7] Documentos de Controle e Metadados de Arquivo
-* Tabela `documentos_controle` atende ao ciclo de vida REST em duas etapas:
-  1. Criação do metadado do documento (`POST /estabelecimentos/{id}/documentos`): exige `tipo_documento` e `data_vencimento`.
-  2. Upload físico do arquivo (`POST /.../arquivo` via multipart): preenche `nome_arquivo`, `content_type` (MIME type), `tamanho_bytes`, `checksum_sha256`, `caminho_storage` (referência interna no storage) e `enviado_em`.
-* Colunas de arquivo físico admitem `NULL` na criação inicial, tornando o fluxo assíncrono e consistente.
+* A criação é `POST /estabelecimentos/{id}/documentos` multipart, com metadados e arquivo.
+* A substituição usa `PUT /estabelecimentos/{id}/documentos/{id_documento}/arquivo` multipart; o download usa GET nesse caminho.
+* O banco guarda nome, MIME, tamanho e referência interna de armazenamento; os binários ficam no volume de arquivos. Metadados legados podem não possuir arquivo e retornam 404 no download.
 
 ### [M8] Suporte a Cadastro Inicial Incompleto
 * Conforme especificação em `EstabelecimentoCreate`:
@@ -114,3 +113,34 @@ psql -d oto_db -f db/seeds/001_dev_seed.sql
 | `meio_hospedagem` | `idx_meio_hospedagem_formas_pagamento_gin` | GIN | Consultas sobre formas de pagamento aceitas |
 | `documentos_controle` | `idx_documentos_estab` | B-Tree | `JOIN` e listagem de documentos por hotel |
 | `documentos_controle` | `idx_documentos_vencimento` | B-Tree | Monitoramento de prazos e alertas de vencimento |
+
+## Integração final — migration 003
+
+`003_persistent_application.sql` complementa as tabelas existentes, sem substituir
+001/002. Acrescenta sessões Bearer opacas com expiração/revogação, destinatários de
+pesquisa, título, fila transacional de e-mails e proteção append-only da auditoria.
+A premissa JWT stateless comentada em 002 foi substituída por sessões SQL revogáveis;
+o contrato exige Bearer, sem impor JWT. IDs operacionais BIGINT são strings opacas
+na API; estado SQL é mapeado explicitamente para os nomes do DTO.
+
+A migration também alinha nullabilidade do PATCH de CNPJ/razão social e JSONB ao
+contrato e cria unicidade de CNPJ sem pontuação/e-mail normalizado. O cadastro mínimo
+continua exigindo os campos na API; nullable no PATCH não significa cadastro sem CNPJ.
+O seed inclui `inativado_em` no INSERT do hotel inativo, antes da validação da constraint,
+e hashes Argon2id de contas fictícias autenticáveis. Não contém senhas de usuários reais.
+
+Para a aplicação, use `python -m app.migrate --seed` no ambiente de desenvolvimento
+ou o serviço `migrate` do Compose. O runner mantém checksums, lock e transação por
+migration; o seed gerenciado é aplicado uma vez, sem desfazer alterações posteriores.
+As instruções antigas de `psql -f` são úteis para verificar SQL isoladamente, mas
+não criam o histórico do runner. Uma base criada manualmente requer baseline
+verificado antes de passar a ser gerenciada, sem DROP automático de tabelas.
+
+No Docker, migrations usam `oto_owner`; a aplicação usa `oto_app`, com privilégios
+DML e sequências, sem alterar o histórico de migrations/seed ou modificar/apagar
+logs. Apenas o serviço de migrations pode criar estrutura. Os volumes preservam
+banco e arquivos. Os testes de integração e o smoke de reinício estão no CI.
+
+Correção do fluxo documental de M7: criação é POST multipart em `/documentos`,
+com arquivo e metadados juntos. Substituição usa PUT `/documentos/{id}/arquivo`;
+não existe POST separado de arquivo. SQL armazena referência e metadados, não o binário.

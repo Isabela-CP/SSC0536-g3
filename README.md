@@ -1,74 +1,106 @@
 # SSC0536-g3 — OTO Hospedagem
 
-Projeto do Grupo 3 da disciplina **SSC0536**: plataforma web de hospedagem com frontend em **React + Vite**.
+Plataforma React + Vite e FastAPI para o inventário de meios de hospedagem.
+A API real usa PostgreSQL; o contrato REST fica em
+[`contratos_api_oto/openapi.json`](contratos_api_oto/openapi.json).
 
-## Como rodar
-# Inventário OTO
+## Executar com Docker
 
-Aplicação para gestão do inventário de meios de hospedagem. O repositório está
-separado por responsabilidade para que interface, API e contrato evoluam sem
-misturar dependências.
-
-## Estrutura
-
-```text
-frontend/            Interface React + Vite
-backend/             API FastAPI e testes básicos
-contratos_api_oto/   Contrato OpenAPI e dados mockados
+```bash
+cp .env.example .env
+# Ajuste as portas em .env se já estiverem ocupadas.
+docker compose up -d --build --wait
 ```
 
-## Contratos e mocks
+- Aplicação: http://localhost:8080 (ou a porta `OTO_WEB_PORT`).
+- API e Swagger: http://localhost:8080/api/docs.
+- Caixa de e-mail de desenvolvimento: http://localhost:8025.
 
-O contrato em `contratos_api_oto/openapi.json` descreve a API REST do MVP:
-categorias, estabelecimentos, inativação/reativação e documentos de controle
-com upload e download. Ele também documenta os perfis `ADMINISTRADOR`,
-`GESTOR`, `EDITOR` e `HOTEL` e as restrições de acesso de cada um.
+Nesta máquina a porta 8080 já estava ocupada; a configuração local ignorada usa
+**8081**, com `OTO_PUBLIC_URL=http://localhost:8081`.
 
-Os dados fictícios de desenvolvimento ficam em
-`contratos_api_oto/mocks/seed-data.json`. Para facilitar o consumo no frontend,
-`contratos_api_oto/mocks/responses/` contém respostas prontas de sucesso para
-as leituras principais. O backend usa o `seed-data.json` como sua fonte de
-verdade temporária, portanto as respostas de consulta correspondem aos mocks.
+O Compose inicia PostgreSQL 17, migrations versionadas, API, worker de e-mail,
+Mailpit e frontend Nginx. O banco não é publicado na rede do host. As portas
+web/e-mail são limitadas ao loopback. Os volumes `postgres` e `files` preservam
+dados e arquivos ao reiniciar/recriar containers. `docker compose down` os mantém;
+`docker compose down --volumes` **apaga os dados** e é reservado a ambientes descartáveis.
+O Mailpit captura mensagens localmente: não entrega e-mails à internet.
 
-Na revisão dos dados, os quatro CNPJs são estruturalmente válidos e os campos
-exigidos pelo contrato estão presentes. Há uma decisão de negócio ainda aberta:
-o contrato marca um documento que vence em 34 dias como `A_VENCER`, mas não
-define a janela de dias para esse status. Essa regra deve ser fechada antes das
-rotas de escrita e da persistência definitiva.
+### Contas fictícias locais
 
-Para detalhes de permissões, uploads e pendências de produto, consulte o
-[README dos contratos](contratos_api_oto/README.md).
+| Perfil | Login | Senha |
+| --- | --- | --- |
+| ADMINISTRADOR | marina.admin@example.test | admin-demo |
+| GESTOR | rafael.consulta@example.test | gestor-demo |
+| EDITOR | camila.editora@example.test | editor-demo |
+| HOTEL | responsavel@serra-azul.example | hotel-demo |
 
-## Executar
+Essas contas são fixtures públicas exclusivas de desenvolvimento. O seed gerenciado
+é aplicado uma vez e não sobrescreve contas/senhas alteradas ao reiniciar a stack.
+No ambiente de produção, não execute o seed e configure credenciais/SMTP próprios.
 
-### Frontend
+## Desenvolvimento e testes
 
 ```bash
 cd frontend
-npm install
-npm run dev      # servidor local
-npm run build    # build de produção (deve passar antes do merge)
+npm ci
+npm test
+npm run build
 ```
 
-## Contribuindo
+Para Vite junto do Docker, configure em `frontend/.env.local`:
 
-1. Abra o PR preenchendo o template (descrição, `Closes #<issue>`, prints/Figma).
-2. O workflow **AI PR Review** comenta automaticamente no PR (Gemini/OpenAI/Anthropic, conforme o secret configurado). Comente `/review` para pedir nova análise.
-3. O parecer fica salvo em [`pr_reviewing/`](pr_reviewing/). Critérios: [REVIEW_GUIDE.md](.github/review/REVIEW_GUIDE.md).
-
-A IA apenas comenta; a aprovação e o merge são sempre humanos.
-npm run dev
+```dotenv
+VITE_API_MODE=real
+VITE_API_BASE_URL=/api
+OTO_API_TARGET=http://127.0.0.1:8080/api
 ```
 
-### Backend
+Troque 8080 por `OTO_WEB_PORT`. O proxy é exclusivo do servidor Vite;
+URL/token/tratamento de erro continuam compartilhados no cliente HTTP.
 
 ```bash
 cd backend
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-uvicorn app.main:app --reload
+python -m pytest -v
 ```
 
-O frontend é servido normalmente em `http://localhost:5173` e a documentação
-da API em `http://localhost:8000/docs`.
+A suíte unitária opta explicitamente por memória. Para executar também a integração
+SQL, informe uma conexão **de testes** com permissão de criar bancos descartáveis:
+
+```bash
+OTO_TEST_ADMIN_URL=postgresql://usuario:senha@localhost:5432/postgres python -m pytest -v
+```
+
+Os testes SQL criam e removem apenas bancos `oto_test_*` exclusivos da execução;
+não truncam bases de desenvolvimento. O CI sempre disponibiliza PostgreSQL real.
+A integração não é considerada validada quando essa variável está ausente.
+
+Teste da stack completa (cria registros fictícios e reinicia `api`/`worker`):
+
+```bash
+OTO_STACK_URL=http://localhost:8080 python backend/tests/stack_smoke.py
+```
+
+Esse teste comprova que sessão, ficha, documento substituído, auditoria e PDF
+persistem após reinício. Não execute contra ambientes de produção.
+
+## Organização
+
+- `frontend/`: telas e cliente HTTP; [documentação](frontend/README.md).
+- `backend/`: API, serviços, repositórios, storage e testes; [documentação](backend/README.md).
+- `db/`: migrations e seed PostgreSQL; [documentação](db/README.md).
+- `contratos_api_oto/`: OpenAPI e fixtures originais.
+- `.github/`: CI, template de PR e review automático.
+
+Login usa Bearer opaco com hash no banco, validade no servidor e revogação.
+Recuperação/ativação usam tokens de uso único; a fila de e-mails é transacional.
+ADMINISTRADOR, GESTOR, EDITOR e HOTEL são autorizados pelo backend, incluindo
+isolamento HOTEL e proteção de CNPJ/razão social. Avatar continua representado
+por iniciais; preferências de tema/fonte são locais por usuário, fora da persistência
+remota do MVP. Nenhuma dessas duas funcionalidades simula upload/sincronização.
+
+Preencha o template de PR, informe `Closes #<issue>` e siga o
+[guia de review](.github/review/REVIEW_GUIDE.md). Reviews automáticos não fazem merge.
