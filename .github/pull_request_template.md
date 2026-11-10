@@ -9,6 +9,6 @@ Closes #
 
 <!-- Informe o número da issue do GitHub. -->
 
-## Prints ou Link do Figna
+## Prints ou Link do Figma
 
 <!-- Coloque aqui Prints da implementação -->

@@ -1,0 +1,1 @@
+{"error":{"code":"VALIDATION_ERROR","message":"Verifique os campos informados.","details":[{"field":"motivo_inativacao","issue":"O motivo de inativação deve ter no máximo 500 caracteres."}]}}
