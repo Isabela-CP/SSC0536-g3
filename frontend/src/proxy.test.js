@@ -4,6 +4,12 @@ import { test } from 'node:test'
 import { backendProxy } from '../devProxy.js'
 import { viteConfigFor } from '../vite.config.js'
 
+test('GitHub Pages usa o caminho do repositório sem alterar o proxy local', () => {
+  assert.equal(viteConfigFor('build', { VITE_BASE_PATH: '/SSC0536-g3/' }).base, '/SSC0536-g3/')
+  assert.equal(viteConfigFor('serve').base, '/')
+  assert.equal(viteConfigFor('build').server, undefined)
+})
+
 test('proxy encaminha API e preserva query string e multipart', () => {
   const proxy = backendProxy({ OTO_API_TARGET: 'http://127.0.0.1:8000' })
   assert.equal(proxy.target, 'http://127.0.0.1:8000')

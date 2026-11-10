@@ -4,6 +4,8 @@ Plataforma React + Vite e FastAPI para o inventário de meios de hospedagem.
 A API real usa PostgreSQL; o contrato REST fica em
 [`contratos_api_oto/openapi.json`](contratos_api_oto/openapi.json).
 
+Para preparar a publicação automática, siga o [guia de CI/CD](docs/DEPLOY.md).
+
 ## Executar com Docker
 
 ```bash

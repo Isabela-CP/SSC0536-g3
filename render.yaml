@@ -1,0 +1,43 @@
+# Criar em Render > New > Blueprint. Publicação somente a partir de main.
+services:
+  - type: web
+    name: oto-api
+    runtime: docker
+    plan: free
+    branch: main
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    dockerCommand: python -m app.start
+    healthCheckPath: /health
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: OTO_ENV
+        value: production
+      - key: OTO_DATA_BACKEND
+        value: postgres
+      - key: OTO_STORAGE_PROVIDER
+        value: supabase
+      - key: OTO_STORAGE_BUCKET
+        value: oto-arquivos
+      - key: OTO_MAIL_PROVIDER
+        value: brevo
+      - key: OTO_MAILER_EMBEDDED
+        value: "true"
+      - key: DATABASE_URL
+        sync: false
+      - key: OTO_SUPABASE_URL
+        sync: false
+      - key: OTO_SUPABASE_SERVICE_KEY
+        sync: false
+      - key: OTO_PUBLIC_URL
+        sync: false
+      - key: OTO_CORS_ORIGINS
+        sync: false
+      - key: OTO_BREVO_API_KEY
+        sync: false
+      - key: OTO_MAIL_FROM
+        sync: false
+      - key: OTO_BOOTSTRAP_ADMIN_EMAIL
+        sync: false
+      - key: OTO_BOOTSTRAP_ADMIN_PASSWORD
+        sync: false

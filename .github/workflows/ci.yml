@@ -5,10 +5,15 @@ on:
     branches:
       - Develop
       - develop
+      - main
   pull_request:
     branches:
       - Develop
       - develop
+      - main
+
+permissions:
+  contents: read
 
 jobs:
   backend-tests:
@@ -79,6 +84,10 @@ jobs:
 
       - name: Buildar o frontend
         run: npm run build
+        env:
+          VITE_API_MODE: real
+          VITE_API_BASE_URL: ${{ vars.OTO_API_URL || 'https://api.example.invalid' }}
+          VITE_BASE_PATH: /${{ github.event.repository.name }}/
 
   docker-smoke:
     name: Docker e persistência após reinício
