@@ -18,7 +18,11 @@ class SupabaseStorage:
         if not bucket.replace('-', '').replace('_', '').isalnum() or max_bytes < 1:
             raise RuntimeError('Bucket ou limite de storage inválido.')
         self.url = url.rstrip('/') + '/storage/v1/object'
-        self.headers = {'Authorization': 'Bearer ' + key, 'apikey': key}
+        if key.startswith('sb_publishable_'):
+            raise RuntimeError('Storage privado exige uma chave secreta do Supabase.')
+        self.headers = {'apikey': key}
+        if not key.startswith('sb_secret_'):
+            self.headers['Authorization'] = 'Bearer ' + key
         self.bucket, self.prefix, self.max_bytes = bucket, prefix, max_bytes
         self.types = types or LocalDocumentStorage.TYPES
         self.client = client or httpx.Client(timeout=30, follow_redirects=False)

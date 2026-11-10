@@ -10,7 +10,7 @@ from app.start import validate_hosted_config
 
 
 def storage(handler, max_bytes=1024):
-    return SupabaseStorage('https://project.supabase.co', 'fake-server-only-key',
+    return SupabaseStorage('https://project.supabase.co', 'sb_secret_fake_test',
                            'oto-arquivos', 'documentos', max_bytes,
                            client=httpx.Client(transport=httpx.MockTransport(handler)))
 
@@ -18,7 +18,8 @@ def storage(handler, max_bytes=1024):
 def test_cloud_storage_private_roundtrip():
     objects = {}
     def handle(request):
-        assert request.headers['authorization'] == 'Bearer fake-server-only-key'
+        assert request.headers['apikey'] == 'sb_secret_fake_test'
+        assert 'authorization' not in request.headers
         key = request.url.path.rsplit('/', 1)[-1]
         if request.method == 'POST':
             assert '/authenticated/' not in request.url.path
