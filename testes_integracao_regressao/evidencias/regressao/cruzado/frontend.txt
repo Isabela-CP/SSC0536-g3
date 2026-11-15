@@ -1,0 +1,670 @@
+TAP version 13
+# Subtest: App apresenta carregamento antes da sessão e dos dados
+ok 1 - App apresenta carregamento antes da sessão e dos dados
+  ---
+  duration_ms: 595.157745
+  ...
+# Subtest: cadastro reproduz identificação, vencimentos e ações sem módulos alheios
+ok 2 - cadastro reproduz identificação, vencimentos e ações sem módulos alheios
+  ---
+  duration_ms: 42.160069
+  ...
+# Subtest: campos obrigatórios do contrato estão acessíveis no cadastro
+ok 3 - campos obrigatórios do contrato estão acessíveis no cadastro
+  ---
+  duration_ms: 45.709179
+  ...
+# Subtest: EDITOR visualiza CNPJ e razão social bloqueados
+ok 4 - EDITOR visualiza CNPJ e razão social bloqueados
+  ---
+  duration_ms: 41.614039
+  ...
+# Subtest: HOTEL visualiza CNPJ e razão social bloqueados
+ok 5 - HOTEL visualiza CNPJ e razão social bloqueados
+  ---
+  duration_ms: 36.610779
+  ...
+# Subtest: GESTOR não recebe ações de escrita
+ok 6 - GESTOR não recebe ações de escrita
+  ---
+  duration_ms: 37.56592
+  ...
+# Subtest: HOTEL não pode editar registro de outra conta nem receber ações de documentos
+ok 7 - HOTEL não pode editar registro de outra conta nem receber ações de documentos
+  ---
+  duration_ms: 1.306251
+  ...
+# Subtest: ADMINISTRADOR recebe manutenção conforme status
+ok 8 - ADMINISTRADOR recebe manutenção conforme status
+  ---
+  duration_ms: 71.033966
+  ...
+# Subtest: modo HOTEL segue o frame Meus dados e Meu cadastro
+ok 9 - modo HOTEL segue o frame Meus dados e Meu cadastro
+  ---
+  duration_ms: 33.391137
+  ...
+# Subtest: checklists completos são renderizados conforme schemas de hospedagem
+ok 10 - checklists completos são renderizados conforme schemas de hospedagem
+  ---
+  duration_ms: 33.435383
+  ...
+# Subtest: cadastro incompleto mantém preenchimento operacional opcional
+ok 11 - cadastro incompleto mantém preenchimento operacional opcional
+  ---
+  duration_ms: 28.004642
+  ...
+# Subtest: estado de envio desabilita ações e informa tecnologia assistiva
+ok 12 - estado de envio desabilita ações e informa tecnologia assistiva
+  ---
+  duration_ms: 21.302591
+  ...
+# Subtest: erros vinculados ao campo e resumo acessível
+ok 13 - erros vinculados ao campo e resumo acessível
+  ---
+  duration_ms: 12.819193
+  ...
+# Subtest: mensagens de sucesso e erro têm semântica consistente
+ok 14 - mensagens de sucesso e erro têm semântica consistente
+  ---
+  duration_ms: 0.457317
+  ...
+# Subtest: documentos mostram metadados e ações permitidas
+ok 15 - documentos mostram metadados e ações permitidas
+  ---
+  duration_ms: 0.593082
+  ...
+# Subtest: documentos vazios, indisponíveis e em envio
+ok 16 - documentos vazios, indisponíveis e em envio
+  ---
+  duration_ms: 0.275418
+  ...
+# Subtest: inativação usa modal com motivo e confirmação; reativação não pede motivo
+ok 17 - inativação usa modal com motivo e confirmação; reativação não pede motivo
+  ---
+  duration_ms: 0.855808
+  ...
+# Subtest: limpeza de booleano anulável é explícita
+ok 18 - limpeza de booleano anulável é explícita
+  ---
+  duration_ms: 0.240223
+  ...
+# Subtest: rotas isolam HOTEL antes de consultar API
+ok 19 - rotas isolam HOTEL antes de consultar API
+  ---
+  duration_ms: 0.746745
+  ...
+# Subtest: categoria oferece somente o segmento de hospedagem do MVP
+ok 20 - categoria oferece somente o segmento de hospedagem do MVP
+  ---
+  duration_ms: 10.707792
+  ...
+# Subtest: atalhos operacionais não duplicam IDs dos checklists detalhados
+ok 21 - atalhos operacionais não duplicam IDs dos checklists detalhados
+  ---
+  duration_ms: 12.113072
+  ...
+# Subtest: listas de contatos mostram quebras de linha reais no campo
+ok 22 - listas de contatos mostram quebras de linha reais no campo
+  ---
+  duration_ms: 0.258566
+  ...
+# Subtest: cadastro não exibe a tag de demonstração
+ok 23 - cadastro não exibe a tag de demonstração
+  ---
+  duration_ms: 11.527025
+  ...
+# Subtest: resumo de validação identifica cada campo obrigatório pelo nome
+ok 24 - resumo de validação identifica cada campo obrigatório pelo nome
+  ---
+  duration_ms: 0.323864
+  ...
+# Subtest: cadastro mínimo não exige hospedagem nem checklists
+ok 25 - cadastro mínimo não exige hospedagem nem checklists
+  ---
+  duration_ms: 307.25448
+  ...
+# Subtest: cadastro exige id_categoria
+ok 26 - cadastro exige id_categoria
+  ---
+  duration_ms: 0.744477
+  ...
+# Subtest: cadastro exige nome_fantasia
+ok 27 - cadastro exige nome_fantasia
+  ---
+  duration_ms: 0.946624
+  ...
+# Subtest: cadastro exige razao_social
+ok 28 - cadastro exige razao_social
+  ---
+  duration_ms: 0.658903
+  ...
+# Subtest: cadastro exige cnpj
+ok 29 - cadastro exige cnpj
+  ---
+  duration_ms: 0.284959
+  ...
+# Subtest: cadastro exige endereco
+ok 30 - cadastro exige endereco
+  ---
+  duration_ms: 0.526873
+  ...
+# Subtest: CNPJ válido: 11.222.333/0001-81
+ok 31 - CNPJ válido: 11.222.333/0001-81
+  ---
+  duration_ms: 0.228561
+  ...
+# Subtest: CNPJ válido: 11222333000181
+ok 32 - CNPJ válido: 11222333000181
+  ---
+  duration_ms: 0.1708
+  ...
+# Subtest: CNPJ inválido: 00.000.000/0000-00
+ok 33 - CNPJ inválido: 00.000.000/0000-00
+  ---
+  duration_ms: 0.250825
+  ...
+# Subtest: CNPJ inválido: 11.222.333/0001-80
+ok 34 - CNPJ inválido: 11.222.333/0001-80
+  ---
+  duration_ms: 0.253212
+  ...
+# Subtest: CNPJ inválido: 1122233300018
+ok 35 - CNPJ inválido: 1122233300018
+  ---
+  duration_ms: 0.390602
+  ...
+# Subtest: CNPJ inválido: abc11222333000181
+ok 36 - CNPJ inválido: abc11222333000181
+  ---
+  duration_ms: 0.229248
+  ...
+# Subtest: validação do contrato: latitude
+ok 37 - validação do contrato: latitude
+  ---
+  duration_ms: 0.468137
+  ...
+# Subtest: validação do contrato: longitude
+ok 38 - validação do contrato: longitude
+  ---
+  duration_ms: 0.328868
+  ...
+# Subtest: validação do contrato: id_categoria
+ok 39 - validação do contrato: id_categoria
+  ---
+  duration_ms: 0.330494
+  ...
+# Subtest: validação do contrato: nome_fantasia
+ok 40 - validação do contrato: nome_fantasia
+  ---
+  duration_ms: 0.264685
+  ...
+# Subtest: validação do contrato: email_comercial
+ok 41 - validação do contrato: email_comercial
+  ---
+  duration_ms: 0.40875
+  ...
+# Subtest: validação do contrato: cadastur_status
+ok 42 - validação do contrato: cadastur_status
+  ---
+  duration_ms: 0.227714
+  ...
+# Subtest: validação do contrato: status
+ok 43 - validação do contrato: status
+  ---
+  duration_ms: 0.254527
+  ...
+# Subtest: validação do contrato: data_abertura
+ok 44 - validação do contrato: data_abertura
+  ---
+  duration_ms: 1.083198
+  ...
+# Subtest: validação do contrato: aceita_pesquisas
+ok 45 - validação do contrato: aceita_pesquisas
+  ---
+  duration_ms: 0.328129
+  ...
+# Subtest: validação do contrato: meio_hospedagem.total_uh
+ok 46 - validação do contrato: meio_hospedagem.total_uh
+  ---
+  duration_ms: 0.287212
+  ...
+# Subtest: validação do contrato: meio_hospedagem.total_uh
+ok 47 - validação do contrato: meio_hospedagem.total_uh
+  ---
+  duration_ms: 0.834197
+  ...
+# Subtest: validação do contrato: meio_hospedagem.formas_pagamento
+ok 48 - validação do contrato: meio_hospedagem.formas_pagamento
+  ---
+  duration_ms: 1.109807
+  ...
+# Subtest: validação do contrato: acessibilidade.possui_facilidade_pcd
+ok 49 - validação do contrato: acessibilidade.possui_facilidade_pcd
+  ---
+  duration_ms: 0.229447
+  ...
+# Subtest: PATCH contém somente campos alterados e mantém false, zero e null
+ok 50 - PATCH contém somente campos alterados e mantém false, zero e null
+  ---
+  duration_ms: 1.352727
+  ...
+# Subtest: converte horários e listas sem apagar valores omitidos
+ok 51 - converte horários e listas sem apagar valores omitidos
+  ---
+  duration_ms: 0.37235
+  ...
+# Subtest: EDITOR não envia CNPJ nem razão social
+ok 52 - EDITOR não envia CNPJ nem razão social
+  ---
+  duration_ms: 0.682981
+  ...
+# Subtest: HOTEL não envia CNPJ nem razão social
+ok 53 - HOTEL não envia CNPJ nem razão social
+  ---
+  duration_ms: 0.179702
+  ...
+# Subtest: permissões de criação, escrita e isolamento HOTEL
+ok 54 - permissões de criação, escrita e isolamento HOTEL
+  ---
+  duration_ms: 0.390295
+  ...
+# Subtest: motivo inválido com 0 caracteres
+ok 55 - motivo inválido com 0 caracteres
+  ---
+  duration_ms: 0.202553
+  ...
+# Subtest: motivo inválido com 2 caracteres
+ok 56 - motivo inválido com 2 caracteres
+  ---
+  duration_ms: 0.132358
+  ...
+# Subtest: motivo inválido com 501 caracteres
+ok 57 - motivo inválido com 501 caracteres
+  ---
+  duration_ms: 0.191537
+  ...
+# Subtest: motivo válido com 3 caracteres
+ok 58 - motivo válido com 3 caracteres
+  ---
+  duration_ms: 0.138514
+  ...
+# Subtest: motivo válido com 500 caracteres
+ok 59 - motivo válido com 500 caracteres
+  ---
+  duration_ms: 0.104842
+  ...
+# Subtest: mensagens HTTP e erros por campo
+ok 60 - mensagens HTTP e erros por campo
+  ---
+  duration_ms: 0.353981
+  ...
+# Subtest: upload e substituição usam FormData com arquivo e campos permitidos
+ok 61 - upload e substituição usam FormData com arquivo e campos permitidos
+  ---
+  duration_ms: 26.66065
+  ...
+# Subtest: valida MIME, extensão, arquivo vazio e limite inclusive
+ok 62 - valida MIME, extensão, arquivo vazio e limite inclusive
+  ---
+  duration_ms: 0.79031
+  ...
+# Subtest: metadados de documento respeitam PATCH e datas
+ok 63 - metadados de documento respeitam PATCH e datas
+  ---
+  duration_ms: 0.663517
+  ...
+# Subtest: nome de download preserva acentos e remove caminhos
+ok 64 - nome de download preserva acentos e remove caminhos
+  ---
+  duration_ms: 0.667456
+  ...
+# Subtest: download cria link temporário e libera URL após o acionamento
+ok 65 - download cria link temporário e libera URL após o acionamento
+  ---
+  duration_ms: 0.720824
+  ...
+# Subtest: centraliza URL, Bearer e JSON
+ok 66 - centraliza URL, Bearer e JSON
+  ---
+  duration_ms: 32.388327
+  ...
+# Subtest: multipart mantém boundary do navegador e não serializa arquivo em JSON
+ok 67 - multipart mantém boundary do navegador e não serializa arquivo em JSON
+  ---
+  duration_ms: 2.611528
+  ...
+# Subtest: preserva status, código e detalhes do contrato
+ok 68 - preserva status, código e detalhes do contrato
+  ---
+  duration_ms: 1.04674
+  ...
+# Subtest: falha de rede, erro não JSON e cancelamento
+ok 69 - falha de rede, erro não JSON e cancelamento
+  ---
+  duration_ms: 1.359251
+  ...
+# Subtest: downloads retornam Blob e nome público
+ok 70 - downloads retornam Blob e nome público
+  ---
+  duration_ms: 1.904316
+  ...
+# Subtest: operações usam os métodos e caminhos do contrato
+ok 71 - operações usam os métodos e caminhos do contrato
+  ---
+  duration_ms: 0.837265
+  ...
+# Subtest: erros 401 e 403 são propagados sem fallback nem repetição
+ok 72 - erros 401 e 403 são propagados sem fallback nem repetição
+  ---
+  duration_ms: 1.385294
+  ...
+# Subtest: mock reutiliza seed e mantém cadastro, edição e transições na sessão
+ok 73 - mock reutiliza seed e mantém cadastro, edição e transições na sessão
+  ---
+  duration_ms: 419.334586
+  ...
+# Subtest: mock mantém fluxo multipart, metadados, download e substituição
+ok 74 - mock mantém fluxo multipart, metadados, download e substituição
+  ---
+  duration_ms: 9.181402
+  ...
+# Subtest: mock isola HOTEL e bloqueia GESTOR em escrita
+ok 75 - mock isola HOTEL e bloqueia GESTOR em escrita
+  ---
+  duration_ms: 4.168386
+  ...
+# Subtest: mock preserva o arquivo anterior quando a substituição falha
+ok 76 - mock preserva o arquivo anterior quando a substituição falha
+  ---
+  duration_ms: 3.861071
+  ...
+# Subtest: sessão expira e remove as credenciais
+ok 77 - sessão expira e remove as credenciais
+  ---
+  duration_ms: 480.910059
+  ...
+# Subtest: falha de storage não deixa token parcial
+ok 78 - falha de storage não deixa token parcial
+  ---
+  duration_ms: 0.274408
+  ...
+# Subtest: requisição protegida sem sessão não chega ao proxy local
+ok 79 - requisição protegida sem sessão não chega ao proxy local
+  ---
+  duration_ms: 13.957133
+  ...
+# Subtest: login inválido não dispara o tratamento de expiração
+ok 80 - login inválido não dispara o tratamento de expiração
+  ---
+  duration_ms: 0.54671
+  ...
+# Subtest: valida login, convite, senha confirmada e recuperação
+ok 81 - valida login, convite, senha confirmada e recuperação
+  ---
+  duration_ms: 0.705445
+  ...
+# Subtest: perfil envia somente nome/email alterados e ignora cargo
+ok 82 - perfil envia somente nome/email alterados e ignora cargo
+  ---
+  duration_ms: 0.279161
+  ...
+# Subtest: preferências são isoladas por usuário e validadas ao carregar
+ok 83 - preferências são isoladas por usuário e validadas ao carregar
+  ---
+  duration_ms: 0.252789
+  ...
+# Subtest: convite exige vínculo HOTEL e payload de outra conta não carrega vínculo antigo
+ok 84 - convite exige vínculo HOTEL e payload de outra conta não carrega vínculo antigo
+  ---
+  duration_ms: 0.197869
+  ...
+# Subtest: falha parcial de convite retoma sem criar outra conta
+ok 85 - falha parcial de convite retoma sem criar outra conta
+  ---
+  duration_ms: 0.260552
+  ...
+# Subtest: recipientes carregam todas as páginas, não apenas a primeira
+ok 86 - recipientes carregam todas as páginas, não apenas a primeira
+  ---
+  duration_ms: 0.360548
+  ...
+# Subtest: pesquisa valida período e destinatários, PATCH não envia campos intocados
+ok 87 - pesquisa valida período e destinatários, PATCH não envia campos intocados
+  ---
+  duration_ms: 1.24721
+  ...
+# Subtest: navegação bloqueia contas e fichas alheias por perfil
+ok 88 - navegação bloqueia contas e fichas alheias por perfil
+  ---
+  duration_ms: 0.523381
+  ...
+# Subtest: acesso usa campos de senha protegidos e link de recuperação
+ok 89 - acesso usa campos de senha protegidos e link de recuperação
+  ---
+  duration_ms: 12.843969
+  ...
+# Subtest: perfil renderiza cargo protegido e preferências do protótipo
+ok 90 - perfil renderiza cargo protegido e preferências do protótipo
+  ---
+  duration_ms: 2.914854
+  ...
+# Subtest: painel de contas preserva equipe, hospedagens e histórico na inativação
+ok 91 - painel de contas preserva equipe, hospedagens e histórico na inativação
+  ---
+  duration_ms: 3.570929
+  ...
+# Subtest: GESTOR consulta pesquisas sem receber ações de gestão
+ok 92 - GESTOR consulta pesquisas sem receber ações de gestão
+  ---
+  duration_ms: 4.357453
+  ...
+# Subtest: início HOTEL cobre pendências e estado sem pesquisas
+ok 93 - início HOTEL cobre pendências e estado sem pesquisas
+  ---
+  duration_ms: 1.302031
+  ...
+# Subtest: relatórios aguardam geração e rejeitam JSON disfarçado de arquivo
+ok 94 - relatórios aguardam geração e rejeitam JSON disfarçado de arquivo
+  ---
+  duration_ms: 0.816572
+  ...
+# Subtest: novas operações reutilizam o cliente HTTP e os caminhos existentes
+ok 95 - novas operações reutilizam o cliente HTTP e os caminhos existentes
+  ---
+  duration_ms: 0.480862
+  ...
+# Subtest: novas senhas seguem o limite do contrato e exigem confirmação
+ok 96 - novas senhas seguem o limite do contrato e exigem confirmação
+  ---
+  duration_ms: 0.215606
+  ...
+# Subtest: redefinição aceita token sem sessão e envia somente campos do contrato
+ok 97 - redefinição aceita token sem sessão e envia somente campos do contrato
+  ---
+  duration_ms: 0.545086
+  ...
+# Subtest: tela de redefinição oculta e-mail e senha fica protegida
+ok 98 - tela de redefinição oculta e-mail e senha fica protegida
+  ---
+  duration_ms: 1.354649
+  ...
+# Subtest: contas ativas e inativas oferecem transições, pendentes oferecem reenvio
+ok 99 - contas ativas e inativas oferecem transições, pendentes oferecem reenvio
+  ---
+  duration_ms: 1.701961
+  ...
+# Subtest: sessão sem expiração válida não é reutilizada
+ok 100 - sessão sem expiração válida não é reutilizada
+  ---
+  duration_ms: 0.149723
+  ...
+# Subtest: proxy encaminha API e preserva query string e multipart
+ok 101 - proxy encaminha API e preserva query string e multipart
+  ---
+  duration_ms: 1.746764
+  ...
+# Subtest: Bearers locais são opcionais e não substituem a sessão autenticada
+ok 102 - Bearers locais são opcionais e não substituem a sessão autenticada
+  ---
+  duration_ms: 0.859489
+  ...
+# Subtest: build de produção não recebe o proxy nem credenciais de desenvolvimento
+ok 103 - build de produção não recebe o proxy nem credenciais de desenvolvimento
+  ---
+  duration_ms: 0.724994
+  ...
+# Subtest: consulta valida parâmetro busca
+ok 104 - consulta valida parâmetro busca
+  ---
+  duration_ms: 507.098998
+  ...
+# Subtest: consulta valida parâmetro id_categoria
+ok 105 - consulta valida parâmetro id_categoria
+  ---
+  duration_ms: 0.204494
+  ...
+# Subtest: consulta valida parâmetro status
+ok 106 - consulta valida parâmetro status
+  ---
+  duration_ms: 0.118836
+  ...
+# Subtest: consulta valida parâmetro cadastur_status
+ok 107 - consulta valida parâmetro cadastur_status
+  ---
+  duration_ms: 0.085499
+  ...
+# Subtest: consulta valida parâmetro aceita_pesquisas
+ok 108 - consulta valida parâmetro aceita_pesquisas
+  ---
+  duration_ms: 0.274354
+  ...
+# Subtest: consulta valida parâmetro page
+ok 109 - consulta valida parâmetro page
+  ---
+  duration_ms: 0.296688
+  ...
+# Subtest: consulta valida parâmetro page_size
+ok 110 - consulta valida parâmetro page_size
+  ---
+  duration_ms: 0.226116
+  ...
+# Subtest: consulta valida parâmetro ordenar_por
+ok 111 - consulta valida parâmetro ordenar_por
+  ---
+  duration_ms: 0.125882
+  ...
+# Subtest: consulta valida parâmetro ordem
+ok 112 - consulta valida parâmetro ordem
+  ---
+  duration_ms: 0.245491
+  ...
+# Subtest: payload de consulta preserva false e combina todos os parâmetros
+ok 113 - payload de consulta preserva false e combina todos os parâmetros
+  ---
+  duration_ms: 0.576702
+  ...
+# Subtest: mock combina filtros e pagina resultados deterministicamente
+ok 114 - mock combina filtros e pagina resultados deterministicamente
+  ---
+  duration_ms: 2.321805
+  ...
+# Subtest: mock busca nome, razão social e CNPJ normalizado e isola HOTEL
+ok 115 - mock busca nome, razão social e CNPJ normalizado e isola HOTEL
+  ---
+  duration_ms: 0.995431
+  ...
+# Subtest: mapa carrega todas as páginas com os mesmos filtros, não só a primeira
+ok 116 - mapa carrega todas as páginas com os mesmos filtros, não só a primeira
+  ---
+  duration_ms: 0.895196
+  ...
+# Subtest: dashboard rejeita formato incompleto, sem converter alerta AVCB em Cadastur
+ok 117 - dashboard rejeita formato incompleto, sem converter alerta AVCB em Cadastur
+  ---
+  duration_ms: 0.539942
+  ...
+# Subtest: cancelamento e falha HTTP interrompem consultas sem fallback
+ok 118 - cancelamento e falha HTTP interrompem consultas sem fallback
+  ---
+  duration_ms: 0.8707
+  ...
+# Subtest: geolocalização aceita zero e rejeita ausentes, strings e coordenadas inválidas
+ok 119 - geolocalização aceita zero e rejeita ausentes, strings e coordenadas inválidas
+  ---
+  duration_ms: 7.660399
+  ...
+# Subtest: dashboard usa todas as fichas e mostra dados faltantes sem inventar valores
+ok 120 - dashboard usa todas as fichas e mostra dados faltantes sem inventar valores
+  ---
+  duration_ms: 5.296749
+  ...
+# Subtest: inventário respeita ações por perfil e usa paginação do servidor
+ok 121 - inventário respeita ações por perfil e usa paginação do servidor
+  ---
+  duration_ms: 21.893696
+  ...
+# Subtest: detalhe apresenta dados aninhados, documentos e valores zero/false, sem escrita GESTOR
+ok 122 - detalhe apresenta dados aninhados, documentos e valores zero/false, sem escrita GESTOR
+  ---
+  duration_ms: 22.132242
+  ...
+# Subtest: rotas reservam auditoria ao ADMIN e isolam detalhe/histórico HOTEL
+ok 123 - rotas reservam auditoria ao ADMIN e isolam detalhe/histórico HOTEL
+  ---
+  duration_ms: 0.520596
+  ...
+# Subtest: auditoria preserva diferença entre null, false, zero e campo ausente
+ok 124 - auditoria preserva diferença entre null, false, zero e campo ausente
+  ---
+  duration_ms: 9.972753
+  ...
+# Subtest: filtros de auditoria validam usuário e intervalo e normalizam ISO
+ok 125 - filtros de auditoria validam usuário e intervalo e normalizam ISO
+  ---
+  duration_ms: 0.672743
+  ...
+# Subtest: histórico combina associação do hotel e mostra ocupação zero como resposta
+ok 126 - histórico combina associação do hotel e mostra ocupação zero como resposta
+  ---
+  duration_ms: 2.001253
+  ...
+# Subtest: indicadores de pesquisa usam apenas respostas e destinatários do conjunto consultado
+ok 127 - indicadores de pesquisa usam apenas respostas e destinatários do conjunto consultado
+  ---
+  duration_ms: 0.402447
+  ...
+# Subtest: sem categoria de hospedagem não consulta outros segmentos turísticos
+ok 128 - sem categoria de hospedagem não consulta outros segmentos turísticos
+  ---
+  duration_ms: 0.22294
+  ...
+# Subtest: carregamento inicial das telas não apresenta totais fictícios
+ok 129 - carregamento inicial das telas não apresenta totais fictícios
+  ---
+  duration_ms: 4.867495
+  ...
+# Subtest: cliente transmite filtros de auditoria nos parâmetros do contrato
+ok 130 - cliente transmite filtros de auditoria nos parâmetros do contrato
+  ---
+  duration_ms: 13.572214
+  ...
+# Subtest: HOTEL retorna ao próprio cadastro na consulta, sem atalho ao inventário global
+ok 131 - HOTEL retorna ao próprio cadastro na consulta, sem atalho ao inventário global
+  ---
+  duration_ms: 22.719508
+  ...
+# Subtest: filtro de autor aceita inteiro zero conforme contrato, sem confundir com ausência
+ok 132 - filtro de autor aceita inteiro zero conforme contrato, sem confundir com ausência
+  ---
+  duration_ms: 0.263913
+  ...
+1..132
+# tests 132
+# suites 0
+# pass 132
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1272.217897

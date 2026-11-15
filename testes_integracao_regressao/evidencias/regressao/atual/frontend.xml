@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<testsuites>
+	<testcase name="App apresenta carregamento antes da sessão e dos dados" time="0.589772" classname="test"/>
+	<testcase name="cadastro reproduz identificação, vencimentos e ações sem módulos alheios" time="0.035311" classname="test"/>
+	<testcase name="campos obrigatórios do contrato estão acessíveis no cadastro" time="0.033401" classname="test"/>
+	<testcase name="EDITOR visualiza CNPJ e razão social bloqueados" time="0.030517" classname="test"/>
+	<testcase name="HOTEL visualiza CNPJ e razão social bloqueados" time="0.031468" classname="test"/>
+	<testcase name="GESTOR não recebe ações de escrita" time="0.030660" classname="test"/>
+	<testcase name="HOTEL não pode editar registro de outra conta nem receber ações de documentos" time="0.000950" classname="test"/>
+	<testcase name="ADMINISTRADOR recebe manutenção conforme status" time="0.040946" classname="test"/>
+	<testcase name="modo HOTEL segue o frame Meus dados e Meu cadastro" time="0.033315" classname="test"/>
+	<testcase name="checklists completos são renderizados conforme schemas de hospedagem" time="0.031423" classname="test"/>
+	<testcase name="cadastro incompleto mantém preenchimento operacional opcional" time="0.027095" classname="test"/>
+	<testcase name="estado de envio desabilita ações e informa tecnologia assistiva" time="0.025601" classname="test"/>
+	<testcase name="erros vinculados ao campo e resumo acessível" time="0.032918" classname="test"/>
+	<testcase name="mensagens de sucesso e erro têm semântica consistente" time="0.000496" classname="test"/>
+	<testcase name="documentos mostram metadados e ações permitidas" time="0.000917" classname="test"/>
+	<testcase name="documentos vazios, indisponíveis e em envio" time="0.000360" classname="test"/>
+	<testcase name="inativação usa modal com motivo e confirmação; reativação não pede motivo" time="0.001100" classname="test"/>
+	<testcase name="limpeza de booleano anulável é explícita" time="0.000340" classname="test"/>
+	<testcase name="rotas isolam HOTEL antes de consultar API" time="0.000749" classname="test"/>
+	<testcase name="categoria oferece somente o segmento de hospedagem do MVP" time="0.020884" classname="test"/>
+	<testcase name="atalhos operacionais não duplicam IDs dos checklists detalhados" time="0.013125" classname="test"/>
+	<testcase name="listas de contatos mostram quebras de linha reais no campo" time="0.000298" classname="test"/>
+	<testcase name="cadastro não exibe a tag de demonstração" time="0.008906" classname="test"/>
+	<testcase name="resumo de validação identifica cada campo obrigatório pelo nome" time="0.000317" classname="test"/>
+	<testcase name="cadastro mínimo não exige hospedagem nem checklists" time="0.341767" classname="test"/>
+	<testcase name="cadastro exige id_categoria" time="0.000723" classname="test"/>
+	<testcase name="cadastro exige nome_fantasia" time="0.000587" classname="test"/>
+	<testcase name="cadastro exige razao_social" time="0.000429" classname="test"/>
+	<testcase name="cadastro exige cnpj" time="0.000257" classname="test"/>
+	<testcase name="cadastro exige endereco" time="0.000350" classname="test"/>
+	<testcase name="CNPJ válido: 11.222.333/0001-81" time="0.000232" classname="test"/>
+	<testcase name="CNPJ válido: 11222333000181" time="0.000158" classname="test"/>
+	<testcase name="CNPJ inválido: 00.000.000/0000-00" time="0.000273" classname="test"/>
+	<testcase name="CNPJ inválido: 11.222.333/0001-80" time="0.000180" classname="test"/>
+	<testcase name="CNPJ inválido: 1122233300018" time="0.000221" classname="test"/>
+	<testcase name="CNPJ inválido: abc11222333000181" time="0.000145" classname="test"/>
+	<testcase name="validação do contrato: latitude" time="0.000986" classname="test"/>
+	<testcase name="validação do contrato: longitude" time="0.000392" classname="test"/>
+	<testcase name="validação do contrato: id_categoria" time="0.000381" classname="test"/>
+	<testcase name="validação do contrato: nome_fantasia" time="0.000200" classname="test"/>
+	<testcase name="validação do contrato: email_comercial" time="0.000709" classname="test"/>
+	<testcase name="validação do contrato: cadastur_status" time="0.000227" classname="test"/>
+	<testcase name="validação do contrato: status" time="0.000253" classname="test"/>
+	<testcase name="validação do contrato: data_abertura" time="0.002207" classname="test"/>
+	<testcase name="validação do contrato: aceita_pesquisas" time="0.000301" classname="test"/>
+	<testcase name="validação do contrato: meio_hospedagem.total_uh" time="0.000243" classname="test"/>
+	<testcase name="validação do contrato: meio_hospedagem.total_uh" time="0.000210" classname="test"/>
+	<testcase name="validação do contrato: meio_hospedagem.formas_pagamento" time="0.000299" classname="test"/>
+	<testcase name="validação do contrato: acessibilidade.possui_facilidade_pcd" time="0.000698" classname="test"/>
+	<testcase name="PATCH contém somente campos alterados e mantém false, zero e null" time="0.001166" classname="test"/>
+	<testcase name="converte horários e listas sem apagar valores omitidos" time="0.000412" classname="test"/>
+	<testcase name="EDITOR não envia CNPJ nem razão social" time="0.000669" classname="test"/>
+	<testcase name="HOTEL não envia CNPJ nem razão social" time="0.000166" classname="test"/>
+	<testcase name="permissões de criação, escrita e isolamento HOTEL" time="0.000589" classname="test"/>
+	<testcase name="motivo inválido com 0 caracteres" time="0.000215" classname="test"/>
+	<testcase name="motivo inválido com 2 caracteres" time="0.000115" classname="test"/>
+	<testcase name="motivo inválido com 501 caracteres" time="0.000210" classname="test"/>
+	<testcase name="motivo válido com 3 caracteres" time="0.000141" classname="test"/>
+	<testcase name="motivo válido com 500 caracteres" time="0.000103" classname="test"/>
+	<testcase name="mensagens HTTP e erros por campo" time="0.000334" classname="test"/>
+	<testcase name="upload e substituição usam FormData com arquivo e campos permitidos" time="0.018689" classname="test"/>
+	<testcase name="valida MIME, extensão, arquivo vazio e limite inclusive" time="0.000782" classname="test"/>
+	<testcase name="metadados de documento respeitam PATCH e datas" time="0.000581" classname="test"/>
+	<testcase name="nome de download preserva acentos e remove caminhos" time="0.000503" classname="test"/>
+	<testcase name="download cria link temporário e libera URL após o acionamento" time="0.000555" classname="test"/>
+	<testcase name="centraliza URL, Bearer e JSON" time="0.031830" classname="test"/>
+	<testcase name="multipart mantém boundary do navegador e não serializa arquivo em JSON" time="0.001623" classname="test"/>
+	<testcase name="preserva status, código e detalhes do contrato" time="0.001017" classname="test"/>
+	<testcase name="falha de rede, erro não JSON e cancelamento" time="0.001550" classname="test"/>
+	<testcase name="downloads retornam Blob e nome público" time="0.001920" classname="test"/>
+	<testcase name="operações usam os métodos e caminhos do contrato" time="0.000830" classname="test"/>
+	<testcase name="erros 401 e 403 são propagados sem fallback nem repetição" time="0.001136" classname="test"/>
+	<testcase name="mock reutiliza seed e mantém cadastro, edição e transições na sessão" time="0.399727" classname="test"/>
+	<testcase name="mock mantém fluxo multipart, metadados, download e substituição" time="0.005845" classname="test"/>
+	<testcase name="mock isola HOTEL e bloqueia GESTOR em escrita" time="0.002652" classname="test"/>
+	<testcase name="mock preserva o arquivo anterior quando a substituição falha" time="0.002272" classname="test"/>
+	<testcase name="sessão expira e remove as credenciais" time="0.455005" classname="test"/>
+	<testcase name="falha de storage não deixa token parcial" time="0.000229" classname="test"/>
+	<testcase name="requisição protegida sem sessão não chega ao proxy local" time="0.010202" classname="test"/>
+	<testcase name="login inválido não dispara o tratamento de expiração" time="0.000444" classname="test"/>
+	<testcase name="valida login, convite, senha confirmada e recuperação" time="0.000622" classname="test"/>
+	<testcase name="perfil envia somente nome/email alterados e ignora cargo" time="0.000258" classname="test"/>
+	<testcase name="preferências são isoladas por usuário e validadas ao carregar" time="0.000217" classname="test"/>
+	<testcase name="convite exige vínculo HOTEL e payload de outra conta não carrega vínculo antigo" time="0.000213" classname="test"/>
+	<testcase name="falha parcial de convite retoma sem criar outra conta" time="0.000304" classname="test"/>
+	<testcase name="recipientes carregam todas as páginas, não apenas a primeira" time="0.000281" classname="test"/>
+	<testcase name="pesquisa valida período e destinatários, PATCH não envia campos intocados" time="0.000821" classname="test"/>
+	<testcase name="navegação bloqueia contas e fichas alheias por perfil" time="0.000338" classname="test"/>
+	<testcase name="acesso usa campos de senha protegidos e link de recuperação" time="0.008095" classname="test"/>
+	<testcase name="perfil renderiza cargo protegido e preferências do protótipo" time="0.001993" classname="test"/>
+	<testcase name="painel de contas preserva equipe, hospedagens e histórico na inativação" time="0.002201" classname="test"/>
+	<testcase name="GESTOR consulta pesquisas sem receber ações de gestão" time="0.003897" classname="test"/>
+	<testcase name="início HOTEL cobre pendências e estado sem pesquisas" time="0.001010" classname="test"/>
+	<testcase name="relatórios aguardam geração e rejeitam JSON disfarçado de arquivo" time="0.000616" classname="test"/>
+	<testcase name="novas operações reutilizam o cliente HTTP e os caminhos existentes" time="0.000712" classname="test"/>
+	<testcase name="novas senhas seguem o limite do contrato e exigem confirmação" time="0.000280" classname="test"/>
+	<testcase name="redefinição aceita token sem sessão e envia somente campos do contrato" time="0.000705" classname="test"/>
+	<testcase name="tela de redefinição oculta e-mail e senha fica protegida" time="0.002182" classname="test"/>
+	<testcase name="contas ativas e inativas oferecem transições, pendentes oferecem reenvio" time="0.003182" classname="test"/>
+	<testcase name="sessão sem expiração válida não é reutilizada" time="0.000189" classname="test"/>
+	<testcase name="GitHub Pages usa o caminho do repositório sem alterar o proxy local" time="0.001932" classname="test"/>
+	<testcase name="proxy encaminha API e preserva query string e multipart" time="0.000268" classname="test"/>
+	<testcase name="Bearers locais são opcionais e não substituem a sessão autenticada" time="0.000871" classname="test"/>
+	<testcase name="build de produção não recebe o proxy nem credenciais de desenvolvimento" time="0.000347" classname="test"/>
+	<testcase name="consulta valida parâmetro busca" time="0.543567" classname="test"/>
+	<testcase name="consulta valida parâmetro id_categoria" time="0.000309" classname="test"/>
+	<testcase name="consulta valida parâmetro status" time="0.000357" classname="test"/>
+	<testcase name="consulta valida parâmetro cadastur_status" time="0.000358" classname="test"/>
+	<testcase name="consulta valida parâmetro aceita_pesquisas" time="0.000339" classname="test"/>
+	<testcase name="consulta valida parâmetro page" time="0.000184" classname="test"/>
+	<testcase name="consulta valida parâmetro page_size" time="0.000212" classname="test"/>
+	<testcase name="consulta valida parâmetro ordenar_por" time="0.000160" classname="test"/>
+	<testcase name="consulta valida parâmetro ordem" time="0.000481" classname="test"/>
+	<testcase name="payload de consulta preserva false e combina todos os parâmetros" time="0.000583" classname="test"/>
+	<testcase name="mock combina filtros e pagina resultados deterministicamente" time="0.002161" classname="test"/>
+	<testcase name="mock busca nome, razão social e CNPJ normalizado e isola HOTEL" time="0.000558" classname="test"/>
+	<testcase name="mapa carrega todas as páginas com os mesmos filtros, não só a primeira" time="0.000859" classname="test"/>
+	<testcase name="dashboard rejeita formato incompleto, sem converter alerta AVCB em Cadastur" time="0.000514" classname="test"/>
+	<testcase name="cancelamento e falha HTTP interrompem consultas sem fallback" time="0.000807" classname="test"/>
+	<testcase name="geolocalização aceita zero e rejeita ausentes, strings e coordenadas inválidas" time="0.007575" classname="test"/>
+	<testcase name="dashboard usa todas as fichas e mostra dados faltantes sem inventar valores" time="0.004930" classname="test"/>
+	<testcase name="inventário respeita ações por perfil e usa paginação do servidor" time="0.013529" classname="test"/>
+	<testcase name="detalhe apresenta dados aninhados, documentos e valores zero/false, sem escrita GESTOR" time="0.015285" classname="test"/>
+	<testcase name="rotas reservam auditoria ao ADMIN e isolam detalhe/histórico HOTEL" time="0.000286" classname="test"/>
+	<testcase name="auditoria preserva diferença entre null, false, zero e campo ausente" time="0.005776" classname="test"/>
+	<testcase name="filtros de auditoria validam usuário e intervalo e normalizam ISO" time="0.000397" classname="test"/>
+	<testcase name="histórico combina associação do hotel e mostra ocupação zero como resposta" time="0.001093" classname="test"/>
+	<testcase name="indicadores de pesquisa usam apenas respostas e destinatários do conjunto consultado" time="0.000204" classname="test"/>
+	<testcase name="sem categoria de hospedagem não consulta outros segmentos turísticos" time="0.000109" classname="test"/>
+	<testcase name="carregamento inicial das telas não apresenta totais fictícios" time="0.002576" classname="test"/>
+	<testcase name="cliente transmite filtros de auditoria nos parâmetros do contrato" time="0.012275" classname="test"/>
+	<testcase name="HOTEL retorna ao próprio cadastro na consulta, sem atalho ao inventário global" time="0.021136" classname="test"/>
+	<testcase name="filtro de autor aceita inteiro zero conforme contrato, sem confundir com ausência" time="0.000210" classname="test"/>
+	<!-- tests 133 -->
+	<!-- suites 0 -->
+	<!-- pass 133 -->
+	<!-- fail 0 -->
+	<!-- cancelled 0 -->
+	<!-- skipped 0 -->
+	<!-- todo 0 -->
+	<!-- duration_ms 1245.518335 -->
+</testsuites>

@@ -1,0 +1,2 @@
+A suíte de integração em processo foi executada três vezes seguidas na imagem do CI:  79 passed, 2 xfailed, nas três execuções.
+A comparação caso a caso entre as execuções (comparar_execucoes.py) não encontrou nenhuma mudança de resultado: não há testes instáveis.

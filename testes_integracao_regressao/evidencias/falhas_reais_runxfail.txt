@@ -1,0 +1,5 @@
+testes_integracao_regressao/integracao/test_int_03_armazenamento.py:141: assert 500 == 404
+testes_integracao_regressao/integracao/test_int_03_armazenamento.py:141: assert 500 == 404
+2 failed, 79 deselected in 0.68s
+stack/test_stk_01_resiliencia.py:115: AssertionError: não entregue após o retorno do servidor (tentativas registradas: 10)
+1 failed, 5 deselected in 56.59s

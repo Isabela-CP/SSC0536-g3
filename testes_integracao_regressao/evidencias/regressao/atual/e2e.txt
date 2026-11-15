@@ -1,0 +1,5 @@
+.......................x.......                                          [100%]
+- generated xml file: /src/testes_integracao_regressao/evidencias/regressao/atual/e2e.xml -
+=========================== short test summary info ============================
+XFAIL testes_funcionais/e2e/test_e2e_02_interface.py::test_ft_ui_11_sem_resultados_sugere_limpar_filtros - DF-10: Sem resultados, a tela só informa; não sugere limpar os filtros (o único 'Limpar' fica oculto no painel recolhido) (UC05 3a).
+30 passed, 1 xfailed in 27.13s

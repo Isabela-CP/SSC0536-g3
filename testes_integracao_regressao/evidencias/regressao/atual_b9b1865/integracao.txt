@@ -1,0 +1,4 @@
+............................x..................                          [100%]
+=========================== short test summary info ============================
+XFAIL testes_integracao_regressao/integracao/test_int_03_armazenamento.py::test_int_arq_06_documento_do_seed_sem_binario[local] - DF-11: Documento do seed tem caminho_storage fora do formato UUID: o storage lança ValueError e o download responde 500, e não 404 como documenta o backend/README.md.
+46 passed, 34 deselected, 1 xfailed in 23.46s

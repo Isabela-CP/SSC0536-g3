@@ -1,0 +1,5 @@
+casos em comum: 132
+base : aprovado 132
+atual: aprovado 133
+mudanças de resultado: 0 | regressões: 0
+casos novos na atual: 1

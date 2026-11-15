@@ -1,0 +1,8 @@
+commit: b9b18657eb5820c99c4ab3b2d3d7ba60c180634f (docs: review automático do PR #39)
+referencia: a81a71955c5d859a4145786ad3e48e14e6540e78 (Merge pull request #38)
+branch de trabalho: qa/testes-integracao-regressao (a partir de qa/testes-funcionais)
+data: 2026-11-14T22:17:25-03:00
+executor: imagem oto-qa-regressao: Python 3.11.15, Node.js v20.20.2; fastapi 0.163.0, pytest 9.2.0, psycopg 3.3.9, httpx 0.28.1 (mesmas versões do CI)
+servicos: PostgreSQL 17.12 (postgres:17-alpine) e Mailpit v1.27 (axllent/mailpit:v1.27), em contêineres só no loopback
+stack: docker compose -p oto-int (db, migrate, api, worker, mailpit, frontend/Nginx); camada stack executada pelo host (Python 3.14.8)
+navegador: Chromium 131.0.6778.33 (Playwright 1.49.1, imagem mcr.microsoft.com/playwright/python:v1.49.1-noble)

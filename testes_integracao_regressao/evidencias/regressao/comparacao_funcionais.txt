@@ -1,0 +1,4 @@
+casos em comum: 188
+base : aprovado 170, xfail 18
+atual: aprovado 170, xfail 18
+mudanças de resultado: 0 | regressões: 0

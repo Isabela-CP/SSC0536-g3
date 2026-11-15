@@ -1,0 +1,18 @@
+============================= test session starts ==============================
+platform linux -- Python 3.14.8, pytest-8.4.2, pluggy-1.7.0 -- /home/juliana/03.repositorios/02.projetos/SSC0536-g3/backend/.venv/bin/python
+rootdir: /home/juliana/03.repositorios/02.projetos/SSC0536-g3/testes_integracao_regressao
+configfile: pytest.ini
+plugins: anyio-4.16.0
+collecting ... collected 6 items
+
+stack/test_stk_01_resiliencia.py::test_int_stk_01_reinicio_da_api_e_do_worker PASSED [ 16%]
+stack/test_stk_01_resiliencia.py::test_int_stk_02_queda_e_retorno_do_banco PASSED [ 33%]
+stack/test_stk_01_resiliencia.py::test_int_stk_03_worker_parado_e_fila_preservada PASSED [ 50%]
+stack/test_stk_01_resiliencia.py::test_int_stk_04_queda_curta_do_servidor_de_email XFAIL [ 66%]
+stack/test_stk_01_resiliencia.py::test_int_stk_05_recriacao_dos_conteineres PASSED [ 83%]
+stack/test_stk_01_resiliencia.py::test_int_stk_06_proxy_entrega_contrato_e_erros_da_api PASSED [100%]
+
+- generated xml file: /home/juliana/03.repositorios/02.projetos/SSC0536-g3/testes_integracao_regressao/evidencias/stack.xml -
+=========================== short test summary info ============================
+XFAIL stack/test_stk_01_resiliencia.py::test_int_stk_04_queda_curta_do_servidor_de_email - DF-12: O worker repete a cada 1 s sem intervalo crescente: uma queda de ~10 s do SMTP/Brevo esgota as 10 tentativas e o convite/recuperação nunca é entregue, mesmo com o servidor de volta.
+=================== 5 passed, 1 xfailed in 110.30s (0:01:50) ===================
