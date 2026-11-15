@@ -1,0 +1,9 @@
+Consulta à API pública do GitHub Actions (Isabela-CP/SSC0536-g3) em 14/11/2026.
+
+run 42921869533  CI  push em main  07386b2 (merge do PR #39, mesma árvore de b9b1865): success
+  - Testes do Backend (FastAPI)            success  (PostgreSQL 17, Python 3.11)
+  - Testes e Build do Frontend             success
+  - Docker e persistência após reinício    success  (backend/tests/stack_smoke.py)
+run 42921768999  CI  pull_request Develop  b9b1865: failure com 0 jobs
+  - nenhum job foi criado: falha de inicialização do workflow, não de teste.
+A suíte testes_funcionais/ ainda não faz parte do workflow ci.yml.

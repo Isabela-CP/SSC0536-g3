@@ -1,0 +1,23 @@
+...................x........x.....................x..................... [ 38%]
+...x......x..........................x................xxx..........x.... [ 76%]
+........x.........xx......x..x...........xxx                             [100%]
+=========================== short test summary info ============================
+XFAIL testes_funcionais/test_01_autenticacao.py::test_ft_aut_09_bloqueio_apos_tentativas_invalidas - DF-01: Não há limitação de tentativas: após 5 senhas erradas, a credencial correta ainda autentica (UC11 3c).
+XFAIL testes_funcionais/test_02_cadastro_estabelecimentos.py::test_ft_cad_05_duplicidade_oferece_registro_existente - DF-02: A resposta 409 de CNPJ duplicado não identifica o registro existente para abri-lo (UC01 5b).
+XFAIL testes_funcionais/test_03_inativacao_e_busca.py::test_ft_ina_02b_motivo_em_branco - DF-03: Motivo de inativação composto só por espaços é aceito e gravado; a empresa fica inativa sem motivo (UC04 passo 2).
+XFAIL testes_funcionais/test_03_inativacao_e_busca.py::test_ft_bus_07_filtro_por_numero_de_leitos - NI-01: Não há filtro por capacidade (ex.: 'Hotéis + Ativos + com mais de 50 leitos', RF de busca cruzada).
+XFAIL testes_funcionais/test_04_auditoria.py::test_ft_aud_07_filtro_por_empresa - NI-02: GET /auditoria não aceita filtro por empresa (id_entidade), exigido pelo UC08 passo 2.
+XFAIL testes_funcionais/test_05_contas_e_perfis.py::test_ft_usr_11_alterar_perfil_de_conta_existente - NI-03: Não há operação para alterar o perfil de uma conta existente (UC07 passo 3); o contrato não define PATCH /usuarios/{id}.
+XFAIL testes_funcionais/test_06_painel_empresario.py::test_ft_emp_06_login_com_cnpj_e_senha - DF-04: O empresário não entra com CNPJ e senha (UC11 passo 2 e Persona 03); o login aceita apenas e-mail.
+XFAIL testes_funcionais/test_06_painel_empresario.py::test_ft_emp_07_empresa_inativa_nao_autentica - DF-05: Conta HOTEL de empresa INATIVA (Hotel Vale do Sol) autentica normalmente (UC11 3b).
+XFAIL testes_funcionais/test_06_painel_empresario.py::test_ft_emp_08_inativacao_encerra_acesso_do_empresario - DF-05: Após a inativação da empresa, a sessão do empresário continua aceita e ele ainda edita a ficha (UC11 3b).
+XFAIL testes_funcionais/test_07_pesquisas_ocupacao.py::test_ft_pes_05_pesquisa_duplicada - DF-06: É possível criar duas pesquisas do mesmo tipo e período (UC13 2a exige impedir a duplicidade).
+XFAIL testes_funcionais/test_07_pesquisas_ocupacao.py::test_ft_res_03_corrigir_resposta_com_pesquisa_aberta - DF-07: Resposta já enviada não pode ser corrigida com a pesquisa aberta: retorna 409 (UC14 3a e Persona 03).
+XFAIL testes_funcionais/test_08_relatorios_e_painel.py::test_ft_rel_03_participante_sem_resposta_aparece - DF-08: Estabelecimentos participantes sem resposta não aparecem como 'sem resposta' no relatório (UC15 *a).
+XFAIL testes_funcionais/test_08_relatorios_e_painel.py::test_ft_rel_04_periodo_sem_respostas_avisa - DF-09: Pesquisa sem nenhuma resposta gera relatório vazio em vez de avisar que não há dados (UC15 3a).
+XFAIL testes_funcionais/test_08_relatorios_e_painel.py::test_ft_rel_08_filtro_por_periodo_e_categoria - NI-04: O relatório não aceita período nem categoria (UC15 passo 2); só uma pesquisa específica ou todas.
+XFAIL testes_funcionais/test_08_relatorios_e_painel.py::test_ft_dsh_03_empresas_cadastradas_no_mes - NI-05: O painel não exibe 'Empresas cadastradas este mês', totalizador pedido no requisito da Home.
+XFAIL testes_funcionais/test_09_documentos_e_requisitos_ausentes.py::test_ft_aus_01_importacao_da_base_excel - NI-06: Não há importação da base Excel/LibreOffice (UC06, HU-06).
+XFAIL testes_funcionais/test_09_documentos_e_requisitos_ausentes.py::test_ft_aus_02_backup_e_restauracao - NI-07: Não há backup diário nem restauração de até 30 dias acionável pelo sistema (UC09, UC10, RNF-03/04).
+XFAIL testes_funcionais/test_09_documentos_e_requisitos_ausentes.py::test_ft_aus_03_exportar_lista_de_estabelecimentos - NI-08: Não há exportação da lista filtrada de estabelecimentos ('Boletim do Inventário' em PDF/Excel).
+170 passed, 18 xfailed in 24.16s

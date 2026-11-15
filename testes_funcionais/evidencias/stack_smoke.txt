@@ -1,0 +1,5 @@
+ Container oto-qa-api-1 Started 
+ Container oto-qa-worker-1 Started 
+Stack validada: sessão, ficha, documento substituído, auditoria e PDF persistiram após reinício.
+início api/worker antes:  2026-11-14T21:12:43.906940214Z 2026-11-14T21:12:43.787355943Z 
+início api/worker depois: 2026-11-14T21:13:27.787088777Z 2026-11-14T21:13:37.53418116Z 

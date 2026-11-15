@@ -1,0 +1,9 @@
+commit: b9b18657eb5820c99c4ab3b2d3d7ba60c180634f (docs: review automático do PR #39)
+branch base: origin/Develop
+data: 2026-11-14T18:40:25-03:00
+python: Python 3.11.15 (container python:3.11-slim, igual ao CI)
+postgresql: 17.12 (container postgres:17-alpine, igual ao CI)
+fastapi 0.163.0 | pytest 9.2.0 | psycopg 3.3.9
+api local adicional: Python 3.14.8 + PostgreSQL 18.6 -> 170 passed, 18 xfailed in 24.16s
+stack: docker compose (projeto oto-qa): db postgres:17-alpine, oto-qa-api, worker, axllent/mailpit:v1.27, frontend Nginx
+navegador: Chromium 131.0.6778.33 (Playwright 1.49.1, imagem mcr.microsoft.com/playwright/python:v1.49.1-noble)

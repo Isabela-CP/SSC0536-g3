@@ -1,0 +1,43 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-8.3.4, pluggy-1.7.0 -- /usr/bin/python3
+rootdir: testes_funcionais
+configfile: pytest.ini
+plugins: base-url-2.1.0, anyio-4.16.0, playwright-0.6.2
+collecting ... collected 31 items
+
+testes_funcionais/e2e/test_e2e_01_stack.py::test_ft_stk_01_aplicacao_web_servida PASSED [  3%]
+testes_funcionais/e2e/test_e2e_01_stack.py::test_ft_stk_02_api_e_cabecalhos_pelo_proxy PASSED [  6%]
+testes_funcionais/e2e/test_e2e_01_stack.py::test_ft_stk_03_limite_de_upload[10485760-201] PASSED [  9%]
+testes_funcionais/e2e/test_e2e_01_stack.py::test_ft_stk_03_limite_de_upload[10485761-413] PASSED [ 12%]
+testes_funcionais/e2e/test_e2e_01_stack.py::test_ft_stk_03_limite_de_upload[13631488-413] PASSED [ 16%]
+testes_funcionais/e2e/test_e2e_01_stack.py::test_ft_stk_04_convite_entregue_por_email_ativa_conta PASSED [ 19%]
+testes_funcionais/e2e/test_e2e_01_stack.py::test_ft_stk_05_recuperacao_de_senha_por_email PASSED [ 22%]
+testes_funcionais/e2e/test_e2e_02_interface.py::test_ft_ui_01_login_mostra_funcoes_do_perfil[ADMINISTRADOR-menu0] PASSED [ 25%]
+testes_funcionais/e2e/test_e2e_02_interface.py::test_ft_ui_01_login_mostra_funcoes_do_perfil[EDITOR-menu1] PASSED [ 29%]
+testes_funcionais/e2e/test_e2e_02_interface.py::test_ft_ui_01_login_mostra_funcoes_do_perfil[GESTOR-menu2] PASSED [ 32%]
+testes_funcionais/e2e/test_e2e_02_interface.py::test_ft_ui_01_login_mostra_funcoes_do_perfil[HOTEL-menu3] PASSED [ 35%]
+testes_funcionais/e2e/test_e2e_02_interface.py::test_ft_ui_02_login_invalido PASSED [ 38%]
+testes_funcionais/e2e/test_e2e_02_interface.py::test_ft_ui_03_rota_nao_permitida[EDITOR-/contas] PASSED [ 41%]
+testes_funcionais/e2e/test_e2e_02_interface.py::test_ft_ui_03_rota_nao_permitida[GESTOR-/auditoria] PASSED [ 45%]
+testes_funcionais/e2e/test_e2e_02_interface.py::test_ft_ui_03_rota_nao_permitida[GESTOR-/estabelecimentos/novo] PASSED [ 48%]
+testes_funcionais/e2e/test_e2e_02_interface.py::test_ft_ui_03_rota_nao_permitida[HOTEL-/inventario] PASSED [ 51%]
+testes_funcionais/e2e/test_e2e_02_interface.py::test_ft_ui_04_gestor_sem_acoes_de_escrita PASSED [ 54%]
+testes_funcionais/e2e/test_e2e_02_interface.py::test_ft_ui_05_cadastro_vazio_destaca_obrigatorios PASSED [ 58%]
+testes_funcionais/e2e/test_e2e_02_interface.py::test_ft_ui_06_cadastro_pela_tela PASSED [ 61%]
+testes_funcionais/e2e/test_e2e_02_interface.py::test_ft_ui_07_cancelar_cadastro_nao_grava PASSED [ 64%]
+testes_funcionais/e2e/test_e2e_02_interface.py::test_ft_ui_08_cnpj_duplicado_na_tela PASSED [ 67%]
+testes_funcionais/e2e/test_e2e_02_interface.py::test_ft_ui_09_inativacao_com_confirmacao PASSED [ 70%]
+testes_funcionais/e2e/test_e2e_02_interface.py::test_ft_ui_10_busca_e_sem_resultados PASSED [ 74%]
+testes_funcionais/e2e/test_e2e_02_interface.py::test_ft_ui_11_sem_resultados_sugere_limpar_filtros XFAIL [ 77%]
+testes_funcionais/e2e/test_e2e_02_interface.py::test_ft_ui_12_editor_cria_pesquisa_pela_tela PASSED [ 80%]
+testes_funcionais/e2e/test_e2e_02_interface.py::test_ft_ui_13_empresario_responde_pela_tela PASSED [ 83%]
+testes_funcionais/e2e/test_e2e_02_interface.py::test_ft_ui_14_taxa_invalida_na_tela[150] PASSED [ 87%]
+testes_funcionais/e2e/test_e2e_02_interface.py::test_ft_ui_14_taxa_invalida_na_tela[-1] PASSED [ 90%]
+testes_funcionais/e2e/test_e2e_02_interface.py::test_ft_ui_15_empresario_edita_proprio_cadastro PASSED [ 93%]
+testes_funcionais/e2e/test_e2e_02_interface.py::test_ft_ui_16_auditoria_mostra_alteracao PASSED [ 96%]
+testes_funcionais/e2e/test_e2e_02_interface.py::test_ft_ui_17_uso_em_tablet PASSED [100%]
+
+----------------- generated xml file: /evid/resultado_e2e.xml ------------------
+=========================== short test summary info ============================
+XFAIL testes_funcionais/e2e/test_e2e_02_interface.py::test_ft_ui_11_sem_resultados_sugere_limpar_filtros - DF-10: Sem resultados, a tela só informa; não sugere limpar os filtros (o único 'Limpar' fica oculto no painel recolhido) (UC05 3a).
+======================== 30 passed, 1 xfailed in 25.85s ========================

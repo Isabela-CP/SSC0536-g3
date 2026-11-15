@@ -1,0 +1,4 @@
+.......................F.......                                          [100%]
+=================================== FAILURES ===================================
+testes_funcionais/e2e/test_e2e_02_interface.py:185: AssertionError: nenhuma sugestão visível de limpar os filtros
+1 failed, 30 passed in 26.34s

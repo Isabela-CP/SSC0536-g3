@@ -1,0 +1,66 @@
+...................F........F.....................F..................... [ 38%]
+...F......F..........................F................FFF..........F.... [ 76%]
+........F.........FF......F..F...........FFF                             [100%]
+=================================== FAILURES ===================================
+E   assert 200 in (423, 429)
+     +  where 200 = <Response [200 OK]>.status_code
+testes_funcionais/test_01_autenticacao.py:84: assert 200 in (423, 429)
+E   assert '11111111-1111-4111-8111-111111111111' in '{"error":{"code":"CONFLICT","message":"Já existe um estabelecimento cadastrado com esse CNPJ."}}'
+     +  where '{"error":{"code":"CONFLICT","message":"Já existe um estabelecimento cadastrado com esse CNPJ."}}' = <Response [409 Conflict]>.text
+testes_funcionais/test_02_cadastro_estabelecimentos.py:67: assert '11111111-1111-4111-8111-111111111111' in '{"error":{"code":"CONFLICT","message":"Já existe um estabelecimento cadastrado com esse CNPJ."}}'
+E   assert 200 == 422
+     +  where 200 = <Response [200 OK]>.status_code
+testes_funcionais/test_03_inativacao_e_busca.py:40: assert 200 == 422
+E   assert False
+     +  where False = any(<generator object test_ft_bus_07_filtro_por_numero_de_leitos.<locals>.<genexpr> at 0x7fab905b4450>)
+testes_funcionais/test_03_inativacao_e_busca.py:144: assert False
+E   AssertionError: assert ([{'id': '17', 'id_usuario': 1, 'usuario': 'marina.admin@example.test', 'acao': 'USUARIO_CRIADO', ...}, {'id': '16', 'i...', ...}, {'id': '13', 'id_usuario': 9, 'usuario': 'hotel.valedosol@example.test', 'acao': 'ENVIAR_RESPOSTA', ...}, ...] and False)
+     +  where False = all(<generator object test_ft_aud_07_filtro_por_empresa.<locals>.<genexpr> at 0x7fab906b72a0>)
+testes_funcionais/test_04_auditoria.py:90: AssertionError: assert ([{'id': '17', 'id_usuario': 1, 'usuario': 'marina.admin@example.test', 'acao': 'USUARIO_CRIADO', ...}, {'id': '16', 'i...', ...}, {'id': '13', 'id_usuario': 9, 'usuario': 'hotel.valedosol@example.test', 'acao': 'ENVIAR_RESPOSTA', ...}, ...] and False)
+E   AssertionError: assert 'patch' in {}
+     +  where {} = <built-in method get of dict object at 0x7fab90486e80>('/usuarios/{id_usuario}', {})
+     +    where <built-in method get of dict object at 0x7fab90486e80> = {'/categorias-estabelecimento': {'get': {'tags': ['Categorias'], 'summary': 'Listar categorias de estabelecimento', 'o... {...}}}, '404': {'description': 'Registro não encontrado.', 'content': {'application/json': {...}}}, ...}, ...}}, ...}.get
+testes_funcionais/test_05_contas_e_perfis.py:146: AssertionError: assert 'patch' in {}
+E   assert 401 == 200
+     +  where 401 = <Response [401 Unauthorized]>.status_code
+testes_funcionais/test_06_painel_empresario.py:70: assert 401 == 200
+E   assert 200 in (401, 403)
+     +  where 200 = <Response [200 OK]>.status_code
+testes_funcionais/test_06_painel_empresario.py:78: assert 200 in (401, 403)
+E   AssertionError: assert 200 in (401, 403)
+     +  where 200 = <Response [200 OK]>.status_code
+     +    where <Response [200 OK]> = patch('/estabelecimentos/11111111-1111-4111-8111-111111111111', json={'telefone_comercial': '+55 9'})
+     +      where patch = <starlette.testclient.TestClient object at 0x7fab904fe8d0>.patch
+testes_funcionais/test_06_painel_empresario.py:86: AssertionError: assert 200 in (401, 403)
+E   AssertionError: assert 201 == 409
+     +  where 201 = <Response [201 Created]>.status_code
+     +    where <Response [201 Created]> = post('/pesquisas-ocupacao', json={'titulo': 'Outra', 'tipo': 'CONSOLIDADO', 'periodo_inicio': '2026-12-01', 'periodo_fim': '2026-12-15', ...})
+     +      where post = <starlette.testclient.TestClient object at 0x7fab903aa550>.post
+     +      and   {'titulo': 'Outra', 'tipo': 'CONSOLIDADO', 'periodo_inicio': '2026-12-01', 'periodo_fim': '2026-12-15', ...} = nova_pesquisa(titulo='Outra')
+testes_funcionais/test_07_pesquisas_ocupacao.py:55: AssertionError: assert 201 == 409
+E   assert 409 in (200, 201)
+     +  where 409 = <Response [409 Conflict]>.status_code
+testes_funcionais/test_07_pesquisas_ocupacao.py:110: assert 409 in (200, 201)
+E   assert ([])
+testes_funcionais/test_08_relatorios_e_painel.py:53: assert ([])
+E   assert 202 in (404, 409, 422)
+     +  where 202 = <Response [202 Accepted]>.status_code
+testes_funcionais/test_08_relatorios_e_painel.py:61: assert 202 in (404, 409, 422)
+E   AssertionError: assert ({'periodo_fim...riodo_inicio'} <= dict_keys(['t...id_pesquisa'])
+      
+      Extra items in the left set:
+      'periodo_fim'
+      'periodo_inicio' or 'periodo' in {'tipo': {'type': 'string', 'enum': ['OCUPACAO']}, 'formato': {'type': 'string', 'enum': ['PDF', 'CSV']}, 'id_pesquisa...ficador opaco da API; no PostgreSQL corresponde ao BIGINT serializado como texto. O modo mock legado pode usar UUID.'}})
+testes_funcionais/test_08_relatorios_e_painel.py:99: AssertionError: assert ({'periodo_fim...riodo_inicio'} <= dict_keys(['t...id_pesquisa'])
+E   AssertionError: indicadores disponíveis: ['estabelecimentos_ativos', 'leitos_nao_informados', 'pesquisas_abertas', 'respostas_recebidas', 'total_empresas', 'total_leitos']
+    assert []
+testes_funcionais/test_08_relatorios_e_painel.py:138: AssertionError: indicadores disponíveis: ['estabelecimentos_ativos', 'leitos_nao_informados', 'pesquisas_abertas', 'respostas_recebidas', 'total_empresas', 'total_leitos']
+E   AssertionError: assert 'import' in 'get /categorias-estabelecimento listar categorias de estabelecimento get /estabelecimentos buscar e listar estabeleci...ios/{id_usuario}/inativacao inativar conta sem excluir histórico post /usuarios/{id_usuario}/reativacao reativar conta'
+     +  where 'get /categorias-estabelecimento listar categorias de estabelecimento get /estabelecimentos buscar e listar estabeleci...ios/{id_usuario}/inativacao inativar conta sem excluir histórico post /usuarios/{id_usuario}/reativacao reativar conta' = _operacoes({'openapi': '3.1.0', 'info': {'title': 'Inventário OTO — API de Gestão de Estabelecimentos', 'version': '0.1.0', 'desc..., {'name': 'Documentos', 'description': 'Metadados, upload, substituição e download de documentos de controle.'}], ...})
+testes_funcionais/test_09_documentos_e_requisitos_ausentes.py:76: AssertionError: assert 'import' in 'get /categorias-estabelecimento listar categorias de estabelecimento get /estabelecimentos buscar e listar estabeleci...ios/{id_usuario}/inativacao inativar conta sem excluir histórico post /usuarios/{id_usuario}/reativacao reativar conta'
+E   AssertionError: assert ('backup' in 'get /categorias-estabelecimento listar categorias de estabelecimento get /estabelecimentos buscar e listar estabeleci...ios/{id_usuario}/inativacao inativar conta sem excluir histórico post /usuarios/{id_usuario}/reativacao reativar conta' or 'restaura' in 'get /categorias-estabelecimento listar categorias de estabelecimento get /estabelecimentos buscar e listar estabeleci...ios/{id_usuario}/inativacao inativar conta sem excluir histórico post /usuarios/{id_usuario}/reativacao reativar conta')
+testes_funcionais/test_09_documentos_e_requisitos_ausentes.py:84: AssertionError: assert ('backup' in 'get /categorias-estabelecimento listar categorias de estabelecimento get /estabelecimentos buscar e listar estabeleci...ios/{id_usuario}/inativacao inativar conta sem excluir histórico post /usuarios/{id_usuario}/reativacao reativar conta' or 'restaura' in 'get /categorias-estabelecimento listar categorias de estabelecimento get /estabelecimentos buscar e listar estabeleci...ios/{id_usuario}/inativacao inativar conta sem excluir histórico post /usuarios/{id_usuario}/reativacao reativar conta')
+E   assert False
+     +  where False = any(<generator object test_ft_aus_03_exportar_lista_de_estabelecimentos.<locals>.<genexpr> at 0x7fab8ec43030>)
+testes_funcionais/test_09_documentos_e_requisitos_ausentes.py:92: assert False
+18 failed, 170 passed in 37.23s
