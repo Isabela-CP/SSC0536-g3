@@ -1,4 +1,4 @@
-import { cadasturOptions } from '../domain/qaOptions.js'
+import { cadasturOptions, lodgingNames } from '../domain/qaOptions.js'
 import React, { useRef, useState } from 'react'
 import {
   BASIC_FIELDS,
@@ -106,14 +106,22 @@ export default function EstablishmentForm({
     'infraestrutura.estacionamento',
     'infraestrutura.recreacao.nao_possui',
   ]
+  const available = hostingCategories(categories)
+  const specific = available.filter((item) => lodgingNames.includes(item.nome_categoria))
+  const categoryOptions = specific.length
+    ? available.filter((item) =>
+        lodgingNames.includes(item.nome_categoria) ||
+        (mode === 'edit' && item.id_categoria === establishment?.id_categoria),
+      )
+    : available
   const shared = {
     draft,
     errors,
     onChange: change,
     disabled: busy || !allowed,
     protectedDisabled: !access.protected,
-    categories: hostingCategories(categories),
-    cadasturOptions: api?.preview ? cadasturOptions : undefined,
+    categories: categoryOptions,
+    cadasturOptions,
     mode,
   }
   const actions = allowed && (

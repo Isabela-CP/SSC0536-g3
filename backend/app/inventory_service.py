@@ -7,6 +7,7 @@ from typing import BinaryIO, Callable
 from uuid import uuid4
 
 from app.document_storage import DocumentStorage
+from app.cadastur import cadastur_for
 from app.inventory_errors import InventoryError, invalid_field
 from app.inventory_repository import WritableInventoryRepository
 
@@ -97,11 +98,13 @@ class InventoryService:
             if hasattr(self.repository, "lock_cnpj"):
                 self.repository.lock_cnpj(cnpj_digits(payload["cnpj"]))
             self.check_cnpj(payload["cnpj"])
-            item = {"aceita_pesquisas": True, "cadastur_status": "OBRIGATORIO", "possui_cadastur": False,
+            item = {"aceita_pesquisas": True, "possui_cadastur": False,
                     "meio_hospedagem": None, "infraestrutura": None, **payload,
                     "id_estabelecimento": str(uuid4()), "status": "ATIVO", "motivo_inativacao": None,
                     "criado_em": now(), "atualizado_em": now(), "documentos": [],
                     "categoria": self.category(payload["id_categoria"])}
+            if "cadastur_status" not in payload:
+                item["cadastur_status"] = cadastur_for(item)
             self.repository.save(item)
             self.audit(actor, "ESTABELECIMENTO_CRIADO", "ESTABELECIMENTO", item["id_estabelecimento"], after=item)
             return item
@@ -118,6 +121,8 @@ class InventoryService:
             item = merge_changes(before, changes)
             if "id_categoria" in changes:
                 item["categoria"] = self.category(changes["id_categoria"])
+            if "cadastur_status" not in changes and {"possui_cadastur", "vencimento_cadastur"} & changes.keys():
+                item["cadastur_status"] = cadastur_for(item)
             item["atualizado_em"] = now()
             self.repository.save(item)
             self.audit(actor, "ESTABELECIMENTO_ATUALIZADO", "ESTABELECIMENTO", establishment_id, before, item)

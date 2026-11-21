@@ -74,7 +74,7 @@ export function createMockFetch(user = mockUser(), { preview = false } = {}) {
   const createItem = (payload) => ({
     aceita_pesquisas: true,
     possui_cadastur: false,
-    cadastur_status: preview ? 'SEM_VALIDADE' : 'OBRIGATORIO',
+    cadastur_status: 'SEM_VALIDADE',
     meio_hospedagem: null,
     infraestrutura: null,
     ...payload,

@@ -17,6 +17,7 @@ from fastapi import APIRouter, Body, Depends, FastAPI, Header, HTTPException, Qu
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 
+from app.cadastur import CadasturStatus
 from app.inventory import InventoryQuery, InventoryRepository, JsonInventoryRepository, query_establishments
 from app.inventory_http import InventoryRoute
 from app.inventory_repository import MemoryInventoryRepository
@@ -232,8 +233,9 @@ def list_establishments(
     busca: Annotated[str | None, Query(max_length=120)] = None,
     status: Literal["ATIVO", "INATIVO"] | None = None,
     id_categoria: Annotated[int | None, Query(ge=1)] = None,
-    cadastur_status: Literal["OBRIGATORIO", "OPCIONAL", "NAO_CONSTA"] | None = None,
+    cadastur_status: CadasturStatus | None = None,
     aceita_pesquisas: bool | None = None,
+    somente_hospedagem: bool = False,
     leitos_min: Annotated[int | None, Query(ge=0, le=2147483647)] = None,
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1, le=100)] = 20,
@@ -245,7 +247,7 @@ def list_establishments(
     query = InventoryQuery(
         busca=busca, status=status, id_categoria=id_categoria,
         cadastur_status=cadastur_status, aceita_pesquisas=aceita_pesquisas,
-        leitos_min=leitos_min, page=page, page_size=page_size, ordenar_por=ordenar_por, ordem=ordem,
+        leitos_min=leitos_min, somente_hospedagem=somente_hospedagem, page=page, page_size=page_size, ordenar_por=ordenar_por, ordem=ordem,
     )
     scope = user["id_estabelecimento"] if user["perfil"] == "HOTEL" else None
     if isinstance(repository, PostgresInventoryRepository):

@@ -66,7 +66,7 @@ def test_pg_seed_and_repositories(pg):
         response=client.get('/estabelecimentos/'+row['id_estabelecimento'])
         assert response.status_code==200,response.text
     with db.transaction() as conn:
-        assert conn.execute('SELECT count(*) AS n FROM schema_migrations').fetchone()['n']==5
+        assert conn.execute('SELECT count(*) AS n FROM schema_migrations').fetchone()['n']==6
         assert conn.execute('SELECT count(*) AS n FROM usuarios').fetchone()['n']==10
         assert conn.execute("SELECT count(*) AS n FROM usuarios WHERE senha_hash NOT LIKE '$argon2id$%'").fetchone()['n']==0
 
@@ -568,3 +568,29 @@ def test_qa_hotel_login_by_cnpj_shares_rate_limit_with_legacy_email(pg):
     assert client.post("/auth/login", json={**correct, "senha": "incorreta"}).status_code == 429
     with TestClient(main.app, client=("other", 50000)) as other:
         assert other.post("/auth/login", json=correct).status_code == 429
+
+
+def test_qa_new_lodging_categories_and_cadastur_status(pg, create_payload):
+    client, _ = pg
+    catalog = {row["nome_categoria"]: row["id_categoria"]
+               for row in client.get("/categorias-estabelecimento").json()["data"]}
+    names = ("HOTEL", "POUSADA", "RESORT", "HOTEL FAZENDA", "HOSTEL", "FLAT", "ACAMPAMENTO TURÍSTICO")
+    assert all(name in catalog for name in names)
+    created = client.post("/estabelecimentos", json={**create_payload, "id_categoria": catalog[names[-1]]})
+    assert created.status_code == 201, created.text
+    record = created.json()
+    assert record["categoria"]["nome_categoria"] == "ACAMPAMENTO TURÍSTICO"
+    assert record["cadastur_status"] == "SEM_VALIDADE"
+    identifier = record["id_estabelecimento"]
+    path = f"/estabelecimentos/{identifier}"
+    for status in ("REGULAR", "PROXIMO_VENCIMENTO", "EM_ALERTA", "VENCIDO", "SEM_VALIDADE"):
+        patched = client.patch(path, json={"cadastur_status": status})
+        assert patched.status_code == 200, patched.text
+        query = {"somente_hospedagem": True, "cadastur_status": status, "id_categoria": catalog[names[-1]]}
+        assert [row["id_estabelecimento"] for row in client.get("/estabelecimentos", params=query).json()["data"]] == [identifier]
+    assert client.patch(path, json={"cadastur_status": "OBRIGATORIO"}).status_code == 422
+    assert client.get("/estabelecimentos", params={"cadastur_status": "OPCIONAL"}).status_code == 400
+    # Uma ficha antiga continua no inventário e a categoria genérica não é inventada novamente.
+    result = client.get("/estabelecimentos", params={"somente_hospedagem": True}).json()
+    assert any(row["id_categoria"] == catalog["Meios de hospedagem"] for row in result["data"])
+    assert client.get("/dashboard").json()["indicadores"]["total_empresas"] == 5

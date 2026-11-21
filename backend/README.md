@@ -205,3 +205,19 @@ e relatórios ou do bucket Supabase. Para produção, mantenha cópias protegida
 em outro host, confira banco e arquivos juntos antes do corte e invalide
 sessões, convites e tokens de recuperação que possam ter voltado no snapshot.
 A rotina do Compose não é provisionada automaticamente no Render.
+
+### Categorias e Cadastur — SCRUM-101
+
+A migration `006_categorias_cadastur.sql` cadastra HOTEL, POUSADA, RESORT,
+HOTEL FAZENDA, HOSTEL, FLAT e ACAMPAMENTO TURÍSTICO. Fichas existentes mantêm
+sua categoria, inclusive a categoria genérica Meios de hospedagem.
+A listagem com `somente_hospedagem=true` inclui categorias específicas e
+fichas antigas.
+
+A migration converte o enum anterior conforme a presença e o vencimento
+do Cadastur. As cinco situações aceitas são `REGULAR`,
+`PROXIMO_VENCIMENTO`, `EM_ALERTA`, `VENCIDO` e `SEM_VALIDADE`. Quando o
+cadastro ou a atualização da validade não informa situação explícita, a
+API calcula com base na data corrente em Olímpia. Dias de 0 a 30 são
+alerta e dias de 31 a 90 são próximo vencimento. Acima de 90 dias até o
+vencimento, a situação é regular. A atualização explícita é preservada até a próxima alteração.

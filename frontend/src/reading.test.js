@@ -55,7 +55,7 @@ test('payload de consulta preserva false e combina todos os parâmetros', () => 
     busca: 'Hotel',
     id_categoria: '1',
     status: 'ATIVO',
-    cadastur_status: 'OBRIGATORIO',
+    cadastur_status: 'REGULAR',
     aceita_pesquisas: 'false',
     page: 2,
     page_size: 1,
@@ -427,4 +427,26 @@ test('HOTEL retorna ao próprio cadastro na consulta, sem atalho ao inventário 
 
 test('filtro de autor aceita inteiro zero conforme contrato, sem confundir com ausência', () => {
   assert.deepEqual(domain.auditQuery({ id_usuario: '0' }), { id_usuario: 0 })
+})
+
+test('inventário real inclui categorias antigas e novas sem alterar um filtro explícito', async () => {
+  const calls = []
+  const api = {
+    categories: async () => ({
+      data: [
+        { id_categoria: 1, nome_categoria: 'Meios de hospedagem' },
+        { id_categoria: 101, nome_categoria: 'HOTEL' },
+        { id_categoria: 102, nome_categoria: 'POUSADA' },
+      ],
+    }),
+    establishments: async (params) => {
+      calls.push(params)
+      return { data: [], pagination: { total_pages: 1 } }
+    },
+  }
+  await service.loadInventory(api, domain.inventoryDefaults)
+  assert.ok(calls.every((params) => params.somente_hospedagem && !params.id_categoria))
+  calls.length = 0
+  await service.loadInventory(api, { ...domain.inventoryDefaults, id_categoria: '102' })
+  assert.ok(calls.every((params) => params.id_categoria === 102 && !params.somente_hospedagem))
 })

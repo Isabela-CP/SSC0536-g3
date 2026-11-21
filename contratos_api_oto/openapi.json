@@ -120,7 +120,7 @@
                       "cnpj": "54.839.271/0001-64",
                       "bairro": "Centro",
                       "status": "ATIVO",
-                      "cadastur_status": "OBRIGATORIO",
+                      "cadastur_status": "REGULAR",
                       "possui_cadastur": true,
                       "aceita_pesquisas": true,
                       "latitude": -22.0174,
@@ -134,7 +134,7 @@
                       "cnpj": "67.294.153/0001-60",
                       "bairro": "Jardim das Flores",
                       "status": "ATIVO",
-                      "cadastur_status": "OBRIGATORIO",
+                      "cadastur_status": "SEM_VALIDADE",
                       "possui_cadastur": false,
                       "aceita_pesquisas": true,
                       "latitude": -22.0111,
@@ -294,6 +294,16 @@
               "maximum": 2147483647
             },
             "description": "Número mínimo de leitos. Fichas sem total informado ficam fora do filtro."
+          },
+          {
+            "name": "somente_hospedagem",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "Limita aos meios de hospedagem, incluindo a categoria genérica das fichas antigas."
           }
         ],
         "x-role-permissions": {
@@ -435,7 +445,7 @@
                     "telefone_pesquisas": "+55 16 99999-1000",
                     "email_pesquisas": "pesquisas@serra-azul.example",
                     "aceita_pesquisas": true,
-                    "cadastur_status": "OBRIGATORIO",
+                    "cadastur_status": "REGULAR",
                     "possui_cadastur": true,
                     "numero_cadastur": "CAD-OTO-000123",
                     "vencimento_cadastur": "2027-08-31",
@@ -528,7 +538,7 @@
                   "telefone_pesquisas": "+55 16 99999-1000",
                   "email_pesquisas": "pesquisas@serra-azul.example",
                   "aceita_pesquisas": true,
-                  "cadastur_status": "OBRIGATORIO",
+                  "cadastur_status": "REGULAR",
                   "possui_cadastur": true,
                   "numero_cadastur": "CAD-OTO-000123",
                   "vencimento_cadastur": "2027-08-31",
@@ -4489,10 +4499,13 @@
       "CadasturStatus": {
         "type": "string",
         "enum": [
-          "OBRIGATORIO",
-          "OPCIONAL",
-          "NAO_CONSTA"
-        ]
+          "REGULAR",
+          "PROXIMO_VENCIMENTO",
+          "EM_ALERTA",
+          "VENCIDO",
+          "SEM_VALIDADE"
+        ],
+        "description": "Situação do documento. Sem valor explícito, a API calcula pela validade em dias corridos no fuso de Olímpia: inexistente SEM_VALIDADE, vencida VENCIDO, 0–30 EM_ALERTA, 31–90 PROXIMO_VENCIMENTO, acima de 90 REGULAR."
       },
       "TipoHospedagem": {
         "type": "string",
@@ -5913,8 +5926,7 @@
             "default": true
           },
           "cadastur_status": {
-            "$ref": "#/components/schemas/CadasturStatus",
-            "default": "OBRIGATORIO"
+            "$ref": "#/components/schemas/CadasturStatus"
           },
           "possui_cadastur": {
             "type": "boolean",
@@ -6362,8 +6374,7 @@
             "default": true
           },
           "cadastur_status": {
-            "$ref": "#/components/schemas/CadasturStatus",
-            "default": "OBRIGATORIO"
+            "$ref": "#/components/schemas/CadasturStatus"
           },
           "possui_cadastur": {
             "type": "boolean",
@@ -10538,6 +10549,9 @@
                 "type": "integer",
                 "minimum": 0,
                 "maximum": 2147483647
+              },
+              "somente_hospedagem": {
+                "type": "boolean"
               }
             },
             "additionalProperties": false

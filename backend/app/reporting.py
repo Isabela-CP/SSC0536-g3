@@ -2,6 +2,7 @@
 import csv
 from io import BytesIO, StringIO
 from xml.sax.saxutils import escape
+from app.cadastur import CadasturStatus
 
 
 XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -113,9 +114,10 @@ def report_rows(payload, repository, surveys, history):
         busca: str | None = Field(None, max_length=120)
         id_categoria: int | None = Field(None, ge=1)
         status: Literal["ATIVO", "INATIVO"] | None = None
-        cadastur_status: Literal["OBRIGATORIO", "OPCIONAL", "NAO_CONSTA"] | None = None
+        cadastur_status: CadasturStatus | None = None
         aceita_pesquisas: bool | None = None
         leitos_min: int | None = Field(None, ge=0, le=2147483647)
+        somente_hospedagem: bool = False
         ordenar_por: Literal["nome_fantasia", "criado_em", "atualizado_em"] = "nome_fantasia"
         ordem: Literal["asc", "desc"] = "asc"
 

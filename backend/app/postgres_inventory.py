@@ -4,6 +4,7 @@ from decimal import Decimal
 from uuid import UUID
 from psycopg import sql
 from psycopg.types.json import Jsonb
+from app.cadastur import HOSPITALITY_CATEGORIES
 from app.inventory_models import flatten, SCHEMAS
 
 
@@ -131,6 +132,9 @@ class PostgresInventoryRepository:
         if query.leitos_min is not None:
             clauses.append('EXISTS (SELECT 1 FROM meio_hospedagem m WHERE m.id_estabelecimento=estabelecimentos.id_estabelecimento AND m.total_leitos >= %s)')
             params.append(query.leitos_min)
+        if query.somente_hospedagem:
+            clauses.append("id_categoria IN (SELECT id_categoria FROM categorias_estabelecimento WHERE upper(nome_categoria)=ANY(%s))")
+            params.append(sorted(HOSPITALITY_CATEGORIES))
         where=sql.SQL(' WHERE '+' AND '.join(clauses)) if clauses else sql.SQL('')
         field=query.ordenar_por
         if field not in ('nome_fantasia','criado_em','atualizado_em') or query.ordem not in ('asc','desc'):raise ValueError('Ordenação inválida.')

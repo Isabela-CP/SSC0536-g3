@@ -2,6 +2,7 @@
 from datetime import date, datetime, timezone
 from zoneinfo import ZoneInfo
 from app.inventory_errors import invalid_field
+from app.cadastur import HOSPITALITY_CATEGORIES
 
 
 def dashboard_summary(repository, surveys, responses, today=None):
@@ -13,7 +14,7 @@ def dashboard_summary(repository, surveys, responses, today=None):
         local = datetime.fromisoformat(value).astimezone(zone).date()
         return (local.year, local.month) == (today.year, today.month)
     categories = {row['id_categoria'] for row in repository.categories()
-                  if row['nome_categoria'].casefold() == 'meios de hospedagem'}
+                  if row['nome_categoria'].upper() in HOSPITALITY_CATEGORIES}
     items = [row for row in repository.establishments() if row['id_categoria'] in categories]
     beds = [(row.get('meio_hospedagem') or {}).get('total_leitos') for row in items]
     alerts = []

@@ -79,7 +79,7 @@ export default function InventoryPage({ api, user, initialData = null }) {
                 })) || [],
               ],
               ['status', 'Status', schemas.StatusEstabelecimento],
-              ['cadastur_status', 'Situação Cadastur', schemas.CadasturStatus, api.preview ? cadasturOptions : undefined],
+              ['cadastur_status', 'Situação Cadastur', schemas.CadasturStatus, cadasturOptions],
               ...(api.preview ? [['leitos_min', 'Mínimo de leitos', { type: 'integer', minimum: 0 }]] : []),
               [
                 'aceita_pesquisas',

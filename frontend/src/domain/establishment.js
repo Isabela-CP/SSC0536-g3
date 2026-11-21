@@ -132,7 +132,6 @@ export function draftFrom(item) {
 }
 export const emptyDraft = () => ({
   aceita_pesquisas: true,
-  cadastur_status: 'OBRIGATORIO',
   possui_cadastur: false,
 })
 
