@@ -66,7 +66,7 @@ def configure_application_role(db):
         tables = ('categorias_estabelecimento', 'estabelecimentos', 'meio_hospedagem',
                   'documentos_controle', 'usuarios', 'convites', 'pesquisas_ocupacao',
                   'respostas_ocupacao', 'auditoria_logs', 'relatorios', 'recuperacao_senha',
-                  'pesquisa_destinatarios', 'sessoes', 'email_outbox', 'schema_migrations')
+                  'pesquisa_destinatarios', 'sessoes', 'email_outbox', 'schema_migrations', 'login_tentativas')
         for table in tables:
             conn.execute(sql.SQL('DROP POLICY IF EXISTS oto_application ON {}').format(sql.Identifier(table)))
             conn.execute(sql.SQL('CREATE POLICY oto_application ON {} TO {} USING (true) WITH CHECK (true)').format(sql.Identifier(table), sql.Identifier(name)))
