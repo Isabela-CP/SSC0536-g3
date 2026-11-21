@@ -87,14 +87,16 @@ def document_storage() -> DocumentStorage:
 
 @lru_cache
 def report_storage() -> DocumentStorage:
+    from app.reporting import XLSX_MIME
+    types = {'application/pdf': {'.pdf'}, 'text/csv': {'.csv'}, XLSX_MIME: {'.xlsx'}}
     provider = os.getenv('OTO_STORAGE_PROVIDER', 'local')
     if provider == 'supabase':
         from app.cloud_storage import cloud_storage
         return cloud_storage('relatorios', int(os.getenv('OTO_REPORT_MAX_BYTES', '52428800')),
-                             {'application/pdf': {'.pdf'}, 'text/csv': {'.csv'}})
+                             types)
     if provider != 'local':
         raise RuntimeError('OTO_STORAGE_PROVIDER deve ser local ou supabase.')
     root = Path(os.getenv('OTO_REPORT_STORAGE_DIR') or str(Path(os.getenv('OTO_STORAGE_DIR', str(Path.home()/'.local/share/oto/documentos')))/'relatorios'))
     storage = LocalDocumentStorage(root, max_bytes=int(os.getenv('OTO_REPORT_MAX_BYTES','52428800')))
-    storage.TYPES = {'application/pdf':{'.pdf'},'text/csv':{'.csv'}}
+    storage.TYPES = types
     return storage

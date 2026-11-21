@@ -66,7 +66,7 @@ def test_pg_seed_and_repositories(pg):
         response=client.get('/estabelecimentos/'+row['id_estabelecimento'])
         assert response.status_code==200,response.text
     with db.transaction() as conn:
-        assert conn.execute('SELECT count(*) AS n FROM schema_migrations').fetchone()['n']==4
+        assert conn.execute('SELECT count(*) AS n FROM schema_migrations').fetchone()['n']==5
         assert conn.execute('SELECT count(*) AS n FROM usuarios').fetchone()['n']==10
         assert conn.execute("SELECT count(*) AS n FROM usuarios WHERE senha_hash NOT LIKE '$argon2id$%'").fetchone()['n']==0
 
@@ -159,7 +159,7 @@ def test_pg_hotel_isolation_and_survey(pg):
     assert client.get('/estabelecimentos',headers=headers).json()['pagination']['total']==1
     assert client.get('/estabelecimentos/22222222-2222-4222-8222-222222222222',headers=headers).status_code==403
     assert client.post('/pesquisas-ocupacao/'+research+'/respostas',json={'taxa_ocupacao':0},headers=headers).status_code==201
-    assert client.post('/pesquisas-ocupacao/'+research+'/respostas',json={'taxa_ocupacao':20},headers=headers).status_code==409
+    assert client.post('/pesquisas-ocupacao/'+research+'/respostas',json={'taxa_ocupacao':20},headers=headers).status_code==200
     assert all(row['id_estabelecimento']==hotel for row in client.get('/respostas-ocupacao/historico',headers=headers).json()['data'])
     report=client.post('/relatorios',json={'tipo':'OCUPACAO','formato':'CSV','id_pesquisa':research})
     assert report.status_code==202,report.text
@@ -398,6 +398,9 @@ def test_pg_brevo_failure_retry_and_delivery(pg, monkeypatch):
         row = conn.execute('SELECT * FROM email_outbox ORDER BY id DESC LIMIT 1').fetchone()
         assert row['tentativas'] == 1 and row['enviado_em'] is None
         assert 'sensitive' not in row['ultimo_erro']
+    assert not dispatch_one(db, brevo_sender=lambda row: None)
+    with db.transaction() as conn:
+        conn.execute("UPDATE email_outbox SET proxima_tentativa_em=now()-interval '1 second' WHERE id=%s", (row['id'],))
     assert dispatch_one(db, brevo_sender=lambda row: None)
     with db.transaction() as conn:
         row = conn.execute('SELECT * FROM email_outbox ORDER BY id DESC LIMIT 1').fetchone()

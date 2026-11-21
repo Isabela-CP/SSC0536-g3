@@ -64,6 +64,12 @@ def create_write_router(repository_dependency, user_dependency, audit_callback) 
                              service: InventoryService = Depends(service)):
         return service.create(actor, payload.model_dump(mode="json", exclude_unset=True))
 
+    @router.post("/estabelecimentos/importacao", status_code=201, tags=["Estabelecimentos"])
+    def import_establishments(arquivo: Annotated[UploadFile, File()], actor: dict = Depends(admin),
+                              service: InventoryService = Depends(service)):
+        from app.inventory_import import import_workbook
+        return import_workbook(service, actor, arquivo.file, arquivo.filename)
+
     @router.patch("/estabelecimentos/{id_estabelecimento}", response_model=Establishment,
                   response_model_exclude_unset=True, tags=["Estabelecimentos"])
     def update_establishment(id_estabelecimento: UUID, payload: EstablishmentUpdate,

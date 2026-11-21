@@ -1,10 +1,17 @@
 """Consultas para dashboard e auditoria, sem dependência de rotas."""
 from datetime import date, datetime, timezone
+from zoneinfo import ZoneInfo
 from app.inventory_errors import invalid_field
 
 
 def dashboard_summary(repository, surveys, responses, today=None):
-    today = today or date.today()
+    zone = ZoneInfo("America/Sao_Paulo")
+    today = today or datetime.now(zone).date()
+    def in_month(value):
+        if not value:
+            return False
+        local = datetime.fromisoformat(value).astimezone(zone).date()
+        return (local.year, local.month) == (today.year, today.month)
     categories = {row['id_categoria'] for row in repository.categories()
                   if row['nome_categoria'].casefold() == 'meios de hospedagem'}
     items = [row for row in repository.establishments() if row['id_categoria'] in categories]
@@ -19,7 +26,8 @@ def dashboard_summary(repository, surveys, responses, today=None):
                        'dias_ate_vencimento': (expiration - today).days})
     alerts.sort(key=lambda row: (row['data'], row['id_estabelecimento']))
     return {'indicadores': {
-        'total_empresas': len(items), 'total_leitos': sum(value for value in beds if value is not None),
+        'total_empresas': len(items),
+        'empresas_cadastradas_no_mes': sum(in_month(row.get('criado_em')) for row in items), 'total_leitos': sum(value for value in beds if value is not None),
         'leitos_nao_informados': sum(value is None for value in beds),
         'estabelecimentos_ativos': sum(row['status'] == 'ATIVO' for row in items),
         'pesquisas_abertas': sum(row['status'] == 'ABERTA' for row in surveys),
@@ -37,13 +45,15 @@ def instant(value, field):
         raise invalid_field(field, 'Informe data e hora com fuso horário.') from None
 
 
-def audit_records(records, action=None, user_id=None, start=None, end=None):
+def audit_records(records, action=None, user_id=None, start=None, end=None, entity=None):
     lower = instant(start, 'data_inicio') if start else None
     upper = instant(end, 'data_fim') if end else None
     if lower and upper and lower > upper:
         raise invalid_field('data_fim', 'A data final deve ser posterior ou igual à inicial.')
     result = []
     for row in records:
+        if entity and (row['entidade'] != 'ESTABELECIMENTO' or str(row['id_entidade']) != entity):
+            continue
         if action and row['acao'] != action:
             continue
         if user_id is not None and row['id_usuario'] != user_id:

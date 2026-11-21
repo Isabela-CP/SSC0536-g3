@@ -283,6 +283,17 @@
               ],
               "default": "asc"
             }
+          },
+          {
+            "name": "leitos_min",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            "description": "Número mínimo de leitos. Fichas sem total informado ficam fora do filtro."
           }
         ],
         "x-role-permissions": {
@@ -2052,6 +2063,16 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "Limite temporário após cinco falhas por conta ou endereço IP.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         },
         "requestBody": {
@@ -2766,7 +2787,7 @@
             }
           },
           "409": {
-            "description": "Erro da operação.",
+            "description": "Pesquisa em conflito com o estado atual ou outra do mesmo tipo e período.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2910,7 +2931,14 @@
             "$ref": "#/components/responses/NotFound"
           },
           "409": {
-            "$ref": "#/components/responses/Conflict"
+            "description": "Pesquisa em conflito com o estado atual ou outra do mesmo tipo e período.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           },
           "422": {
             "$ref": "#/components/responses/ValidationError"
@@ -3058,7 +3086,14 @@
             "$ref": "#/components/responses/NotFound"
           },
           "409": {
-            "$ref": "#/components/responses/Conflict"
+            "description": "A pesquisa não está aberta.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           },
           "400": {
             "description": "Erro da operação.",
@@ -3099,6 +3134,16 @@
                 }
               }
             }
+          },
+          "200": {
+            "description": "Resposta corrigida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RespostaPublica"
+                }
+              }
+            }
           }
         },
         "requestBody": {
@@ -3121,7 +3166,8 @@
               "description": "Identificador opaco da API; no PostgreSQL corresponde ao BIGINT serializado como texto. O modo mock legado pode usar UUID."
             }
           }
-        ]
+        ],
+        "description": "HOTEL pode enviar ou corrigir a resposta do seu estabelecimento enquanto a pesquisa estiver aberta. A correção preserva o identificador."
       }
     },
     "/respostas-ocupacao/historico": {
@@ -3214,7 +3260,7 @@
           "Relatórios"
         ],
         "operationId": "gerarRelatorio",
-        "summary": "Gerar relatório PDF ou CSV",
+        "summary": "Gerar relatório de ocupação ou boletim de inventário",
         "responses": {
           "202": {
             "description": "Resposta da operação.",
@@ -3256,7 +3302,7 @@
             }
           },
           "409": {
-            "description": "Erro da operação.",
+            "description": "Nenhuma resposta corresponde aos filtros do relatório de ocupação.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3378,7 +3424,27 @@
         "summary": "Baixar relatório gerado",
         "responses": {
           "200": {
-            "description": "Arquivo do relatório."
+            "description": "Arquivo do relatório.",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
@@ -3439,6 +3505,16 @@
               "type": "string",
               "format": "date-time"
             }
+          },
+          {
+            "name": "id_entidade",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "description": "Identificador da empresa afetada em eventos de estabelecimento."
           }
         ],
         "responses": {
@@ -4029,6 +4105,251 @@
             }
           }
         ]
+      }
+    },
+    "/usuarios/{id_usuario}": {
+      "patch": {
+        "tags": [
+          "Usuários"
+        ],
+        "operationId": "alterarPerfilUsuario",
+        "summary": "Alterar perfil de uma conta",
+        "description": "Exclusivo de ADMINISTRADOR. A troca revoga as sessões e cancela convites pendentes da conta afetada.",
+        "parameters": [
+          {
+            "name": "id_usuario",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "perfil": {
+                    "type": "string",
+                    "enum": [
+                      "ADMINISTRADOR",
+                      "GESTOR",
+                      "EDITOR",
+                      "HOTEL"
+                    ]
+                  },
+                  "id_estabelecimento": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                "required": [
+                  "perfil"
+                ],
+                "additionalProperties": false,
+                "description": "O vínculo é obrigatório para HOTEL e omitido para perfis internos."
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Conta atualizada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsuarioPublico"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Perfil sem acesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Conta não encontrada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "A própria conta não pode ser alterada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Dados inválidos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Banco indisponível.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/estabelecimentos/importacao": {
+      "post": {
+        "tags": [
+          "Estabelecimentos"
+        ],
+        "operationId": "importarEstabelecimentos",
+        "summary": "Importar estabelecimentos via XLSX",
+        "description": "Exclusivo de ADMINISTRADOR. Até 1 MB e 200 linhas de dados. O lote é gravado integralmente ou rejeitado.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "arquivo": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                },
+                "required": [
+                  "arquivo"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Lote importado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "importados": {
+                      "type": "integer",
+                      "minimum": 1
+                    }
+                  },
+                  "required": [
+                    "importados"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Requisição inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sessão inválida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Perfil sem acesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Arquivo acima do limite.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Formato inválido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Erros na planilha.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Banco indisponível.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
       }
     }
   },
@@ -10071,13 +10392,19 @@
               "respostas_recebidas": {
                 "type": "integer",
                 "minimum": 0
+              },
+              "empresas_cadastradas_no_mes": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Cadastros do mês no fuso de Olímpia, inclusive inativos."
               }
             },
             "required": [
               "total_empresas",
               "total_leitos",
               "leitos_nao_informados",
-              "estabelecimentos_ativos"
+              "estabelecimentos_ativos",
+              "empresas_cadastradas_no_mes"
             ]
           },
           "referencia": {
@@ -10125,26 +10452,86 @@
           "tipo": {
             "type": "string",
             "enum": [
-              "OCUPACAO"
+              "OCUPACAO",
+              "INVENTARIO"
             ]
           },
           "formato": {
             "type": "string",
             "enum": [
               "PDF",
-              "CSV"
+              "CSV",
+              "XLSX"
             ]
           },
           "id_pesquisa": {
             "type": "string",
             "description": "Identificador opaco da API; no PostgreSQL corresponde ao BIGINT serializado como texto. O modo mock legado pode usar UUID."
+          },
+          "periodo_inicio": {
+            "type": "string",
+            "format": "date"
+          },
+          "periodo_fim": {
+            "type": "string",
+            "format": "date"
+          },
+          "id_categoria": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "filtros": {
+            "type": "object",
+            "properties": {
+              "busca": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "id_categoria": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "status": {
+                "$ref": "#/components/schemas/StatusEstabelecimento"
+              },
+              "cadastur_status": {
+                "$ref": "#/components/schemas/CadasturStatus"
+              },
+              "aceita_pesquisas": {
+                "type": "boolean"
+              },
+              "ordenar_por": {
+                "type": "string",
+                "enum": [
+                  "nome_fantasia",
+                  "criado_em",
+                  "atualizado_em"
+                ],
+                "default": "nome_fantasia"
+              },
+              "ordem": {
+                "type": "string",
+                "enum": [
+                  "asc",
+                  "desc"
+                ],
+                "default": "asc"
+              },
+              "leitos_min": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2147483647
+              }
+            },
+            "additionalProperties": false
           }
         },
         "required": [
           "tipo",
           "formato"
         ],
-        "additionalProperties": false
+        "additionalProperties": false,
+        "description": "OCUPACAO aceita PDF/CSV e filtros opcionais de pesquisa, categoria e datas. INVENTARIO aceita PDF/XLSX e somente filtros do inventário."
       },
       "RelatorioPublico": {
         "type": "object",
@@ -10156,14 +10543,16 @@
           "tipo": {
             "type": "string",
             "enum": [
-              "OCUPACAO"
+              "OCUPACAO",
+              "INVENTARIO"
             ]
           },
           "formato": {
             "type": "string",
             "enum": [
               "PDF",
-              "CSV"
+              "CSV",
+              "XLSX"
             ]
           },
           "status": {

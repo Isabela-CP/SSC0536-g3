@@ -107,7 +107,7 @@ def test_survey_permissions_partial_updates_and_closing(env):
 
 def test_hotel_pending_response_and_isolation(env):
     created = research(env).json()
-    other = research(env, estabelecimentos=[env.items[1]["id_estabelecimento"]]).json()
+    other = research(env, tipo="EXPECTATIVA", estabelecimentos=[env.items[1]["id_estabelecimento"]]).json()
     headers = env.headers("HOTEL")
     assert len(env.client.get("/pesquisas-ocupacao", headers=headers).json()["data"]) == 1
     assert len(env.client.get("/pesquisas-ocupacao/pendentes", headers=headers).json()["data"]) == 1
@@ -115,7 +115,7 @@ def test_hotel_pending_response_and_isolation(env):
     response = env.client.post(f'/pesquisas-ocupacao/{created["id_pesquisa"]}/respostas', json={"taxa_ocupacao": 75.5}, headers=headers)
     assert response.status_code == 201
     assert response.json()["id_estabelecimento"] == env.items[0]["id_estabelecimento"]
-    assert env.client.post(f'/pesquisas-ocupacao/{created["id_pesquisa"]}/respostas', json={"taxa_ocupacao": 50}, headers=headers).status_code == 409
+    assert env.client.post(f'/pesquisas-ocupacao/{created["id_pesquisa"]}/respostas', json={"taxa_ocupacao": 50}, headers=headers).status_code == 200
     assert env.client.get("/pesquisas-ocupacao/pendentes", headers=headers).json()["data"] == []
     assert len(env.client.get("/respostas-ocupacao/historico", headers=headers).json()["data"]) == 1
 
