@@ -7,7 +7,7 @@ export function applicationRuntime() {
     const mock = import.meta.env.VITE_API_MODE === 'mock'
     const session = createSession(globalThis.sessionStorage)
     const options = {
-      baseUrl: import.meta.env.VITE_API_BASE_URL || '/api',
+      baseUrl: mock ? '' : import.meta.env.VITE_API_BASE_URL || '/api',
       getToken: () => session.token(),
       requireSession: !mock,
       onUnauthorized: () => {
