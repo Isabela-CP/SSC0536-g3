@@ -1,3 +1,4 @@
+import { lodgingNames, mockCadasturStatus } from '../domain/qaOptions.js'
 import { mockInventory, mockDashboard } from './mockReading.js'
 import seed from '../../../contratos_api_oto/mocks/seed-data.json'
 import {
@@ -20,8 +21,16 @@ export function mockUser(role = 'ADMINISTRADOR') {
     ...(role === 'HOTEL' ? { id_estabelecimento: account.id_estabelecimento } : {}),
   }
 }
-export function createMockFetch(user = mockUser()) {
+export function createMockFetch(user = mockUser(), { preview = false } = {}) {
+  const categories = preview
+    ? lodgingNames.map((nome_categoria, index) => ({ id_categoria: index === 0 ? 1 : 100 + index, nome_categoria }))
+    : seed.categorias_estabelecimento
   let items = structuredClone(seed.estabelecimentos)
+  if (preview) items = items.filter((item) => item.id_categoria === 1).map((item) => {
+    const name = item.nome_fantasia.toUpperCase()
+    const categoria = categories.find((category) => name.startsWith(category.nome_categoria)) || categories[0]
+    return { ...item, categoria, id_categoria: categoria.id_categoria, cadastur_status: mockCadasturStatus(item.vencimento_cadastur) }
+  })
   let nextDocumentId =
     Math.max(0, ...items.flatMap((item) => item.documentos.map((doc) => doc.id_documento))) + 1
   const files = new Map()
@@ -93,15 +102,15 @@ export function createMockFetch(user = mockUser()) {
       return fail(503, 'MOCK_NOT_AVAILABLE', 'Este módulo requer a conexão com o backend real.')
     if (path === '/perfil') return json(user)
     if (path === '/categorias-estabelecimento')
-      return json({ data: hostingCategories(seed.categorias_estabelecimento) })
+      return json({ data: hostingCategories(categories) })
     if (path === '/estabelecimentos' && method === 'GET') {
-      const result = mockInventory(items, user, requestUrl.searchParams)
+      const result = mockInventory(items, user, requestUrl.searchParams, preview)
       return result.errors ? invalid(result.errors) : json(result)
     }
     if (path === '/dashboard')
       return user.perfil === 'HOTEL'
         ? fail(403, 'FORBIDDEN', 'Seu perfil não pode acessar o dashboard.')
-        : json(mockDashboard(items, seed.categorias_estabelecimento))
+        : json(mockDashboard(items, categories))
     if (path === '/auditoria')
       return user.perfil === 'ADMINISTRADOR'
         ? json({ data: [] })
@@ -110,9 +119,9 @@ export function createMockFetch(user = mockUser()) {
     if (path === '/estabelecimentos' && method === 'POST') {
       if (!permissions(user).create)
         return fail(403, 'FORBIDDEN', 'Seu perfil não pode cadastrar.')
-      const errors = validateEstablishment(payload)
+      const errors = validateEstablishment(payload, 'create', preview)
       if (
-        !hostingCategories(seed.categorias_estabelecimento).some(
+        !hostingCategories(categories).some(
           (category) => category.id_categoria === payload.id_categoria,
         )
       )
@@ -127,7 +136,7 @@ export function createMockFetch(user = mockUser()) {
       const item = {
         aceita_pesquisas: true,
         possui_cadastur: false,
-        cadastur_status: 'OBRIGATORIO',
+        cadastur_status: preview ? 'SEM_VALIDADE' : 'OBRIGATORIO',
         meio_hospedagem: null,
         infraestrutura: null,
         ...payload,
@@ -138,7 +147,7 @@ export function createMockFetch(user = mockUser()) {
         atualizado_em: new Date().toISOString(),
         documentos: [],
         categoria: structuredClone(
-          seed.categorias_estabelecimento.find(
+          categories.find(
             (category) => category.id_categoria === payload.id_categoria,
           ),
         ),
@@ -162,7 +171,7 @@ export function createMockFetch(user = mockUser()) {
       if (method === 'GET') return json(item)
       if (!access.protected && ('cnpj' in payload || 'razao_social' in payload))
         return fail(403, 'FORBIDDEN', 'Campo reservado ao administrador.')
-      const errors = validateEstablishment(payload, 'edit')
+      const errors = validateEstablishment(payload, 'edit', preview)
       if (Object.keys(errors).length) return invalid(errors)
       if (
         payload.cnpj &&
@@ -176,6 +185,7 @@ export function createMockFetch(user = mockUser()) {
         return fail(409, 'CONFLICT', 'Já existe uma hospedagem com este CNPJ.')
       item = merge(item, payload)
       item.atualizado_em = new Date().toISOString()
+      item.categoria = categories.find((category) => category.id_categoria === item.id_categoria)
       items = items.map((entry) => (entry.id_estabelecimento === id ? item : entry))
       return json(item)
     }

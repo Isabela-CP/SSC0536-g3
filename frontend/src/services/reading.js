@@ -11,7 +11,7 @@ export async function loadInventory(api, draft, options = {}) {
     }
   const params = {
     ...inventoryQuery(draft),
-    id_categoria: Number(draft.id_categoria || categories[0].id_categoria),
+    ...(!api.preview && { id_categoria: Number(draft.id_categoria || categories[0].id_categoria) }),
   }
   const [result, markers] = await Promise.all([
     api.establishments(params, options),

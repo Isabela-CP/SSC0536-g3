@@ -21,6 +21,9 @@ export default function DashboardPage({ api, initialData = null }) {
               ['Total Empresas', data.indicadores.total_empresas],
               ['Leitos', data.indicadores.total_leitos],
               ['Ativas', data.indicadores.estabelecimentos_ativos],
+              ...(Number.isInteger(data.indicadores.empresas_cadastradas_no_mes)
+                ? [['Empresas cadastradas no mês', data.indicadores.empresas_cadastradas_no_mes]]
+                : []),
             ].map(([label, value]) => (
               <article className="stat-card" key={label}>
                 <h2>

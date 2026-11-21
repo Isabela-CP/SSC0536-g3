@@ -19,9 +19,10 @@ export function applicationRuntime() {
       const { createMockFetch, mockUser } = await import('./mock.js')
       options.fetchImpl = createMockFetch(
         mockUser(import.meta.env.VITE_MOCK_ROLE || 'ADMINISTRADOR'),
+        { preview: true },
       )
     }
-    return { api: createInventoryApi(createHttpClient(options)), mock, session }
+    return { api: createInventoryApi(createHttpClient(options), { preview: mock }), mock, session }
   })()
   return runtime
 }

@@ -1,3 +1,4 @@
+import { cadasturOptions } from '../domain/qaOptions.js'
 import React, { useState } from 'react'
 import { Field } from '../components/FormFields.jsx'
 import { FormErrors } from '../components/Feedback.jsx'
@@ -24,7 +25,7 @@ export default function InventoryPage({ api, user, initialData = null }) {
   }
   const apply = (event) => {
     event.preventDefault()
-    const next = inventoryErrors(draft)
+    const next = inventoryErrors(draft, api.preview)
     setErrors(next)
     if (!Object.keys(next).length) setQuery({ ...draft, page: 1 })
   }
@@ -77,7 +78,8 @@ export default function InventoryPage({ api, user, initialData = null }) {
                 })) || [],
               ],
               ['status', 'Status', schemas.StatusEstabelecimento],
-              ['cadastur_status', 'Situação Cadastur', schemas.CadasturStatus],
+              ['cadastur_status', 'Situação Cadastur', schemas.CadasturStatus, api.preview ? cadasturOptions : undefined],
+              ...(api.preview ? [['leitos_min', 'Mínimo de leitos', { type: 'integer', minimum: 0 }]] : []),
               [
                 'aceita_pesquisas',
                 'Aceita pesquisas',
