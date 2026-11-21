@@ -532,7 +532,7 @@ def test_qa_invalid_storage_reference_returns_404(pg, monkeypatch):
     client, db = pg
     hotel = client.get("/estabelecimentos", params={"busca": "Hotel Serra Azul"}).json()["data"][0]
     path = f"/estabelecimentos/{hotel['id_estabelecimento']}/documentos"
-    upload = client.post(path, data={"tipo_documento": "OUTRO", "data_vencimento": "2031-12-31"},
+    upload = client.post(path, data={"tipo_documento": "ALVARA", "data_vencimento": "2031-12-31"},
                          files={"arquivo": ("teste.pdf", b"%PDF-1.4 fixture", "application/pdf")})
     assert upload.status_code == 201, upload.text
     doc = upload.json()["id_documento"]
@@ -550,3 +550,21 @@ def test_qa_invalid_storage_reference_returns_404(pg, monkeypatch):
         assert client.get(f"{path}/{doc}/arquivo").status_code == 404
     finally:
         document_storage.cache_clear()
+
+
+def test_qa_hotel_login_by_cnpj_shares_rate_limit_with_legacy_email(pg):
+    client, db = pg
+    email = "responsavel@serra-azul.example"
+    with db.transaction() as conn:
+        cnpj = conn.execute("SELECT cnpj FROM estabelecimentos WHERE nome_fantasia='Hotel Serra Azul'").fetchone()["cnpj"]
+    correct = {"cnpj": cnpj, "senha": "hotel-demo"}
+    login = client.post("/auth/login", json=correct)
+    assert login.status_code == 200, login.text
+    assert login.json()["usuario"]["email"] == email
+    with TestClient(main.app, client=("other", 50000)) as other:
+        assert other.post("/auth/login", json={**correct, "email": email}).status_code == 401
+    for _ in range(4):
+        assert client.post("/auth/login", json={"email": email, "senha": "incorreta"}).status_code == 401
+    assert client.post("/auth/login", json={**correct, "senha": "incorreta"}).status_code == 429
+    with TestClient(main.app, client=("other", 50000)) as other:
+        assert other.post("/auth/login", json=correct).status_code == 429

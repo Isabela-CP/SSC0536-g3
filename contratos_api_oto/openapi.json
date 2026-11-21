@@ -9986,13 +9986,30 @@
             "format": "password",
             "minLength": 1,
             "maxLength": 128
+          },
+          "cnpj": {
+            "type": "string",
+            "pattern": "^(?:[0-9]{14}|[0-9]{2}\\.[0-9]{3}\\.[0-9]{3}/[0-9]{4}-[0-9]{2})$",
+            "description": "Identificador do estabelecimento para login HOTEL."
           }
         },
         "required": [
-          "email",
           "senha"
         ],
-        "additionalProperties": false
+        "additionalProperties": false,
+        "oneOf": [
+          {
+            "required": [
+              "email"
+            ]
+          },
+          {
+            "required": [
+              "cnpj"
+            ]
+          }
+        ],
+        "description": "Use CNPJ e senha para o perfil HOTEL. E-mail e senha continuam aceitos durante a adoção do novo login na interface."
       },
       "LoginResponse": {
         "type": "object",

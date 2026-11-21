@@ -54,3 +54,21 @@ def record_failure(conn, account_keys):
         """, (key, WINDOW)).fetchone()
         blocked = blocked or row['falhas'] >= LIMIT
     return blocked
+
+
+def credentials(payload):
+    """Identificador explícito. Os formatos legados de e-mail continuam válidos."""
+    import re
+    email, cnpj, password = payload.get("email"), payload.get("cnpj"), payload.get("senha")
+    if "cnpj" in payload:
+        value = cnpj.strip() if isinstance(cnpj, str) else ""
+        valid = "email" not in payload and re.fullmatch(r"(?:[0-9]{14}|[0-9]{2}\.[0-9]{3}\.[0-9]{3}/[0-9]{4}-[0-9]{2})", value)
+        return "cnpj", re.sub(r"[^0-9]", "", value) if valid else "", password
+    value = email.strip().casefold() if isinstance(email, str) else ""
+    return "email", value if len(value) <= 254 else "", password
+
+
+def account_key(field, identifier, company_cnpj=None):
+    if field == "cnpj" or company_cnpj:
+        return f"cnpj:{company_cnpj or identifier}"
+    return f"email:{identifier}"

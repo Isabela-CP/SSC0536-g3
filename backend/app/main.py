@@ -24,7 +24,7 @@ from app.inventory_writes import create_write_router
 from app.inventory_errors import InventoryError, invalid_field
 from app.inventory_models import contract_model
 from app import operations
-from app.login_attempts import MemoryAttempts
+from app.login_attempts import MemoryAttempts, account_key, credentials
 from app.database import persistent, database
 from app.postgres_inventory import PostgresInventoryRepository
 from app.postgres_portal import PostgresPortal
@@ -116,11 +116,15 @@ async def operation_error(request, exc):
     return JSONResponse(status_code=exc.status_code, headers={"WWW-Authenticate":"Bearer"} if exc.status_code==401 else None, content={"error": exc.error})
 
 
+def hotel_establishment(actor):
+    repository = app.dependency_overrides.get(inventory_repository, inventory_repository)()
+    return repository.establishment(actor.get("id_estabelecimento", ""))
+
+
 def hotel_active(actor):
     if actor["perfil"] != "HOTEL":
         return True
-    repository = app.dependency_overrides.get(inventory_repository, inventory_repository)()
-    item = repository.establishment(actor.get("id_estabelecimento", ""))
+    item = hotel_establishment(actor)
     return item is not None and item["status"] == "ATIVO"
 
 
@@ -268,13 +272,25 @@ def login(request: Request, payload: dict = Body(...)) -> Any:
     peer = request.client.host if request.client else "unknown"
     if persistent():
         return portal().login(payload, peer)
-    email, password = payload.get("email"), payload.get("senha")
-    identifier = email.strip().casefold() if isinstance(email, str) else ""
+    from app.inventory_service import cnpj_digits
+    field, identifier, password = credentials(payload)
+    candidates, company_cnpj = [], None
+    if identifier and field == "cnpj":
+        for candidate in DEMO_USERS.values():
+            item = hotel_establishment(candidate) if candidate["perfil"] == "HOTEL" else None
+            if item and cnpj_digits(item.get("cnpj") or "") == identifier:
+                candidates.append(candidate)
+    elif identifier and (candidate := DEMO_USERS.get(identifier)):
+        candidates.append(candidate)
+        item = hotel_establishment(candidate) if candidate["perfil"] == "HOTEL" else None
+        company_cnpj = cnpj_digits(item.get("cnpj") or "") if item else None
+
     def authenticate():
-        actor = DEMO_USERS.get(identifier) if 0 < len(identifier) <= 254 else None
-        if actor and isinstance(password, str) and password and actor["senha"] == password and actor["ativo"] and hotel_active(actor):
-            return actor
-    user, blocked = LOGIN_ATTEMPTS.check(identifier if len(identifier) <= 254 else "", peer, authenticate)
+        matches = [actor for actor in candidates if isinstance(password, str) and 0 < len(password) <= 128
+                   and actor["senha"] == password and actor["ativo"] and hotel_active(actor)]
+        return matches[0] if len(matches) == 1 else None
+
+    user, blocked = LOGIN_ATTEMPTS.check(account_key(field, identifier, company_cnpj), peer, authenticate)
     if blocked:
         return error_response(429, "LOGIN_RATE_LIMIT", "Muitas tentativas de login. Tente novamente mais tarde.")
     if not user:

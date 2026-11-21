@@ -6,7 +6,7 @@ import secrets
 from pwdlib import PasswordHash
 from psycopg.types.json import Jsonb
 from app import operations
-from app.login_attempts import keys, lock_attempts, record_failure
+from app.login_attempts import account_key, credentials, keys, lock_attempts, record_failure
 from app.inventory_errors import InventoryError, invalid_field
 from app.postgres_inventory import public
 
@@ -47,21 +47,38 @@ class PostgresPortal:
             return user_dto(row)
 
     def login(self, payload, peer):
-        email,password = payload.get('email'),payload.get('senha')
-        identifier = email.strip().casefold() if isinstance(email, str) else ""
-        valid_input = 0 < len(identifier) <= 254 and isinstance(password, str) and 0 < len(password) <= 128
-        bound_identifier = identifier if len(identifier) <= 254 else ""
-        account_keys = keys(bound_identifier, peer)
+        field, identifier, password = credentials(payload)
+        valid_password = isinstance(password, str) and 0 < len(password) <= 128
         with self.db.transaction() as conn:
+            candidates = []
+            if identifier and field == 'cnpj':
+                candidates = conn.execute("""SELECT u.* FROM usuarios u
+                    JOIN estabelecimentos e ON e.id_estabelecimento=u.id_estabelecimento
+                    WHERE u.perfil='HOTEL' AND u.status='ATIVO' AND e.cnpj IS NOT NULL
+                    AND regexp_replace(e.cnpj, '[^0-9]', '', 'g')=%s
+                    ORDER BY u.id FOR SHARE OF u""", (identifier,)).fetchall()
+            elif identifier:
+                candidate = conn.execute("""SELECT u.*, regexp_replace(e.cnpj, '[^0-9]', '', 'g') AS company_cnpj
+                    FROM usuarios u LEFT JOIN estabelecimentos e ON u.perfil='HOTEL'
+                    AND e.id_estabelecimento=u.id_estabelecimento WHERE lower(u.email)=%s FOR SHARE OF u""",
+                    (identifier,)).fetchone()
+                if candidate:
+                    candidates = [candidate]
+            canonical = account_key(field, identifier, candidates[0].get('company_cnpj') if candidates else None)
+            account_keys = keys(canonical, peer)
             blocked = lock_attempts(conn, account_keys)
             if not blocked:
-                row = (conn.execute('SELECT * FROM usuarios WHERE lower(email)=%s FOR SHARE', (identifier,)).fetchone()
-                       if valid_input else None)
-                try:
-                    valid = valid_input and PASSWORDS.verify(password, row['senha_hash'] if row else DUMMY_HASH)
-                except Exception:
-                    valid = False
-                if valid and row and row['status'] == 'ATIVO' and self.hotel_active(conn, row):
+                matches = []
+                if valid_password:
+                    for candidate in candidates or [None]:
+                        try:
+                            valid = PASSWORDS.verify(password, candidate['senha_hash'] if candidate else DUMMY_HASH)
+                        except Exception:
+                            valid = False
+                        if valid and candidate and candidate['status'] == 'ATIVO':
+                            matches.append(candidate)
+                row = matches[0] if len(matches) == 1 else None
+                if row and self.hotel_active(conn, row):
                     token = secrets.token_urlsafe(32)
                     lifetime = int(os.getenv('OTO_SESSION_SECONDS', '900'))
                     if not 60 <= lifetime <= 86400:

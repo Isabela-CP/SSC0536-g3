@@ -159,6 +159,11 @@ o agendamento da fila de e-mail e o formato XLSX de relatório. Aplique com
 `python -m app.migrate` antes de iniciar API ou dispatcher. O Compose aplica
 as migrations pelo serviço `migrate`.
 
+- HOTEL aceita `{"cnpj":"00000000000000","senha":"..."}` no login, além
+  do e-mail. Use apenas um identificador por requisição. Os dois formatos
+  compartilham o limite para a hospedagem. Se mais de uma conta vinculada
+  tiver a mesma senha, a tentativa por CNPJ é recusada para evitar escolher
+  uma conta arbitrariamente. Perfis internos entram por e-mail.
 - O login bloqueia após cinco falhas por conta ou IP durante 15 minutos.
   O IP vem da conexão resolvida pelo Uvicorn. Atrás de proxy, configure
   `FORWARDED_ALLOW_IPS` no serviço hospedado ou `OTO_TRUSTED_PROXY_IPS` no
