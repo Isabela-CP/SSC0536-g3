@@ -1,5 +1,4 @@
-import { hostingCategories } from './establishment.js'
-import { validateSchema, schemas } from './establishment.js'
+import { hostingCategories, validateSchema, schemas } from './establishment.js'
 export const roles = {
   ADMINISTRADOR: 'Administrador',
   GESTOR: 'Funcionário — consulta',

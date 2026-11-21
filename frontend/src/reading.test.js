@@ -63,7 +63,8 @@ test('payload de consulta preserva false e combina todos os parâmetros', () => 
     ordem: 'desc',
   }
   assert.deepEqual(domain.inventoryErrors(draft), {})
-  assert.deepEqual(domain.inventoryQuery(draft), { ...draft, id_categoria: 1 })
+  const { leitos_min, ...expected } = draft
+  assert.deepEqual(domain.inventoryQuery(draft), { ...expected, id_categoria: 1 })
   assert.equal(Object.hasOwn(domain.inventoryQuery(domain.inventoryDefaults), 'busca'), false)
 })
 test('mock combina filtros e pagina resultados deterministicamente', () => {

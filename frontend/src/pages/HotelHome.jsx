@@ -5,7 +5,7 @@ import { OperationFeedback, ResourceState } from '../components/OperationsUI.jsx
 import { useOperation, useResource } from '../hooks/operations.js'
 import { validateOccupancy } from '../domain/operations.js'
 function AnswerDialog({ survey, api, onClose, onSaved }) {
-  const [rate, setRate] = useState(''),
+  const [rate, setRate] = useState(survey.rate ?? ''),
     [errors, setErrors] = useState({}),
     [confirm, setConfirm] = useState(false),
     operation = useOperation()
@@ -32,8 +32,8 @@ function AnswerDialog({ survey, api, onClose, onSaved }) {
         <OperationFeedback operation={operation} errors={errors} />
         {confirm ? (
           <p>
-            Confirma o envio da taxa de ocupação de <strong>{rate}%</strong>? A resposta não poderá
-            ser reenviada.
+            Confirma o envio da taxa de ocupação de <strong>{rate}%</strong>?
+            {!api.preview && ' A resposta não poderá ser reenviada.'}
           </p>
         ) : (
           <Field
@@ -69,11 +69,12 @@ function AnswerDialog({ survey, api, onClose, onSaved }) {
 export default function HotelHome({ api, initialData = null }) {
   const resource = useResource(
       async (options) => {
-        const [pending, history] = await Promise.all([
+        const [pending, history, surveys] = await Promise.all([
           api.pendingSurveys(options),
           api.responseHistory(options),
+          api.preview ? api.surveys(options) : { data: [] },
         ])
-        return { pending: pending.data, history: history.data }
+        return { pending: pending.data, history: history.data, open: surveys.data.filter((row) => row.status === 'ABERTA') }
       },
       [api],
       initialData,
@@ -122,12 +123,22 @@ export default function HotelHome({ api, initialData = null }) {
             <h2>Minhas respostas</h2>
             {resource.data.history.length ? (
               <ul className="response-list">
-                {resource.data.history.map((row) => (
+                {resource.data.history.map((row) => {
+                  const survey = resource.data.open?.find((item) => item.id_pesquisa === row.id_pesquisa)
+                  return (
                   <li key={row.id_resposta}>
                     <span>{new Date(row.enviada_em).toLocaleDateString('pt-BR')}</span>
                     <strong>{row.dados.taxa_ocupacao}%</strong>
+                    {api.preview && survey && (
+                      <button type="button" className="button button-small button-secondary"
+                        aria-label={`Corrigir resposta — ${survey.titulo}`}
+                        onClick={() => setAnswering({ ...survey, rate: row.dados.taxa_ocupacao })}>
+                        Corrigir resposta
+                      </button>
+                    )}
                   </li>
-                ))}
+                  )
+                })}
               </ul>
             ) : (
               <p className="muted">Nenhuma resposta enviada.</p>

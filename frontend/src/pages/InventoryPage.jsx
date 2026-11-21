@@ -1,4 +1,5 @@
 import { cadasturOptions } from '../domain/qaOptions.js'
+import InventoryFiles from './InventoryFiles.jsx'
 import React, { useState } from 'react'
 import { Field } from '../components/FormFields.jsx'
 import { FormErrors } from '../components/Feedback.jsx'
@@ -220,6 +221,13 @@ export default function InventoryPage({ api, user, initialData = null }) {
               onPage={(page) => setQuery((previous) => ({ ...previous, page }))}
             />
           </div>
+          {api.preview && (
+            <InventoryFiles api={api} rows={data.markers} categories={data.categories}
+              canImport={user.perfil === 'ADMINISTRADOR'} loading={resource.loading}
+              onImported={() => {
+                setQuery((previous) => ({ ...previous, page: 1 }))
+              }} />
+          )}
           <InventoryMap items={data.markers} title="MAPA" />
           <p className="muted">Mapa com todos os resultados dos filtros aplicados.</p>
         </>

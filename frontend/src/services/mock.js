@@ -1,3 +1,5 @@
+import { mockOperations } from './mockOperations.js'
+import { readInventorySheet } from './inventoryFiles.js'
 import { lodgingNames, mockCadasturStatus } from '../domain/qaOptions.js'
 import { mockInventory, mockDashboard } from './mockReading.js'
 import seed from '../../../contratos_api_oto/mocks/seed-data.json'
@@ -57,6 +59,33 @@ export function createMockFetch(user = mockUser(), { preview = false } = {}) {
           : value
     return result
   }
+  const auditRows = seed.audit_log.map((row) => ({
+    id: row.id_log, acao: row.operacao, entidade: row.tabela_afetada,
+    id_entidade: row.registro_id, usuario: row.usuario_identificador,
+    id_usuario: seed.usuarios_internos.find((entry) => entry.email === row.usuario_identificador)?.id_usuario,
+    criado_em: row.data_hora, antes: row.valores_anteriores, depois: row.valores_novos,
+  }))
+  const audit = (acao, entidade, id, antes, depois) => auditRows.unshift({
+    id: crypto.randomUUID(), acao, entidade, id_entidade: String(id), usuario: user.email,
+    id_usuario: user.id_usuario, criado_em: new Date().toISOString(),
+    antes: structuredClone(antes), depois: structuredClone(depois),
+  })
+  const operations = mockOperations(seed, user, () => items, audit, json, fail)
+  const createItem = (payload) => ({
+    aceita_pesquisas: true,
+    possui_cadastur: false,
+    cadastur_status: preview ? 'SEM_VALIDADE' : 'OBRIGATORIO',
+    meio_hospedagem: null,
+    infraestrutura: null,
+    ...payload,
+    id_estabelecimento: crypto.randomUUID(),
+    status: 'ATIVO',
+    motivo_inativacao: null,
+    criado_em: new Date().toISOString(),
+    atualizado_em: new Date().toISOString(),
+    documentos: [],
+    categoria: categories.find((category) => category.id_categoria === payload.id_categoria),
+  })
   return async function mockFetch(url, options = {}) {
     if (options.signal?.aborted) throw new DOMException('Cancelado', 'AbortError')
     const requestUrl = new URL(url, 'http://mock.local')
@@ -89,6 +118,11 @@ export function createMockFetch(user = mockUser(), { preview = false } = {}) {
       Object.assign(user, data)
       return json(user)
     }
+    const payload = typeof options.body === 'string' ? JSON.parse(options.body) : options.body
+    if (preview) {
+      const response = await operations(path, method, payload)
+      if (response) return response
+    }
     if (
       [
         '/usuarios',
@@ -113,9 +147,44 @@ export function createMockFetch(user = mockUser(), { preview = false } = {}) {
         : json(mockDashboard(items, categories))
     if (path === '/auditoria')
       return user.perfil === 'ADMINISTRADOR'
-        ? json({ data: [] })
+        ? json({ data: preview ? auditRows.filter((row) => {
+            const params = requestUrl.searchParams
+            const id = params.get('id_entidade')
+            const start = params.get('data_inicio')
+            const end = params.get('data_fim')
+            return (!id || (row.entidade === 'ESTABELECIMENTO' && row.id_entidade === id)) &&
+              (!params.has('acao') || row.acao === params.get('acao')) &&
+              (!params.has('id_usuario') || row.id_usuario === Number(params.get('id_usuario'))) &&
+              (!start || Date.parse(row.criado_em) >= Date.parse(start)) &&
+              (!end || Date.parse(row.criado_em) <= Date.parse(end))
+          }) : [] })
         : fail(403, 'FORBIDDEN', 'Auditoria exclusiva de administrador.')
-    const payload = typeof options.body === 'string' ? JSON.parse(options.body) : options.body
+    if (preview && path === '/estabelecimentos/importacao' && method === 'POST') {
+      if (!permissions(user).create) return fail(403, 'FORBIDDEN', 'Seu perfil não pode importar.')
+      let rows
+      try {
+        rows = await readInventorySheet(payload?.get('arquivo'))
+      } catch (error) {
+        return fail(422, 'VALIDATION_ERROR', error.message)
+      }
+      const seen = new Set(items.map((item) => normalizeCnpj(item.cnpj || '')))
+      const errors = {}
+      for (const { line, payload: entry } of rows) {
+        const invalidFields = validateEstablishment(entry, 'create', true)
+        if (!categories.some((category) => category.id_categoria === entry.id_categoria))
+          invalidFields.id_categoria = 'Categoria inválida.'
+        const cnpj = normalizeCnpj(entry.cnpj)
+        if (cnpj && seen.has(cnpj)) invalidFields.cnpj = 'CNPJ já cadastrado ou repetido na planilha.'
+        seen.add(cnpj)
+        for (const [field, issue] of Object.entries(invalidFields))
+          errors[`Linha ${line} · ${field}`] = issue
+      }
+      if (Object.keys(errors).length) return invalid(errors)
+      const created = rows.map(({ payload: entry }) => createItem({ ...entry, cnpj: normalizeCnpj(entry.cnpj) }))
+      items.push(...created)
+      for (const item of created) audit('IMPORTACAO', 'ESTABELECIMENTO', item.id_estabelecimento, null, item)
+      return json({ importados: created.length }, 201)
+    }
     if (path === '/estabelecimentos' && method === 'POST') {
       if (!permissions(user).create)
         return fail(403, 'FORBIDDEN', 'Seu perfil não pode cadastrar.')
@@ -133,26 +202,9 @@ export function createMockFetch(user = mockUser(), { preview = false } = {}) {
         )
       )
         return fail(409, 'CONFLICT', 'Já existe uma hospedagem com este CNPJ.')
-      const item = {
-        aceita_pesquisas: true,
-        possui_cadastur: false,
-        cadastur_status: preview ? 'SEM_VALIDADE' : 'OBRIGATORIO',
-        meio_hospedagem: null,
-        infraestrutura: null,
-        ...payload,
-        id_estabelecimento: crypto.randomUUID(),
-        status: 'ATIVO',
-        motivo_inativacao: null,
-        criado_em: new Date().toISOString(),
-        atualizado_em: new Date().toISOString(),
-        documentos: [],
-        categoria: structuredClone(
-          categories.find(
-            (category) => category.id_categoria === payload.id_categoria,
-          ),
-        ),
-      }
+      const item = createItem(payload)
       items.push(item)
+      if (preview) audit('CREATE', 'ESTABELECIMENTO', item.id_estabelecimento, null, item)
       return json(item, 201)
     }
     const match = path.match(
@@ -183,10 +235,14 @@ export function createMockFetch(user = mockUser(), { preview = false } = {}) {
         )
       )
         return fail(409, 'CONFLICT', 'Já existe uma hospedagem com este CNPJ.')
+      if ('id_categoria' in payload && !hostingCategories(categories).some((row) => row.id_categoria === payload.id_categoria))
+        return invalid({ id_categoria: 'Categoria inválida.' })
+      const before = item
       item = merge(item, payload)
       item.atualizado_em = new Date().toISOString()
       item.categoria = categories.find((category) => category.id_categoria === item.id_categoria)
       items = items.map((entry) => (entry.id_estabelecimento === id ? item : entry))
+      if (preview) audit('UPDATE', 'ESTABELECIMENTO', id, before, item)
       return json(item)
     }
     if (['inativacao', 'reativacao'].includes(resource)) {
@@ -203,9 +259,11 @@ export function createMockFetch(user = mockUser(), { preview = false } = {}) {
           `ESTABELECIMENTO_JA_${target}`,
           `O estabelecimento já está ${target.toLowerCase()}.`,
         )
+      const before = { ...item }
       item.status = target
       item.motivo_inativacao = target === 'INATIVO' ? payload.motivo_inativacao : null
       item.atualizado_em = new Date().toISOString()
+      if (preview) audit(target === 'INATIVO' ? 'INACTIVATE' : 'REACTIVATE', 'ESTABELECIMENTO', id, before, item)
       return json(item)
     }
     if (!documentId && method === 'GET') return json({ data: item.documentos })
