@@ -1,13 +1,14 @@
 """Projeções do mesmo limite de login para PostgreSQL e testes em memória."""
 from datetime import datetime, timedelta, timezone
 from threading import Lock
+from hashlib import sha256
 
 LIMIT = 5
 WINDOW = timedelta(minutes=15)
 
 
 def keys(identifier, peer):
-    return sorted((f"conta:{identifier}", f"ip:{peer}"))
+    return [f"conta:{sha256(identifier.encode()).hexdigest()}", f"ip:{peer}"]
 
 
 class MemoryAttempts:
@@ -24,7 +25,7 @@ class MemoryAttempts:
                 return None, True
             result = authenticate()
             if result:
-                self.entries.pop(f"conta:{identifier}", None)
+                self.entries.pop(account_keys[0], None)
                 return result, False
             for key in account_keys:
                 count, expiry = self.entries.get(key, (0, now + WINDOW))

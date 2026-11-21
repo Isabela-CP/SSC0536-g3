@@ -48,15 +48,17 @@ class PostgresPortal:
 
     def login(self, payload, peer):
         email,password = payload.get('email'),payload.get('senha')
-        if not isinstance(email,str) or not isinstance(password,str) or not password or len(password)>128: fail(401,'INVALID_CREDENTIALS','E-mail ou senha inválidos.')
-        identifier = email.strip().casefold()[:254]
-        account_keys = keys(identifier, peer)
+        identifier = email.strip().casefold() if isinstance(email, str) else ""
+        valid_input = 0 < len(identifier) <= 254 and isinstance(password, str) and 0 < len(password) <= 128
+        bound_identifier = identifier if len(identifier) <= 254 else ""
+        account_keys = keys(bound_identifier, peer)
         with self.db.transaction() as conn:
             blocked = lock_attempts(conn, account_keys)
             if not blocked:
-                row = conn.execute('SELECT * FROM usuarios WHERE lower(email)=%s', (identifier,)).fetchone()
+                row = (conn.execute('SELECT * FROM usuarios WHERE lower(email)=%s FOR SHARE', (identifier,)).fetchone()
+                       if valid_input else None)
                 try:
-                    valid = PASSWORDS.verify(password, row['senha_hash'] if row else DUMMY_HASH)
+                    valid = valid_input and PASSWORDS.verify(password, row['senha_hash'] if row else DUMMY_HASH)
                 except Exception:
                     valid = False
                 if valid and row and row['status'] == 'ATIVO' and self.hotel_active(conn, row):
@@ -66,7 +68,7 @@ class PostgresPortal:
                         raise RuntimeError('OTO_SESSION_SECONDS deve estar entre 60 e 86400.')
                     conn.execute('INSERT INTO sessoes(token_hash,id_usuario,expira_em) VALUES (%s,%s,%s)',
                                  (digest(token), row['id'], now() + timedelta(seconds=lifetime)))
-                    conn.execute('DELETE FROM login_tentativas WHERE chave=%s', (f'conta:{identifier}',))
+                    conn.execute('DELETE FROM login_tentativas WHERE chave=%s', (account_keys[0],))
                     return {'access_token': token, 'expires_in': lifetime, 'token_type': 'Bearer', 'usuario': user_dto(row)}
                 blocked = record_failure(conn, account_keys)
         if blocked:
@@ -372,7 +374,9 @@ class PostgresPortal:
         from app.document_storage import report_storage
         from app.reporting import build_report, report_rows
         from io import BytesIO
-        rows = report_rows(payload, self.inventory, lambda: self.surveys(actor)['data'], lambda: self.history(actor)['data'])
+        with self.db.transaction() as conn:
+            conn.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY")
+            rows = report_rows(payload, self.inventory, lambda: self.surveys(actor)['data'], lambda: self.history(actor)['data'])
         title = 'Boletim do Inventário — OTO' if payload['tipo'] == 'INVENTARIO' else 'Relatório de ocupação — OTO'
         content, mime = build_report(payload['formato'], rows, title)
         storage = report_storage()

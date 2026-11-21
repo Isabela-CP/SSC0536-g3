@@ -269,12 +269,12 @@ def login(request: Request, payload: dict = Body(...)) -> Any:
     if persistent():
         return portal().login(payload, peer)
     email, password = payload.get("email"), payload.get("senha")
-    identifier = email.strip().casefold()[:254] if isinstance(email, str) else ""
+    identifier = email.strip().casefold() if isinstance(email, str) else ""
     def authenticate():
-        actor = DEMO_USERS.get(identifier)
+        actor = DEMO_USERS.get(identifier) if 0 < len(identifier) <= 254 else None
         if actor and isinstance(password, str) and password and actor["senha"] == password and actor["ativo"] and hotel_active(actor):
             return actor
-    user, blocked = LOGIN_ATTEMPTS.check(identifier, peer, authenticate)
+    user, blocked = LOGIN_ATTEMPTS.check(identifier if len(identifier) <= 254 else "", peer, authenticate)
     if blocked:
         return error_response(429, "LOGIN_RATE_LIMIT", "Muitas tentativas de login. Tente novamente mais tarde.")
     if not user:

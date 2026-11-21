@@ -406,3 +406,147 @@ def test_pg_brevo_failure_retry_and_delivery(pg, monkeypatch):
         row = conn.execute('SELECT * FROM email_outbox ORDER BY id DESC LIMIT 1').fetchone()
         assert row['tentativas'] == 2 and row['enviado_em']
         assert row['corpo'] == '' and row['ultimo_erro'] is None
+
+
+def test_qa_login_limit_by_account_and_peer(pg):
+    client, db = pg
+    password = {"email": "marina.admin@example.test", "senha": "incorreta"}
+    assert [client.post("/auth/login", json=password).status_code for _ in range(5)] == [401] * 4 + [429]
+    with TestClient(main.app, client=("test-other", 50000)) as other:
+        assert other.post("/auth/login", json={**password, "senha": "admin-demo"}).status_code == 429
+    assert client.post("/auth/login", json={"email": "other@example.test", "senha": "x"}).status_code == 429
+    with db.transaction() as conn:
+        conn.execute("UPDATE login_tentativas SET expira_em=now()-interval '1 second'")
+    assert client.post("/auth/login", json={**password, "senha": "admin-demo"}).status_code == 200
+
+
+def test_qa_inactivation_revokes_hotel_sessions_even_after_reactivation(pg):
+    client, _ = pg
+    credentials = {"email": "responsavel@serra-azul.example", "senha": "hotel-demo"}
+    auth = client.post("/auth/login", json=credentials).json()
+    headers = {"Authorization": f"Bearer {auth['access_token']}"}
+    path = f"/estabelecimentos/{auth['usuario']['id_estabelecimento']}"
+    assert client.post(path + "/inativacao", json={"motivo_inativacao": "      "}).status_code == 422
+    assert client.post(path + "/inativacao", json={"motivo_inativacao": "  Reforma  "}).json()["motivo_inativacao"] == "Reforma"
+    assert client.get("/perfil", headers=headers).status_code == 401
+    assert client.post("/auth/login", json=credentials).status_code == 401
+    assert client.post(path + "/reativacao").status_code == 200
+    assert client.get("/perfil", headers=headers).status_code == 401
+    assert client.post("/auth/login", json=credentials).status_code == 200
+
+
+def test_qa_change_role_revokes_tokens_and_preserves_public_audit(pg):
+    client, _ = pg
+    credentials = {"email": "rafael.consulta@example.test", "senha": "gestor-demo"}
+    auth = client.post("/auth/login", json=credentials).json()
+    actor_token = {"Authorization": f"Bearer {auth['access_token']}"}
+    path = f"/usuarios/{auth['usuario']['id_usuario']}"
+    assert client.patch(path, json={"perfil": "EDITOR"}, headers=actor_token).status_code == 403
+    assert client.patch("/usuarios/1", json={"perfil": "GESTOR"}).status_code == 409
+    assert client.patch(path, json={"perfil": "HOTEL"}).status_code == 422
+    assert client.patch(path, json={"perfil": "EDITOR"}).json()["perfil"] == "EDITOR"
+    assert client.get("/perfil", headers=actor_token).status_code == 401
+    events = client.get("/auditoria", params={"acao": "USUARIO_PERFIL_ALTERADO"}).json()["data"]
+    assert len(events) == 1 and events[0]["antes"]["perfil"] == "GESTOR"
+    assert events[0]["depois"]["perfil"] == "EDITOR" and "senha_hash" not in events[0]["depois"]
+
+
+def test_qa_survey_duplicates_rejected_and_reports_include_unanswered(pg):
+    client, _ = pg
+    auth = client.post("/auth/login", json={"email": "responsavel@serra-azul.example", "senha": "hotel-demo"}).json()
+    hotel = auth["usuario"]["id_estabelecimento"]
+    hotels = client.get("/estabelecimentos", params={"status": "ATIVO", "aceita_pesquisas": True}).json()["data"]
+    other = next(row["id_estabelecimento"] for row in hotels if row["id_estabelecimento"] != hotel)
+    payload = {"titulo": "QA", "tipo": "CONSOLIDADO", "periodo_inicio": "2030-08-01",
+               "periodo_fim": "2030-08-31", "estabelecimentos": [hotel, other]}
+    first = client.post("/pesquisas-ocupacao", json=payload)
+    assert first.status_code == 201, first.text
+    assert client.post("/pesquisas-ocupacao", json={**payload, "titulo": "Duplicada"}).status_code == 409
+    identifier = first.json()["id_pesquisa"]
+    report = {"tipo": "OCUPACAO", "formato": "CSV", "id_pesquisa": identifier}
+    assert client.post("/relatorios", json=report).status_code == 409
+    url = f"/pesquisas-ocupacao/{identifier}/respostas"
+    headers = {"Authorization": f"Bearer {auth['access_token']}"}
+    response = client.post(url, json={"taxa_ocupacao": 70}, headers=headers)
+    assert response.status_code == 201
+    corrected = client.post(url, json={"taxa_ocupacao": 0}, headers=headers)
+    assert corrected.status_code == 200
+    assert corrected.json()["id_resposta"] == response.json()["id_resposta"]
+    assert client.post(f"/pesquisas-ocupacao/{identifier}/encerramento").status_code == 200
+    assert client.post(url, json={"taxa_ocupacao": 10}, headers=headers).status_code == 409
+    report.update(periodo_inicio="2030-08-15", periodo_fim="2030-09-01", id_categoria=1)
+    created = client.post("/relatorios", json=report)
+    assert created.status_code == 202, created.text
+    download = client.get(f"/relatorios/{created.json()['id_relatorio']}/arquivo")
+    assert download.status_code == 200
+    assert "Sem resposta" in download.content.decode("utf-8-sig")
+    assert client.post("/relatorios", json={**report, "id_categoria": 999}).status_code == 409
+
+
+def test_qa_inventory_filters_xlsx_and_atomic_import(pg):
+    from io import BytesIO
+    from openpyxl import Workbook, load_workbook
+
+    client, _ = pg
+    list_params = {"status": "ATIVO", "leitos_min": 50, "page_size": 1}
+    listed = client.get("/estabelecimentos", params=list_params).json()
+    assert listed["pagination"]["total"] >= 1
+    assert len(listed["data"]) == 1
+    for item in listed["data"]:
+        detail = client.get(f"/estabelecimentos/{item['id_estabelecimento']}").json()
+        assert detail["meio_hospedagem"]["total_leitos"] >= 50
+    report = client.post("/relatorios", json={"tipo": "INVENTARIO", "formato": "XLSX",
+                                             "filtros": {"status": "ATIVO", "leitos_min": 50}})
+    assert report.status_code == 202, report.text
+    attachment = client.get(f"/relatorios/{report.json()['id_relatorio']}/arquivo")
+    workbook = load_workbook(BytesIO(attachment.content), read_only=True)
+    try:
+        assert len(list(workbook.active.values)) == listed["pagination"]["total"] + 1
+    finally:
+        workbook.close()
+
+    def upload(rows):
+        excel = Workbook()
+        excel.active.append(["id_categoria", "nome_fantasia", "razao_social", "cnpj", "endereco"])
+        for row in rows:
+            excel.active.append(row)
+        output = BytesIO()
+        excel.save(output)
+        return client.post("/estabelecimentos/importacao", files={"arquivo": ("inventario.xlsx", output.getvalue())})
+
+    entry = [1, "Hotel Importado", "Empresa Importada", "11222333000181", "Rua A"]
+    denied = upload([entry, entry])
+    assert denied.status_code == 422, denied.text
+    assert "Linha 3" in denied.text
+    assert client.get("/estabelecimentos", params={"busca": entry[1]}).json()["data"] == []
+    saved = upload([entry])
+    assert saved.status_code == 201, saved.text
+    assert saved.json() == {"importados": 1}
+    item = client.get("/estabelecimentos", params={"busca": entry[1]}).json()["data"][0]
+    events = client.get("/auditoria", params={"id_entidade": item["id_estabelecimento"]}).json()["data"]
+    assert len(events) == 1 and events[0]["acao"] == "ESTABELECIMENTO_CRIADO"
+    assert client.get("/dashboard").json()["indicadores"]["empresas_cadastradas_no_mes"] >= 1
+
+
+def test_qa_invalid_storage_reference_returns_404(pg, monkeypatch):
+    client, db = pg
+    hotel = client.get("/estabelecimentos", params={"busca": "Hotel Serra Azul"}).json()["data"][0]
+    path = f"/estabelecimentos/{hotel['id_estabelecimento']}/documentos"
+    upload = client.post(path, data={"tipo_documento": "OUTRO", "data_vencimento": "2031-12-31"},
+                         files={"arquivo": ("teste.pdf", b"%PDF-1.4 fixture", "application/pdf")})
+    assert upload.status_code == 201, upload.text
+    doc = upload.json()["id_documento"]
+    with db.transaction() as conn:
+        conn.execute("UPDATE documentos_controle SET caminho_storage=%s WHERE id_documento=%s",
+                     ("referencia-invalida", doc))
+    assert client.get(f"{path}/{doc}/arquivo").status_code == 404
+    # O adaptador remoto valida a chave antes de executar qualquer requisição.
+    monkeypatch.setenv("OTO_STORAGE_PROVIDER", "supabase")
+    monkeypatch.setenv("OTO_SUPABASE_URL", "https://storage.example.test")
+    monkeypatch.setenv("OTO_STORAGE_BUCKET", "private")
+    monkeypatch.setenv("OTO_SUPABASE_SERVICE_KEY", "sb_secret_test")
+    document_storage.cache_clear()
+    try:
+        assert client.get(f"{path}/{doc}/arquivo").status_code == 404
+    finally:
+        document_storage.cache_clear()

@@ -151,3 +151,52 @@ suas bases isoladas. Há testes de concorrência, rollback, sessões/expiração
 perfis, convites, recuperação, e-mail capturado, documentos e relatórios.
 O job Docker também executa `tests/stack_smoke.py`, que escreve dados fictícios e
 reinicia processos para verificar persistência. Nunca execute esse smoke em produção.
+
+## Correções de QA — SCRUM-131
+
+A migration `005_qa_backend.sql` adiciona o controle de tentativas de login,
+o agendamento da fila de e-mail e o formato XLSX de relatório. Aplique com
+`python -m app.migrate` antes de iniciar API ou dispatcher. O Compose aplica
+as migrations pelo serviço `migrate`.
+
+- O login bloqueia após cinco falhas por conta ou IP durante 15 minutos.
+  O IP vem da conexão resolvida pelo Uvicorn. Atrás de proxy, configure
+  `FORWARDED_ALLOW_IPS` no serviço hospedado ou `OTO_TRUSTED_PROXY_IPS` no
+  Compose com somente os IPs conhecidos dos proxies. O Nginx local substitui
+  o cabeçalho encaminhado por seu endereço de cliente observado.
+- O dispatcher reagenda falhas, inclusive HTTP 429, com intervalo de 30
+  segundos que dobra a cada tentativa, limitado a uma hora e dez tentativas.
+- A correção de resposta retorna 200 e preserva o ID, enquanto o primeiro
+  envio retorna 201. O relatório de ocupação inclui destinatários sem
+  resposta quando há ao menos uma resposta no recorte. Sem respostas,
+  retorna 409 `REPORT_NO_DATA` antes de gerar o arquivo.
+- O boletim do inventário usa `POST /relatorios` com
+  `{"tipo":"INVENTARIO","formato":"XLSX","filtros":{"leitos_min":50}}`, ou
+  formato PDF. A exportação usa todos os resultados do filtro.
+- A importação recebe um arquivo `.xlsx` de até 1 MB e até 200 linhas de
+  dados. A primeira aba deve ter os cabeçalhos
+  `id_categoria,nome_fantasia,razao_social,cnpj,endereco`. Formate CNPJ como
+  texto para preservar zeros à esquerda. Fórmulas e lotes com erros são
+  rejeitados. A API informa as linhas que precisam de ajuste.
+
+### Backup e restauração do PostgreSQL
+
+Ative a rotina diária com `docker compose --profile backup up -d backup`.
+Ela mantém um arquivo por dia UTC no volume privado `backups`, com retenção
+de 30 dias. Para gerar o backup do dia manualmente, com a rotina desativada:
+
+```sh
+docker compose --profile backup run --rm backup --once
+```
+
+Restaure em **um banco novo**, por exemplo:
+
+```sh
+docker compose --profile backup run --rm backup --restore 2026-11-21 oto_restore_validacao
+```
+
+O dump cobre o PostgreSQL. Faça cópia independente do volume de documentos
+e relatórios ou do bucket Supabase. Para produção, mantenha cópias protegidas
+em outro host, confira banco e arquivos juntos antes do corte e invalide
+sessões, convites e tokens de recuperação que possam ter voltado no snapshot.
+A rotina do Compose não é provisionada automaticamente no Render.
