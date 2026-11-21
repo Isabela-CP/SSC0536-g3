@@ -135,3 +135,26 @@ test('planilha real importa atomicamente e PDF/XLSX têm conteúdo binário vál
   assert.equal(pdf.type, 'application/pdf')
   assert.match(await pdf.slice(0, 8).text(), /^%PDF-/)
 })
+
+test('mock aceita login fictício e rejeita credenciais incorretas', async () => {
+  const api = apiFor()
+  const { email } = mocks.mockUser()
+  await assert.rejects(api.login({ email, senha: 'incorreta' }), { status: 401 })
+  const response = await api.login({ email, senha: 'admin-demo' })
+  assert.equal(response.usuario.perfil, 'ADMINISTRADOR')
+  assert.equal(response.access_token, 'mock-session')
+})
+
+test('mock impede corrigir uma resposta depois que a pesquisa é encerrada', async () => {
+  const actor = mocks.mockUser()
+  const api = createInventoryApi(createHttpClient({
+    fetchImpl: mocks.createMockFetch(actor, { preview: true }),
+  }), { preview: true })
+  const { data: [response] } = await api.responseHistory()
+  await api.closeSurvey(response.id_pesquisa)
+  Object.assign(actor, mocks.mockUser('HOTEL'))
+  await assert.rejects(api.answerSurvey(response.id_pesquisa, { taxa_ocupacao: 35 }), {
+    status: 409, code: 'SURVEY_CLOSED',
+  })
+  assert.deepEqual((await api.responseHistory()).data[0], response)
+})

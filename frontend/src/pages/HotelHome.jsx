@@ -107,7 +107,7 @@ export default function HotelHome({ api, initialData = null }) {
                 </select>
                 <button
                   className="button button-primary"
-                  disabled={!selected}
+                  disabled={resource.loading || Boolean(resource.error) || !selected}
                   onClick={() =>
                     setAnswering(resource.data.pending.find((row) => row.id_pesquisa === selected))
                   }
@@ -131,6 +131,7 @@ export default function HotelHome({ api, initialData = null }) {
                     <strong>{row.dados.taxa_ocupacao}%</strong>
                     {api.preview && survey && (
                       <button type="button" className="button button-small button-secondary"
+                        disabled={resource.loading || Boolean(resource.error)}
                         aria-label={`Corrigir resposta — ${survey.titulo}`}
                         onClick={() => setAnswering({ ...survey, rate: row.dados.taxa_ocupacao })}>
                         Corrigir resposta

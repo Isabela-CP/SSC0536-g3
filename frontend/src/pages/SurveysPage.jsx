@@ -259,7 +259,7 @@ export default function SurveysPage({ api, user, initialData = null }) {
             ['CSV', 'PDF'].map((formato) => (
               <button
                 className="button button-small button-secondary"
-                disabled={operation.busy}
+                disabled={operation.busy || resource.loading || Boolean(resource.error)}
                 key={formato}
                 onClick={() =>
                   operation.run(
@@ -317,7 +317,7 @@ export default function SurveysPage({ api, user, initialData = null }) {
           {canReport && (
             <button
               className="button button-primary consolidated-report"
-              disabled={operation.busy}
+              disabled={operation.busy || resource.loading || Boolean(resource.error)}
               onClick={() =>
                 operation.run(
                   () => exportReport(api, { tipo: 'OCUPACAO', formato: 'PDF' }, data.history.length),

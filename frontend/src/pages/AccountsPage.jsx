@@ -194,7 +194,7 @@ export default function AccountsPage({ api, user: actor, initialData = null }) {
             <button type="button" className="button button-small button-secondary" disabled={operation.busy}
               onClick={() => setEditingRole(user)}>Alterar perfil</button>
           )}
-          {!user.ativo && user.status !== 'INATIVO' && (
+          {!api.preview && !user.ativo && user.status !== 'INATIVO' && (
             <button
               className="button button-small button-secondary"
               disabled={operation.busy}
@@ -208,7 +208,7 @@ export default function AccountsPage({ api, user: actor, initialData = null }) {
               Reenviar convite
             </button>
           )}
-          {(user.ativo || user.status === 'INATIVO') && (
+          {!api.preview && (user.ativo || user.status === 'INATIVO') && (
             <button
               className="button button-small button-secondary"
               disabled={operation.busy || user.id_usuario === actor?.id_usuario}
@@ -230,9 +230,11 @@ export default function AccountsPage({ api, user: actor, initialData = null }) {
       <OperationFeedback operation={operation} />
       {resource.data && (
         <>
-          <button className="button button-primary" onClick={() => setDialog(true)}>
-            Criar Nova Conta
-          </button>
+          {!api.preview && (
+            <button className="button button-primary" onClick={() => setDialog(true)}>
+              Criar Nova Conta
+            </button>
+          )}
           {[
             ['Equipe Interna', false],
             ['Hospedagens', true],
