@@ -28,6 +28,11 @@ export default function InventoryPage({ api, user, initialData = null }) {
     setErrors(next)
     if (!Object.keys(next).length) setQuery({ ...draft, page: 1 })
   }
+  const clearFilters = () => {
+    setDraft({ ...inventoryDefaults })
+    setQuery({ ...inventoryDefaults })
+    setErrors({})
+  }
   return (
     <>
       <header className="page-heading">
@@ -122,11 +127,7 @@ export default function InventoryPage({ api, user, initialData = null }) {
           <button
             type="button"
             className="button button-secondary"
-            onClick={() => {
-              setDraft({ ...inventoryDefaults })
-              setQuery({ ...inventoryDefaults })
-              setErrors({})
-            }}
+            onClick={clearFilters}
           >
             Limpar filtros
           </button>
@@ -194,7 +195,18 @@ export default function InventoryPage({ api, user, initialData = null }) {
                   ))}
                   {!data.data.length && (
                     <tr>
-                      <td colSpan="5">Nenhuma hospedagem encontrada.</td>
+                      <td colSpan="5">
+                        Nenhuma hospedagem encontrada.{' '}
+                        {!resource.loading && (
+                          <button
+                            type="button"
+                            className="button button-small button-secondary"
+                            onClick={clearFilters}
+                          >
+                            Limpar filtros da busca
+                          </button>
+                        )}
+                      </td>
                     </tr>
                   )}
                 </tbody>

@@ -210,6 +210,8 @@ test('inventário respeita ações por perfil e usa paginação do servidor', ()
     initialData: { ...body, data: [] },
   })
   assert.match(empty, /Nenhuma hospedagem encontrada/)
+  assert.match(empty.split('</details>')[1], /Limpar filtros da busca/)
+  assert.doesNotMatch(result, /Limpar filtros da busca/)
 })
 test('detalhe apresenta dados aninhados, documentos e valores zero/false, sem escrita GESTOR', () => {
   const item = structuredClone(seed.estabelecimentos[0])
