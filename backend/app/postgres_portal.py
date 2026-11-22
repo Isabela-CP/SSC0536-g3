@@ -60,7 +60,7 @@ class PostgresPortal:
             elif identifier:
                 candidate = conn.execute("""SELECT u.*, regexp_replace(e.cnpj, '[^0-9]', '', 'g') AS company_cnpj
                     FROM usuarios u LEFT JOIN estabelecimentos e ON u.perfil='HOTEL'
-                    AND e.id_estabelecimento=u.id_estabelecimento WHERE lower(u.email)=%s FOR SHARE OF u""",
+                    AND e.id_estabelecimento=u.id_estabelecimento WHERE lower(u.email)=%s AND u.excluido_em IS NULL FOR SHARE OF u""",
                     (identifier,)).fetchone()
                 if candidate:
                     candidates = [candidate]
@@ -170,7 +170,7 @@ class PostgresPortal:
         operations.fields(payload,{'email'},('email',))
         email = operations.email(payload['email'])
         with self.db.transaction() as conn:
-            row = conn.execute('SELECT * FROM usuarios WHERE lower(email)=%s FOR UPDATE',(email,)).fetchone()
+            row = conn.execute('SELECT * FROM usuarios WHERE lower(email)=%s AND excluido_em IS NULL FOR UPDATE',(email,)).fetchone()
             if not row: fail(404,'USER_NOT_FOUND','Conta não encontrada.')
             if row['status']!='PENDENTE': fail(409,'CONFLICT','A conta não está pendente de ativação.')
             conn.execute("UPDATE convites SET estado='CANCELADO' WHERE lower(email_destinatario)=%s AND estado='PENDENTE'",(email,))

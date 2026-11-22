@@ -4124,7 +4124,7 @@
         ],
         "operationId": "excluirUsuario",
         "summary": "Excluir conta",
-        "description": "Exclusivo de ADMINISTRADOR. Remove a conta do painel, revoga sessões e cancela convites pendentes. Preserva o histórico e mantém o e-mail reservado.",
+        "description": "Exclusivo de ADMINISTRADOR. Remove a conta do painel, revoga sessões e cancela convites pendentes. Preserva o histórico e libera o e-mail para um novo cadastro.",
         "parameters": [
           {
             "name": "id_usuario",

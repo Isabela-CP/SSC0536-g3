@@ -268,7 +268,7 @@ export default function AccountsPage({ api, user: actor, initialData = null }) {
               }}
             >
               <p>{deleting.nome} — {deleting.email}</p>
-              <p>A conta perderá acesso e sairá do painel. A exclusão não pode ser desfeita pelo painel.</p>
+              <p>A conta perderá acesso e sairá do painel. O e-mail poderá ser usado em uma nova conta.</p>
             </ConfirmAction>
           )}
           {editingRole && (

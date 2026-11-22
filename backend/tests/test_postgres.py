@@ -66,7 +66,7 @@ def test_pg_seed_and_repositories(pg):
         response=client.get('/estabelecimentos/'+row['id_estabelecimento'])
         assert response.status_code==200,response.text
     with db.transaction() as conn:
-        assert conn.execute('SELECT count(*) AS n FROM schema_migrations').fetchone()['n']==7
+        assert conn.execute('SELECT count(*) AS n FROM schema_migrations').fetchone()['n']==8
         assert conn.execute('SELECT count(*) AS n FROM usuarios').fetchone()['n']==10
         assert conn.execute("SELECT count(*) AS n FROM usuarios WHERE senha_hash NOT LIKE '$argon2id$%'").fetchone()['n']==0
 
@@ -205,7 +205,12 @@ def test_pg_admin_deletes_account_and_preserves_audit(pg):
     }).json()
     account_id = account['id_usuario']
     path = f'/usuarios/{account_id}'
-    assert client.post('/convites', json={'email': account['email']}).status_code == 201
+    old_invite = client.post('/convites', json={'email': account['email']})
+    assert old_invite.status_code == 201
+    with db.transaction() as conn:
+        old_body = conn.execute('SELECT corpo FROM email_outbox WHERE destinatario=%s',
+                                (account['email'],)).fetchone()['corpo']
+    old_token = old_body.split('token=', 1)[1].split()[0]
     assert client.delete(path).status_code == 204
     assert client.delete(path).status_code == 404
     assert client.post(path + '/reativacao').status_code == 404
@@ -216,6 +221,27 @@ def test_pg_admin_deletes_account_and_preserves_audit(pg):
                             (account['email'],)).fetchone()['estado'] == 'CANCELADO'
         assert conn.execute("SELECT 1 FROM auditoria_logs WHERE acao='USUARIO_EXCLUIDO' AND entidade_id=%s",
                             (str(account_id),)).fetchone()
+
+    payload = {'nome': 'Nova conta', 'email': account['email'].upper(), 'perfil': 'GESTOR'}
+    recreated = client.post('/usuarios', json=payload)
+    assert recreated.status_code == 201, recreated.text
+    new_id = recreated.json()['id_usuario']
+    assert new_id != account_id
+    assert client.post('/usuarios', json=payload).status_code == 409
+    assert client.post('/convites/' + old_invite.json()['id_convite'] + '/aceitacao',
+                       json={'token': old_token, 'senha': 'senha-antiga-123'}).status_code == 409
+    invite = client.post('/convites', json={'email': account['email']})
+    assert invite.status_code == 201, invite.text
+    with db.transaction() as conn:
+        body = conn.execute('SELECT corpo FROM email_outbox WHERE destinatario=%s ORDER BY id DESC LIMIT 1',
+                            (account['email'],)).fetchone()['corpo']
+    token = body.split('token=', 1)[1].split()[0]
+    password = 'senha-nova-123'
+    assert client.post('/convites/' + invite.json()['id_convite'] + '/aceitacao',
+                       json={'token': token, 'senha': password}).status_code == 200
+    login = client.post('/auth/login', json={'email': account['email'], 'senha': password})
+    assert login.status_code == 200, login.text
+    assert login.json()['usuario']['id_usuario'] == new_id
 
 
 def test_pg_recovery_single_use_and_revocation(pg):

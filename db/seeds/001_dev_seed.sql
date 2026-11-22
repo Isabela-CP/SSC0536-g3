@@ -235,7 +235,7 @@ VALUES
     (6,  'juliana.editor@example.test',
          '$argon2id$v=19$m=65536,t=3,p=4$vUA5PBmaE4R7SYMOu73bQg$8P/dPpqx/GpRm6ZueR9Cz2QcaPMSBdjJ/mJV1bcnPsI',
          'EDITOR',        'PENDENTE', 'Juliana Editora')    -- convite pendente
-ON CONFLICT (email) DO NOTHING;
+ON CONFLICT (lower(email)) WHERE excluido_em IS NULL DO NOTHING;
 
 INSERT INTO usuarios (id, email, senha_hash, perfil, status, nome, id_estabelecimento)
 VALUES
@@ -256,7 +256,7 @@ VALUES
          '$argon2id$v=19$m=65536,t=3,p=4$gyVF0yMiq6DxB/fdWvI4xg$RhKskBwu9iv6qQ1hVWQAiF2Sn7ShCEqunjSnGuXdbxI',
          'HOTEL', 'PENDENTE', 'Responsável Hospedagem Cadastro',
          '44444444-4444-4444-8444-444444444444')  -- convite ainda pendente
-ON CONFLICT (email) DO NOTHING;
+ON CONFLICT (lower(email)) WHERE excluido_em IS NULL DO NOTHING;
 
 -- ──────────────────────────────────────────────────────────
 -- CONVITES  (7 registros)
