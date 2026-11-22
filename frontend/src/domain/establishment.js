@@ -1,3 +1,4 @@
+import { lodgingNames, cadasturOptions } from './qaOptions.js'
 import contract from '../../../contratos_api_oto/openapi.json'
 
 export const schemas = contract.components.schemas
@@ -131,7 +132,6 @@ export function draftFrom(item) {
 }
 export const emptyDraft = () => ({
   aceita_pesquisas: true,
-  cadastur_status: 'OBRIGATORIO',
   possui_cadastur: false,
 })
 
@@ -254,10 +254,17 @@ export function validateSchema(value, raw, path = '', errors = {}) {
   return errors
 }
 
-export function validateEstablishment(payload, mode = 'create') {
+export function validateEstablishment(payload, mode = 'create', preview = false) {
+  const schema = schemas[mode === 'create' ? 'EstabelecimentoCreate' : 'EstabelecimentoUpdate']
   const errors = validateSchema(
     payload,
-    schemas[mode === 'create' ? 'EstabelecimentoCreate' : 'EstabelecimentoUpdate'],
+    preview ? {
+      ...schema,
+      properties: {
+        ...schema.properties,
+        cadastur_status: { type: 'string', enum: cadasturOptions.map(({ value }) => value) },
+      },
+    } : schema,
   )
   if (mode === 'create')
     for (const field of REQUIRED)
@@ -299,5 +306,6 @@ export function applyApiError(error) {
 
 export const hostingCategories = (categories) =>
   categories.filter(
-    (category) => category.nome_categoria.toLocaleLowerCase('pt-BR') === 'meios de hospedagem',
+    (category) => category.nome_categoria.toLocaleLowerCase('pt-BR') === 'meios de hospedagem' ||
+      lodgingNames.includes(category.nome_categoria),
   )

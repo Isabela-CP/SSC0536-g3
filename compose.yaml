@@ -7,6 +7,7 @@ x-backend: &backend
     OTO_ROOT_PATH: /api
     OTO_DATA_BACKEND: postgres
     PGHOST: db
+    FORWARDED_ALLOW_IPS: ${OTO_TRUSTED_PROXY_IPS:-127.0.0.1}
     PGDATABASE: oto
     PGUSER: oto_app
     PGPASSWORD: ${OTO_APP_PASSWORD:-oto_local_app}
@@ -66,6 +67,22 @@ services:
         condition: service_completed_successfully
       mailpit:
         condition: service_started
+  backup:
+    image: postgres:17-alpine
+    profiles: [backup]
+    entrypoint: [sh, /opt/oto/postgres-backup.sh]
+    environment:
+      PGHOST: db
+      PGDATABASE: oto
+      PGUSER: oto_owner
+      PGPASSWORD: ${OTO_DB_PASSWORD:-oto_local_owner}
+    volumes:
+      - ./docker/postgres-backup.sh:/opt/oto/postgres-backup.sh:ro
+      - backups:/backups
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
   frontend:
     build:
       context: .
@@ -78,3 +95,4 @@ services:
 volumes:
   postgres:
   files:
+  backups:

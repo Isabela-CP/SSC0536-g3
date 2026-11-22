@@ -4,6 +4,7 @@ from decimal import Decimal
 from uuid import UUID
 from psycopg import sql
 from psycopg.types.json import Jsonb
+from app.cadastur import HOSPITALITY_CATEGORIES
 from app.inventory_models import flatten, SCHEMAS
 
 
@@ -19,6 +20,10 @@ def public(value):
 class PostgresInventoryRepository:
     def __init__(self, db): self.db = db
     def transaction(self): return self.db.transaction()
+
+    def lock_cnpj(self, cnpj):
+        with self.transaction() as conn:
+            conn.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s, 3))", (cnpj,))
 
     def categories(self):
         with self.transaction() as conn:
@@ -80,6 +85,11 @@ class PostgresInventoryRepository:
             previous = conn.execute('SELECT status,inativado_em FROM estabelecimentos WHERE id_estabelecimento=%s FOR UPDATE',(establishment['id_estabelecimento'],)).fetchone()
             payload['inativado_em'] = (previous['inativado_em'] if previous and previous['status']=='INATIVO' else establishment['atualizado_em']) if establishment['status']=='INATIVO' else None
             self._upsert(conn,'estabelecimentos',payload,'id_estabelecimento')
+            if previous and previous['status'] == 'ATIVO' and establishment['status'] == 'INATIVO':
+                conn.execute("""UPDATE sessoes s SET revogado_em=now()
+                    FROM usuarios u WHERE u.id=s.id_usuario AND u.perfil='HOTEL'
+                    AND u.id_estabelecimento=%s AND s.revogado_em IS NULL""",
+                    (establishment['id_estabelecimento'],))
             hosting = establishment.get('meio_hospedagem')
             if hosting is not None or establishment.get('infraestrutura') is not None or establishment.get('acessibilidade') is not None:
                 self._upsert(conn,'meio_hospedagem',{'id_estabelecimento':establishment['id_estabelecimento'],**(hosting or {}),'infraestrutura':establishment.get('infraestrutura'),'acessibilidade':establishment.get('acessibilidade')},'id_estabelecimento')
@@ -119,6 +129,12 @@ class PostgresInventoryRepository:
         for field in ('id_categoria','status','cadastur_status','aceita_pesquisas'):
             value=getattr(query,field)
             if value is not None:clauses.append(field+'=%s');params.append(value)
+        if query.leitos_min is not None:
+            clauses.append('EXISTS (SELECT 1 FROM meio_hospedagem m WHERE m.id_estabelecimento=estabelecimentos.id_estabelecimento AND m.total_leitos >= %s)')
+            params.append(query.leitos_min)
+        if query.somente_hospedagem:
+            clauses.append("id_categoria IN (SELECT id_categoria FROM categorias_estabelecimento WHERE upper(nome_categoria)=ANY(%s))")
+            params.append(sorted(HOSPITALITY_CATEGORIES))
         where=sql.SQL(' WHERE '+' AND '.join(clauses)) if clauses else sql.SQL('')
         field=query.ordenar_por
         if field not in ('nome_fantasia','criado_em','atualizado_em') or query.ordem not in ('asc','desc'):raise ValueError('Ordenação inválida.')

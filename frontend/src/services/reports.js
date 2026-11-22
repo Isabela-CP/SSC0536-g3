@@ -19,7 +19,8 @@ export async function prepareReport(
     throw new Error('O serviço ainda não disponibilizou um arquivo válido para este relatório.')
   return { file, name: `relatorio.${payload.formato.toLowerCase()}` }
 }
-export async function exportReport(api, payload) {
+export async function exportReport(api, payload, responseCount) {
+  if (responseCount === 0) throw new Error('Nenhuma resposta encontrada para gerar o relatório.')
   const result = await prepareReport(api, payload)
   saveDownload(result.file, result.name)
 }

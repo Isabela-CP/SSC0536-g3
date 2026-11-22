@@ -1,6 +1,7 @@
 """Outbox transacional. O SMTP de desenvolvimento é capturado pelo Mailpit."""
 from email.message import EmailMessage
 import logging
+from datetime import timedelta
 import os
 import smtplib
 from threading import Event
@@ -26,7 +27,7 @@ def dispatch_one(db, smtp_factory=smtplib.SMTP, brevo_sender=send_brevo):
     host = os.getenv('OTO_SMTP_HOST')
     if provider == 'smtp' and not host: return False
     with db.transaction() as conn:
-        row = conn.execute("SELECT * FROM email_outbox WHERE enviado_em IS NULL AND tentativas<10 ORDER BY id FOR UPDATE SKIP LOCKED LIMIT 1").fetchone()
+        row = conn.execute("SELECT * FROM email_outbox WHERE enviado_em IS NULL AND tentativas<10 AND proxima_tentativa_em<=now() ORDER BY proxima_tentativa_em,id FOR UPDATE SKIP LOCKED LIMIT 1").fetchone()
         if not row: return False
         message = EmailMessage()
         message['From'] = os.getenv('OTO_MAIL_FROM','no-reply@oto.example.test')
@@ -45,7 +46,10 @@ def dispatch_one(db, smtp_factory=smtplib.SMTP, brevo_sender=send_brevo):
             conn.execute("UPDATE email_outbox SET enviado_em=now(),corpo='',ultimo_erro=NULL,tentativas=tentativas+1 WHERE id=%s",(row['id'],))
         except (OSError, smtplib.SMTPException, httpx.HTTPError):
             # Não persistir mensagem/segredos eventualmente contidos na resposta SMTP.
-            conn.execute("UPDATE email_outbox SET ultimo_erro='Falha no transporte de e-mail',tentativas=tentativas+1 WHERE id=%s",(row['id'],))
+            delay = timedelta(seconds=min(30 * 2 ** row['tentativas'], 3600))
+            conn.execute("""UPDATE email_outbox SET ultimo_erro='Falha no transporte de e-mail',
+                tentativas=tentativas+1,proxima_tentativa_em=now()+%s WHERE id=%s""",
+                (delay, row['id']))
             log.warning('Falha no envio da mensagem %s',row['id'])
         return True
 

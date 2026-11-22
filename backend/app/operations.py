@@ -45,3 +45,17 @@ def survey(payload):
         raise invalid_field("estabelecimentos", "Selecione pelo menos uma hospedagem.")
     result["estabelecimentos"] = list(dict.fromkeys(ids))
     return result
+
+
+def role_change(payload, repository):
+    fields(payload, {"perfil", "id_estabelecimento"}, {"perfil"})
+    role = payload["perfil"]
+    if role not in ("ADMINISTRADOR", "GESTOR", "EDITOR", "HOTEL"):
+        raise invalid_field("perfil", "Perfil inválido.")
+    association = payload.get("id_estabelecimento")
+    if role == "HOTEL":
+        if not isinstance(association, str) or not repository.establishment(association):
+            raise invalid_field("id_estabelecimento", "Selecione uma hospedagem existente.")
+    elif association is not None:
+        raise invalid_field("id_estabelecimento", "Vínculo permitido somente para HOTEL.")
+    return role, association

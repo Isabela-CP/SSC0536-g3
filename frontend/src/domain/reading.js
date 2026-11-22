@@ -1,3 +1,4 @@
+import { cadasturOptions } from './qaOptions.js'
 import { schemas, validateSchema } from './establishment.js'
 import { labelFor } from './labels.js'
 export const inventoryDefaults = {
@@ -6,6 +7,7 @@ export const inventoryDefaults = {
   status: '',
   cadastur_status: '',
   aceita_pesquisas: '',
+  leitos_min: '',
   page: 1,
   page_size: 20,
   ordenar_por: 'nome_fantasia',
@@ -17,11 +19,11 @@ export function inventoryQuery(draft) {
       .filter((key) => draft[key] !== '' && draft[key] != null)
       .map((key) => [
         key,
-        ['id_categoria', 'page', 'page_size'].includes(key) ? Number(draft[key]) : draft[key],
+        ['id_categoria', 'page', 'page_size', 'leitos_min'].includes(key) ? Number(draft[key]) : draft[key],
       ]),
   )
 }
-export function inventoryErrors(draft) {
+export function inventoryErrors(draft, preview = false) {
   const query = inventoryQuery(draft)
   return validateSchema(query, {
     type: 'object',
@@ -29,7 +31,8 @@ export function inventoryErrors(draft) {
       busca: { type: 'string', maxLength: 120 },
       id_categoria: { type: 'integer', minimum: 1 },
       status: schemas.StatusEstabelecimento,
-      cadastur_status: schemas.CadasturStatus,
+      cadastur_status: preview ? { type: 'string', enum: cadasturOptions.map(({ value }) => value) } : schemas.CadasturStatus,
+      leitos_min: { type: 'integer', minimum: 0 },
       aceita_pesquisas: { type: 'string', enum: ['true', 'false'] },
       page: { type: 'integer', minimum: 1 },
       page_size: { type: 'integer', minimum: 1, maximum: 100 },
@@ -90,6 +93,7 @@ export function changes(before, after) {
 }
 export function auditQuery(draft) {
   const query = {}
+  if (draft.id_entidade) query.id_entidade = draft.id_entidade
   if (draft.acao?.trim()) query.acao = draft.acao.trim()
   if (draft.id_usuario !== '') {
     if (

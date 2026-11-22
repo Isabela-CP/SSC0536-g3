@@ -1,4 +1,4 @@
-import { validateSchema, schemas } from './establishment.js'
+import { hostingCategories, validateSchema, schemas } from './establishment.js'
 export const roles = {
   ADMINISTRADOR: 'Administrador',
   GESTOR: 'Funcionário — consulta',
@@ -133,9 +133,7 @@ export function operationError(error) {
   }
 }
 export async function loadRecipients(api, options = {}) {
-  const categories = (await api.categories(options)).data.filter(
-    (category) => category.nome_categoria.toLowerCase() === 'meios de hospedagem',
-  )
+  const categories = hostingCategories((await api.categories(options)).data)
   const result = []
   for (const category of categories) {
     let page = 1

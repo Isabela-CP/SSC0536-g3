@@ -71,11 +71,11 @@ def test_search(client, seed, field):
 @pytest.mark.parametrize("params", [
     {"id_categoria": 1}, {"id_categoria": 999},
     {"status": "ATIVO"}, {"status": "INATIVO"},
-    {"cadastur_status": "OBRIGATORIO"}, {"cadastur_status": "OPCIONAL"},
-    {"cadastur_status": "NAO_CONSTA"},
+    {"cadastur_status": "REGULAR"}, {"cadastur_status": "SEM_VALIDADE"},
+    {"cadastur_status": "VENCIDO"},
     {"aceita_pesquisas": True}, {"aceita_pesquisas": False},
     {"busca": "hotel", "status": "INATIVO", "id_categoria": 1,
-     "cadastur_status": "OPCIONAL", "aceita_pesquisas": False},
+     "cadastur_status": "SEM_VALIDADE", "aceita_pesquisas": False},
     {"busca": "hotel", "status": "ATIVO", "aceita_pesquisas": False},
 ])
 def test_filters(client, seed, params):

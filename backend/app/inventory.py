@@ -8,6 +8,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Protocol
 
+from app.cadastur import HOSPITALITY_CATEGORIES
+
 
 class InventoryRepository(Protocol):
     """Uma implementação PostgreSQL pode substituir o adaptador JSON."""
@@ -45,6 +47,8 @@ class InventoryQuery:
     status: str | None = None
     cadastur_status: str | None = None
     aceita_pesquisas: bool | None = None
+    leitos_min: int | None = None
+    somente_hospedagem: bool = False
     page: int = 1
     page_size: int = 20
     ordenar_por: str = "nome_fantasia"
@@ -78,6 +82,15 @@ def query_establishments(
         value = getattr(query, field)
         if value is not None:
             items = [item for item in items if item.get(field) == value]
+
+    if query.somente_hospedagem:
+        ids = {row["id_categoria"] for row in repository.categories()
+               if row["nome_categoria"].upper() in HOSPITALITY_CATEGORIES}
+        items = [item for item in items if item["id_categoria"] in ids]
+    if query.leitos_min is not None:
+        items = [item for item in items
+                 if (beds := (item.get("meio_hospedagem") or {}).get("total_leitos")) is not None
+                 and beds >= query.leitos_min]
 
     # Desempate por UUID ascendente, inclusive na ordenação principal descendente.
     items = sorted(items, key=lambda item: item["id_estabelecimento"])

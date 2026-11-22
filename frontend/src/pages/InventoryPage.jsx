@@ -1,3 +1,5 @@
+import { cadasturOptions } from '../domain/qaOptions.js'
+import InventoryFiles from './InventoryFiles.jsx'
 import React, { useState } from 'react'
 import { Field } from '../components/FormFields.jsx'
 import { FormErrors } from '../components/Feedback.jsx'
@@ -24,9 +26,14 @@ export default function InventoryPage({ api, user, initialData = null }) {
   }
   const apply = (event) => {
     event.preventDefault()
-    const next = inventoryErrors(draft)
+    const next = inventoryErrors(draft, api.preview)
     setErrors(next)
     if (!Object.keys(next).length) setQuery({ ...draft, page: 1 })
+  }
+  const clearFilters = () => {
+    setDraft({ ...inventoryDefaults })
+    setQuery({ ...inventoryDefaults })
+    setErrors({})
   }
   return (
     <>
@@ -72,7 +79,8 @@ export default function InventoryPage({ api, user, initialData = null }) {
                 })) || [],
               ],
               ['status', 'Status', schemas.StatusEstabelecimento],
-              ['cadastur_status', 'Situação Cadastur', schemas.CadasturStatus],
+              ['cadastur_status', 'Situação Cadastur', schemas.CadasturStatus, cadasturOptions],
+              ...(api.preview ? [['leitos_min', 'Mínimo de leitos', { type: 'integer', minimum: 0 }]] : []),
               [
                 'aceita_pesquisas',
                 'Aceita pesquisas',
@@ -122,11 +130,7 @@ export default function InventoryPage({ api, user, initialData = null }) {
           <button
             type="button"
             className="button button-secondary"
-            onClick={() => {
-              setDraft({ ...inventoryDefaults })
-              setQuery({ ...inventoryDefaults })
-              setErrors({})
-            }}
+            onClick={clearFilters}
           >
             Limpar filtros
           </button>
@@ -194,7 +198,18 @@ export default function InventoryPage({ api, user, initialData = null }) {
                   ))}
                   {!data.data.length && (
                     <tr>
-                      <td colSpan="5">Nenhuma hospedagem encontrada.</td>
+                      <td colSpan="5">
+                        Nenhuma hospedagem encontrada.{' '}
+                        {!resource.loading && (
+                          <button
+                            type="button"
+                            className="button button-small button-secondary"
+                            onClick={clearFilters}
+                          >
+                            Limpar filtros da busca
+                          </button>
+                        )}
+                      </td>
                     </tr>
                   )}
                 </tbody>
@@ -206,6 +221,13 @@ export default function InventoryPage({ api, user, initialData = null }) {
               onPage={(page) => setQuery((previous) => ({ ...previous, page }))}
             />
           </div>
+          {api.preview && (
+            <InventoryFiles api={api} rows={data.markers} categories={data.categories}
+              canImport={user.perfil === 'ADMINISTRADOR'} loading={resource.loading}
+              onImported={() => {
+                setQuery((previous) => ({ ...previous, page: 1 }))
+              }} />
+          )}
           <InventoryMap items={data.markers} title="MAPA" />
           <p className="muted">Mapa com todos os resultados dos filtros aplicados.</p>
         </>

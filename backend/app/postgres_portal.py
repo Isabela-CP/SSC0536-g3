@@ -6,6 +6,7 @@ import secrets
 from pwdlib import PasswordHash
 from psycopg.types.json import Jsonb
 from app import operations
+from app.login_attempts import account_key, credentials, keys, lock_attempts, record_failure
 from app.inventory_errors import InventoryError, invalid_field
 from app.postgres_inventory import public
 
@@ -42,25 +43,63 @@ class PostgresPortal:
         if scheme.lower()!='bearer' or not token: fail(401,'UNAUTHORIZED','É necessário autenticar-se.')
         with self.db.transaction() as conn:
             row = conn.execute("SELECT u.* FROM sessoes s JOIN usuarios u ON u.id=s.id_usuario WHERE s.token_hash=%s AND s.revogado_em IS NULL AND s.expira_em>now() AND u.status='ATIVO'",(digest(token),)).fetchone()
-            if not row: fail(401,'UNAUTHORIZED','Sessão inválida ou expirada.')
+            if not row or not self.hotel_active(conn, row): fail(401,'UNAUTHORIZED','Sessão inválida ou expirada.')
             return user_dto(row)
 
-    def login(self, payload):
-        email,password = payload.get('email'),payload.get('senha')
-        if not isinstance(email,str) or not isinstance(password,str) or not password or len(password)>128: fail(401,'INVALID_CREDENTIALS','E-mail ou senha inválidos.')
+    def login(self, payload, peer):
+        field, identifier, password = credentials(payload)
+        valid_password = isinstance(password, str) and 0 < len(password) <= 128
         with self.db.transaction() as conn:
-            row = conn.execute('SELECT * FROM usuarios WHERE lower(email)=%s',(email.strip().casefold(),)).fetchone()
-            encoded = row['senha_hash'] if row else DUMMY_HASH
-            try: valid = PASSWORDS.verify(password,encoded)
-            except Exception:
-                # Hashes inválidos do legado não são senhas em texto aceitas.
-                valid = False
-            if not valid or not row or row['status']!='ATIVO': fail(401,'INVALID_CREDENTIALS','E-mail ou senha inválidos.')
-            token = secrets.token_urlsafe(32)
-            lifetime = int(os.getenv('OTO_SESSION_SECONDS','900'))
-            if not 60 <= lifetime <= 86400: raise RuntimeError('OTO_SESSION_SECONDS deve estar entre 60 e 86400.')
-            conn.execute('INSERT INTO sessoes(token_hash,id_usuario,expira_em) VALUES (%s,%s,%s)',(digest(token),row['id'],now()+timedelta(seconds=lifetime)))
-            return {'access_token':token,'expires_in':lifetime,'token_type':'Bearer','usuario':user_dto(row)}
+            candidates = []
+            if identifier and field == 'cnpj':
+                candidates = conn.execute("""SELECT u.* FROM usuarios u
+                    JOIN estabelecimentos e ON e.id_estabelecimento=u.id_estabelecimento
+                    WHERE u.perfil='HOTEL' AND u.status='ATIVO' AND e.cnpj IS NOT NULL
+                    AND regexp_replace(e.cnpj, '[^0-9]', '', 'g')=%s
+                    ORDER BY u.id FOR SHARE OF u""", (identifier,)).fetchall()
+            elif identifier:
+                candidate = conn.execute("""SELECT u.*, regexp_replace(e.cnpj, '[^0-9]', '', 'g') AS company_cnpj
+                    FROM usuarios u LEFT JOIN estabelecimentos e ON u.perfil='HOTEL'
+                    AND e.id_estabelecimento=u.id_estabelecimento WHERE lower(u.email)=%s FOR SHARE OF u""",
+                    (identifier,)).fetchone()
+                if candidate:
+                    candidates = [candidate]
+            canonical = account_key(field, identifier, candidates[0].get('company_cnpj') if candidates else None)
+            account_keys = keys(canonical, peer)
+            blocked = lock_attempts(conn, account_keys)
+            if not blocked:
+                matches = []
+                if valid_password:
+                    for candidate in candidates or [None]:
+                        try:
+                            valid = PASSWORDS.verify(password, candidate['senha_hash'] if candidate else DUMMY_HASH)
+                        except Exception:
+                            valid = False
+                        if valid and candidate and candidate['status'] == 'ATIVO':
+                            matches.append(candidate)
+                row = matches[0] if len(matches) == 1 else None
+                if row and self.hotel_active(conn, row):
+                    token = secrets.token_urlsafe(32)
+                    lifetime = int(os.getenv('OTO_SESSION_SECONDS', '900'))
+                    if not 60 <= lifetime <= 86400:
+                        raise RuntimeError('OTO_SESSION_SECONDS deve estar entre 60 e 86400.')
+                    conn.execute('INSERT INTO sessoes(token_hash,id_usuario,expira_em) VALUES (%s,%s,%s)',
+                                 (digest(token), row['id'], now() + timedelta(seconds=lifetime)))
+                    conn.execute('DELETE FROM login_tentativas WHERE chave=%s', (account_keys[0],))
+                    return {'access_token': token, 'expires_in': lifetime, 'token_type': 'Bearer', 'usuario': user_dto(row)}
+                blocked = record_failure(conn, account_keys)
+        if blocked:
+            fail(429, 'LOGIN_RATE_LIMIT', 'Muitas tentativas de login. Tente novamente mais tarde.')
+        fail(401, 'INVALID_CREDENTIALS', 'E-mail ou senha inválidos.')
+
+    @staticmethod
+    def hotel_active(conn, row):
+        if row['perfil'] != 'HOTEL':
+            return True
+        return conn.execute(
+            "SELECT 1 FROM estabelecimentos WHERE id_estabelecimento=%s AND status='ATIVO' FOR SHARE",
+            (row['id_estabelecimento'],),
+        ).fetchone() is not None
 
     def logout(self, authorization):
         with self.db.transaction() as conn:
@@ -83,6 +122,27 @@ class PostgresPortal:
         require(actor,'ADMINISTRADOR')
         with self.db.transaction() as conn:
             return {'data':[user_dto(row) | {'status':row['status']} for row in conn.execute('SELECT * FROM usuarios ORDER BY id').fetchall()]}
+
+    def change_role(self, actor, user_id, payload):
+        require(actor, 'ADMINISTRADOR')
+        if user_id == actor['id_usuario']:
+            fail(409, 'CONFLICT', 'Não é possível alterar o próprio perfil.')
+        with self.db.transaction() as conn:
+            previous = conn.execute('SELECT * FROM usuarios WHERE id=%s FOR UPDATE', (user_id,)).fetchone()
+            if not previous:
+                fail(404, 'USER_NOT_FOUND', 'Conta não encontrada.')
+            role, association = operations.role_change(payload, self.inventory)
+            before = user_dto(previous) | {'status': previous['status']}
+            if role == previous['perfil'] and association == before.get('id_estabelecimento'):
+                return before
+            row = conn.execute("""UPDATE usuarios SET perfil=%s, id_estabelecimento=%s
+                WHERE id=%s RETURNING *""", (role, association, user_id)).fetchone()
+            conn.execute('UPDATE sessoes SET revogado_em=now() WHERE id_usuario=%s AND revogado_em IS NULL', (user_id,))
+            conn.execute("""UPDATE convites SET estado='CANCELADO'
+                WHERE lower(email_destinatario)=%s AND estado='PENDENTE'""", (row['email'].lower(),))
+            result = user_dto(row) | {'status': row['status']}
+            self.audit(actor, 'USUARIO_PERFIL_ALTERADO', 'USUARIO', user_id, before, result)
+            return result
 
     def create_user(self, actor, payload):
         require(actor,'ADMINISTRADOR')
@@ -220,6 +280,13 @@ class PostgresPortal:
             else:
                 data = operations.survey(payload)
                 before = None
+            conn.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s, 2))", (data['tipo'],))
+            if conn.execute("""SELECT 1 FROM pesquisas_ocupacao
+                WHERE tipo=%s AND coalesce(data_inicio, periodo_referencia)=%s
+                  AND coalesce(data_fim, periodo_referencia)=%s AND id IS DISTINCT FROM %s""",
+                (data['tipo'], data['periodo_inicio'], data['periodo_fim'], previous['id'] if previous else None),
+            ).fetchone():
+                fail(409, 'SURVEY_DUPLICATE', 'Já existe uma pesquisa deste tipo e período.')
             for establishment_id in data['estabelecimentos']:
                 row = conn.execute('SELECT status,aceita_pesquisas FROM estabelecimentos WHERE id_estabelecimento::text=%s FOR SHARE',(establishment_id,)).fetchone()
                 if not row or row['status']!='ATIVO' or not row['aceita_pesquisas']: raise invalid_field('estabelecimentos','Selecione hospedagens ativas que aceitam pesquisas.')
@@ -275,16 +342,18 @@ class PostgresPortal:
             if not conn.execute('SELECT 1 FROM pesquisa_destinatarios WHERE id_pesquisa=%s AND id_estabelecimento=%s',(survey['id'],actor['id_estabelecimento'])).fetchone(): fail(403,'FORBIDDEN','Pesquisa não destinada à sua hospedagem.')
             if survey['estado']!='ABERTA': fail(409,'SURVEY_CLOSED','Esta pesquisa está encerrada.')
             previous = conn.execute('SELECT * FROM respostas_ocupacao WHERE id_pesquisa=%s AND id_estabelecimento=%s FOR UPDATE',(survey['id'],actor['id_estabelecimento'])).fetchone()
-            if previous and previous['status']=='ENVIADA': fail(409,'RESPONSE_ALREADY_SENT','A resposta já foi enviada.')
+            corrected = previous is not None and previous['status'] == 'ENVIADA'
             if previous:
                 row = conn.execute("UPDATE respostas_ocupacao SET taxa_ocupacao=%s,status='ENVIADA',enviada_em=now(),id_respondente=%s WHERE id=%s RETURNING *",(rate,actor['id_usuario'],previous['id'])).fetchone()
             else:
                 row = conn.execute("INSERT INTO respostas_ocupacao(id_pesquisa,id_estabelecimento,id_respondente,taxa_ocupacao,status,enviada_em) VALUES (%s,%s,%s,%s,'ENVIADA',now()) RETURNING *",(survey['id'],actor['id_estabelecimento'],actor['id_usuario'],rate)).fetchone()
             result = {'id_resposta':str(row['id']),'id_pesquisa':str(row['id_pesquisa']),'id_estabelecimento':str(row['id_estabelecimento']),'id_usuario':row['id_respondente'],'dados':payload,'enviada_em':row['enviada_em'].isoformat()}
-            self.audit(actor,'RESPOSTA_OCUPACAO_ENVIADA','RESPOSTA_OCUPACAO',row['id'],after=result)
-            return result
+            before = {'taxa_ocupacao': public(previous['taxa_ocupacao'])} if corrected else None
+            self.audit(actor, 'RESPOSTA_OCUPACAO_CORRIGIDA' if corrected else 'RESPOSTA_OCUPACAO_ENVIADA',
+                       'RESPOSTA_OCUPACAO', row['id'], before, result)
+            return result, corrected
 
-    def audit_log(self, actor, action=None, user_id=None, start=None, end=None):
+    def audit_log(self, actor, action=None, user_id=None, start=None, end=None, entity=None):
         require(actor,'ADMINISTRADOR')
         from app.read_views import instant
         lower = instant(start,'data_inicio') if start else None
@@ -294,6 +363,9 @@ class PostgresPortal:
         for field,value in [('acao',action),('id_usuario',user_id)]:
             if value is not None:
                 clauses.append(f'a.{field}=%s');params.append(value)
+        if entity:
+            clauses.append("a.entidade_tipo='ESTABELECIMENTO' AND a.entidade_id=%s")
+            params.append(entity)
         if lower: clauses.append('a.criado_em>=%s');params.append(lower)
         if upper: clauses.append('a.criado_em<=%s');params.append(upper)
         with self.db.transaction() as conn:
@@ -312,25 +384,18 @@ class PostgresPortal:
         with self.db.transaction() as conn:
             row = conn.execute('SELECT * FROM relatorios WHERE id::text=%s',(str(report_id),)).fetchone()
             if not row: fail(404,'REPORT_NOT_FOUND','Relatório não encontrado.')
-            return {'id_relatorio':str(row['id']),'tipo':'OCUPACAO','formato':row['formato'],'status':row['status'],'criado_em':row['criado_em'].isoformat(),'arquivo':{'nome_arquivo':row['arquivo_nome'],'tamanho_bytes':row['arquivo_tamanho_bytes']} if row['arquivo_nome'] else None}
+            return {'id_relatorio':str(row['id']),'tipo':row['parametros'].get('tipo','OCUPACAO'),'formato':row['formato'],'status':row['status'],'criado_em':row['criado_em'].isoformat(),'arquivo':{'nome_arquivo':row['arquivo_nome'],'tamanho_bytes':row['arquivo_tamanho_bytes']} if row['arquivo_nome'] else None}
 
     def generate_report(self, actor, payload):
         require(actor,'ADMINISTRADOR','GESTOR')
-        operations.fields(payload,{'tipo','formato','id_pesquisa'},('tipo','formato'))
-        if payload['tipo']!='OCUPACAO' or payload['formato'] not in ('PDF','CSV'): raise invalid_field('formato','Informe tipo OCUPACAO e formato PDF ou CSV.')
         from app.document_storage import report_storage
-        from app.reporting import build_report
+        from app.reporting import build_report, report_rows
         from io import BytesIO
-        surveys = {row['id_pesquisa']:row for row in self.surveys(actor)['data']}
-        selected = payload.get('id_pesquisa')
-        if selected is not None and str(selected) not in surveys: fail(404,'SURVEY_NOT_FOUND','Pesquisa não encontrada.')
-        rows = [['Pesquisa','Hospedagem','Início','Fim','Ocupação (%)','Respondida em']]
-        for response in self.history(actor)['data']:
-            if selected is not None and response['id_pesquisa']!=str(selected): continue
-            survey = surveys[response['id_pesquisa']]
-            item = self.inventory.establishment(response['id_estabelecimento'])
-            rows.append([survey['titulo'],item['nome_fantasia'],survey['periodo_inicio'],survey['periodo_fim'],response['dados']['taxa_ocupacao'],response['enviada_em']])
-        content,mime = build_report(payload['formato'],rows)
+        with self.db.transaction() as conn:
+            conn.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY")
+            rows = report_rows(payload, self.inventory, lambda: self.surveys(actor)['data'], lambda: self.history(actor)['data'])
+        title = 'Boletim do Inventário — OTO' if payload['tipo'] == 'INVENTARIO' else 'Relatório de ocupação — OTO'
+        content, mime = build_report(payload['formato'], rows, title)
         storage = report_storage()
         name = 'relatorio.'+payload['formato'].lower()
         stored = storage.save(BytesIO(content),name,mime.split(';')[0])
@@ -347,10 +412,11 @@ class PostgresPortal:
         from fastapi.responses import StreamingResponse
         from starlette.background import BackgroundTask
         from app.document_storage import report_storage
+        from app.reporting import XLSX_MIME
         self.report(actor,report_id)
         with self.db.transaction() as conn:
             row = conn.execute('SELECT * FROM relatorios WHERE id::text=%s',(str(report_id),)).fetchone()
             if not row['arquivo_caminho_interno']: fail(404,'NOT_FOUND','Arquivo não encontrado.')
             try: stream = report_storage().open(row['arquivo_caminho_interno'])
             except (ValueError,FileNotFoundError): fail(404,'NOT_FOUND','Arquivo não encontrado.')
-            return StreamingResponse(iter(lambda:stream.read(65536),b''),media_type='application/pdf' if row['formato']=='PDF' else 'text/csv',headers={'Content-Disposition':f'attachment; filename="{row["arquivo_nome"]}"'},background=BackgroundTask(stream.close))
+            return StreamingResponse(iter(lambda:stream.read(65536),b''),media_type={'PDF': 'application/pdf', 'CSV': 'text/csv', 'XLSX': XLSX_MIME}[row['formato']],headers={'Content-Disposition':f'attachment; filename="{row["arquivo_nome"]}"'},background=BackgroundTask(stream.close))

@@ -123,6 +123,42 @@ export function AccountDialog({
     </Modal>
   )
 }
+function RoleDialog({ api, account, recipients, onClose, onSaved }) {
+  const operation = useOperation()
+  const [profile, setProfile] = useState(account.perfil)
+  const [company, setCompany] = useState(account.id_estabelecimento || '')
+  return (
+    <Modal title={`Alterar perfil de ${account.nome}`} onClose={onClose} busy={operation.busy}>
+      <form onSubmit={(event) => {
+        event.preventDefault()
+        operation.run(() => api.changeRole(account.id_usuario, {
+          perfil: profile, ...(profile === 'HOTEL' && { id_estabelecimento: company }),
+        }), onSaved)
+      }}>
+        <OperationFeedback operation={operation} />
+        <fieldset className="field-grid" disabled={operation.busy}>
+          <label>Perfil
+            <select value={profile} onChange={(event) => setProfile(event.target.value)}>
+              {Object.entries(roles).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+            </select>
+          </label>
+          {profile === 'HOTEL' && (
+            <label>Hospedagem vinculada
+              <select required value={company} onChange={(event) => setCompany(event.target.value)}>
+                <option value="">Selecione</option>
+                {recipients.map((item) => <option key={item.id_estabelecimento} value={item.id_estabelecimento}>{item.nome_fantasia}</option>)}
+              </select>
+            </label>
+          )}
+        </fieldset>
+        <button className="button button-primary" disabled={operation.busy ||
+          (profile === account.perfil && (profile !== 'HOTEL' || company === account.id_estabelecimento))}>
+          {operation.busy ? 'Salvando…' : 'Confirmar alteração'}
+        </button>
+      </form>
+    </Modal>
+  )
+}
 export default function AccountsPage({ api, user: actor, initialData = null }) {
   const resource = useResource(
       async (options) => {
@@ -137,6 +173,7 @@ export default function AccountsPage({ api, user: actor, initialData = null }) {
     ),
     [dialog, setDialog] = useState(false),
     [changing, setChanging] = useState(null),
+    [editingRole, setEditingRole] = useState(null),
     operation = useOperation()
   const columns = [
     { key: 'nome', label: 'Nome' },
@@ -153,7 +190,11 @@ export default function AccountsPage({ api, user: actor, initialData = null }) {
       label: 'Ações',
       render: (user) => (
         <div className="document-actions">
-          {!user.ativo && user.status !== 'INATIVO' && (
+          {api.preview && actor?.perfil === 'ADMINISTRADOR' && user.id_usuario !== actor.id_usuario && (
+            <button type="button" className="button button-small button-secondary" disabled={operation.busy}
+              onClick={() => setEditingRole(user)}>Alterar perfil</button>
+          )}
+          {!api.preview && !user.ativo && user.status !== 'INATIVO' && (
             <button
               className="button button-small button-secondary"
               disabled={operation.busy}
@@ -167,7 +208,7 @@ export default function AccountsPage({ api, user: actor, initialData = null }) {
               Reenviar convite
             </button>
           )}
-          {(user.ativo || user.status === 'INATIVO') && (
+          {!api.preview && (user.ativo || user.status === 'INATIVO') && (
             <button
               className="button button-small button-secondary"
               disabled={operation.busy || user.id_usuario === actor?.id_usuario}
@@ -189,9 +230,11 @@ export default function AccountsPage({ api, user: actor, initialData = null }) {
       <OperationFeedback operation={operation} />
       {resource.data && (
         <>
-          <button className="button button-primary" onClick={() => setDialog(true)}>
-            Criar Nova Conta
-          </button>
+          {!api.preview && (
+            <button className="button button-primary" onClick={() => setDialog(true)}>
+              Criar Nova Conta
+            </button>
+          )}
           {[
             ['Equipe Interna', false],
             ['Hospedagens', true],
@@ -206,6 +249,15 @@ export default function AccountsPage({ api, user: actor, initialData = null }) {
             </section>
           ))}
           <p className="muted">As contas são inativadas para preservar o histórico.</p>
+          {editingRole && (
+            <RoleDialog api={api} account={editingRole} recipients={resource.data.recipients}
+              onClose={() => setEditingRole(null)}
+              onSaved={() => {
+                setEditingRole(null)
+                resource.reload()
+                operation.success('Perfil atualizado.')
+              }} />
+          )}
           {changing && (
             <ConfirmAction
               title={changing.ativo ? 'Inativar conta' : 'Reativar conta'}

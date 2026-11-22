@@ -1,3 +1,4 @@
+import { cadasturOptions, lodgingNames } from '../domain/qaOptions.js'
 import React, { useRef, useState } from 'react'
 import {
   BASIC_FIELDS,
@@ -29,8 +30,9 @@ export default function EstablishmentForm({
   initialErrors = {},
   initialStatus = 'idle',
 }) {
+  const newDraft = () => api?.preview ? { ...emptyDraft(), cadastur_status: 'SEM_VALIDADE' } : emptyDraft()
   const [draft, setDraft] = useState(() =>
-    mode === 'create' ? emptyDraft() : draftFrom(establishment || {}),
+    mode === 'create' ? newDraft() : draftFrom(establishment || {}),
   )
   const [dirty, setDirty] = useState([])
   const [errors, setErrors] = useState(initialErrors)
@@ -65,7 +67,7 @@ export default function EstablishmentForm({
       setStatus('error')
       return
     }
-    const nextErrors = validateEstablishment(payload, mode)
+    const nextErrors = validateEstablishment(payload, mode, api?.preview)
     setErrors(nextErrors)
     if (Object.keys(nextErrors).length) {
       setStatus('error')
@@ -104,13 +106,22 @@ export default function EstablishmentForm({
     'infraestrutura.estacionamento',
     'infraestrutura.recreacao.nao_possui',
   ]
+  const available = hostingCategories(categories)
+  const specific = available.filter((item) => lodgingNames.includes(item.nome_categoria))
+  const categoryOptions = specific.length
+    ? available.filter((item) =>
+        lodgingNames.includes(item.nome_categoria) ||
+        (mode === 'edit' && item.id_categoria === establishment?.id_categoria),
+      )
+    : available
   const shared = {
     draft,
     errors,
     onChange: change,
     disabled: busy || !allowed,
     protectedDisabled: !access.protected,
-    categories: hostingCategories(categories),
+    categories: categoryOptions,
+    cadasturOptions,
     mode,
   }
   const actions = allowed && (
@@ -120,7 +131,7 @@ export default function EstablishmentForm({
         type="button"
         disabled={busy}
         onClick={() => {
-          setDraft(mode === 'create' ? emptyDraft() : draftFrom(establishment))
+          setDraft(mode === 'create' ? newDraft() : draftFrom(establishment))
           setErrors({})
           setDirty([])
           setStatus('idle')

@@ -3,17 +3,24 @@ import { useResource } from '../hooks/operations.js'
 import { ResourceState } from '../components/OperationsUI.jsx'
 import { Feedback } from '../components/Feedback.jsx'
 import DataTable from '../components/DataTable.jsx'
+import { loadRecipients } from '../domain/operations.js'
 import { auditQuery, changes } from '../domain/reading.js'
 const valueLabel = (value) => (value === undefined ? 'Campo ausente' : JSON.stringify(value))
 export default function AuditPage({ api, user, initialData = null }) {
   const [draft, setDraft] = useState({
       acao: '',
+      id_entidade: '',
       id_usuario: '',
       data_inicio: '',
       data_fim: '',
     }),
     [query, setQuery] = useState({}),
     [error, setError] = useState('')
+  const companies = useResource(
+    (options) => api.preview && user.perfil === 'ADMINISTRADOR' ? loadRecipients(api, options) : [],
+    [api, user.perfil],
+    [],
+  )
   const resource = useResource(
     (options) =>
       user.perfil === 'ADMINISTRADOR'
@@ -59,10 +66,21 @@ export default function AuditPage({ api, user, initialData = null }) {
             />
           </label>
         ))}
+        {api.preview && (
+          <label>
+            Empresa
+            <select value={draft.id_entidade} disabled={companies.loading}
+              onChange={(event) => setDraft((previous) => ({ ...previous, id_entidade: event.target.value }))}>
+              <option value="">Todas</option>
+              {companies.data.map((item) => <option key={item.id_estabelecimento} value={item.id_estabelecimento}>{item.nome_fantasia}</option>)}
+            </select>
+          </label>
+        )}
         <button className="button button-primary" disabled={resource.loading}>
           Aplicar filtros
         </button>
       </form>
+      {api.preview && <ResourceState resource={companies} />}
       <Feedback message={error} />
       <ResourceState resource={resource} />
       <p className="muted">Cada linha representa um campo alterado.</p>

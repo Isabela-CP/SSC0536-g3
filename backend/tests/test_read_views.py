@@ -18,7 +18,7 @@ def test_dashboard_uses_mutable_repository_and_only_hospitality(write_env):
     response = env.client.get('/dashboard')
     assert response.status_code == 200
     assert response.json()['indicadores']['estabelecimentos_ativos'] == sum(r['status'] == 'ATIVO' for r in items)
-    assert env.client.get('/dashboard', headers=env.headers('HOTEL')).status_code == 403
+    assert env.client.get('/dashboard', headers=env.headers('HOTEL')).status_code == 401
     for role in ('EDITOR', 'GESTOR'):
         assert env.client.get('/dashboard', headers=env.headers(role)).status_code == 200
 
