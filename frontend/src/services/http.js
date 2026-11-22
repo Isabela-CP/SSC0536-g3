@@ -85,6 +85,7 @@ export function createInventoryApi(request, { preview = false } = {}) {
     resetPassword: (payload) =>
       request('/auth/redefinicao-senha', { method: 'POST', body: payload }),
     changePassword: (payload) => request('/perfil/senha', { method: 'PUT', body: payload }),
+    deleteUser: (id) => request(`/usuarios/${encodeURIComponent(id)}`, { method: 'DELETE' }),
     inactivateUser: (id) =>
       request(`/usuarios/${encodeURIComponent(id)}/inativacao`, { method: 'POST' }),
     reactivateUser: (id) =>

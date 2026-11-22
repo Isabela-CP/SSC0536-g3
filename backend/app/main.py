@@ -678,6 +678,15 @@ def change_password(payload: contract_model('AlteracaoSenha'), user: dict = Depe
     return portal().change_password(user,payload.model_dump())
 
 
+@app.delete('/usuarios/{id_usuario}', status_code=204, tags=['Usuários'])
+def delete_user(id_usuario: Annotated[int, APIPath(ge=1)], user: dict = Depends(current_user)):
+    ensure_role(user, 'ADMINISTRADOR')
+    if not persistent():
+        raise InventoryError(503, 'MOCK_NOT_AVAILABLE', 'Este fluxo exige PostgreSQL.')
+    portal().delete_user(user, id_usuario)
+    return Response(status_code=204)
+
+
 @app.post('/usuarios/{id_usuario}/inativacao', tags=['Usuários'])
 def inactivate_user(id_usuario: Annotated[int, APIPath(ge=1)], user: dict = Depends(current_user)):
     if not persistent():

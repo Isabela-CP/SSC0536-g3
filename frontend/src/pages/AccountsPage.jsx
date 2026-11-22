@@ -99,8 +99,7 @@ export function AccountDialog({
           ))}
         </div>
         <p className="file-hint">
-          O convite será colocado na fila de envio. Em desenvolvimento, consulte a caixa de
-          e-mail local (Mailpit).
+          O convite será colocado na fila de envio.
         </p>
         <div className="form-actions">
           <button
@@ -173,8 +172,10 @@ export default function AccountsPage({ api, user: actor, initialData = null }) {
     ),
     [dialog, setDialog] = useState(false),
     [changing, setChanging] = useState(null),
+    [deleting, setDeleting] = useState(null),
     [editingRole, setEditingRole] = useState(null),
     operation = useOperation()
+  const canManage = !api.preview && actor?.perfil === 'ADMINISTRADOR'
   const columns = [
     { key: 'nome', label: 'Nome' },
     { key: 'email', label: 'E-mail' },
@@ -208,13 +209,19 @@ export default function AccountsPage({ api, user: actor, initialData = null }) {
               Reenviar convite
             </button>
           )}
-          {!api.preview && (user.ativo || user.status === 'INATIVO') && (
+          {canManage && (user.ativo || user.status === 'INATIVO') && (
             <button
               className="button button-small button-secondary"
               disabled={operation.busy || user.id_usuario === actor?.id_usuario}
               onClick={() => setChanging(user)}
             >
               {user.ativo ? 'Inativar' : 'Reativar'}
+            </button>
+          )}
+          {canManage && user.id_usuario !== actor.id_usuario && (
+            <button type="button" className="button button-small button-secondary"
+              disabled={operation.busy} onClick={() => setDeleting(user)}>
+              Excluir
             </button>
           )}
         </div>
@@ -248,7 +255,22 @@ export default function AccountsPage({ api, user: actor, initialData = null }) {
               />
             </section>
           ))}
-          <p className="muted">As contas são inativadas para preservar o histórico.</p>
+          <p className="muted">Inativar suspende o acesso. Excluir também retira a conta do painel e preserva o histórico.</p>
+          {deleting && (
+            <ConfirmAction
+              title="Excluir conta"
+              label="Excluir"
+              onClose={() => setDeleting(null)}
+              action={() => api.deleteUser(deleting.id_usuario)}
+              onDone={() => {
+                resource.reload()
+                operation.success('Conta excluída.')
+              }}
+            >
+              <p>{deleting.nome} — {deleting.email}</p>
+              <p>A conta perderá acesso e sairá do painel. A exclusão não pode ser desfeita pelo painel.</p>
+            </ConfirmAction>
+          )}
           {editingRole && (
             <RoleDialog api={api} account={editingRole} recipients={resource.data.recipients}
               onClose={() => setEditingRole(null)}
@@ -267,7 +289,10 @@ export default function AccountsPage({ api, user: actor, initialData = null }) {
                   ? api.inactivateUser(changing.id_usuario)
                   : api.reactivateUser(changing.id_usuario)
               }
-              onDone={resource.reload}
+              onDone={() => {
+                resource.reload()
+                operation.success(changing.ativo ? 'Conta inativada.' : 'Conta reativada.')
+              }}
               label={changing.ativo ? 'Inativar' : 'Reativar'}
             >
               <p>

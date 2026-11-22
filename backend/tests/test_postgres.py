@@ -66,7 +66,7 @@ def test_pg_seed_and_repositories(pg):
         response=client.get('/estabelecimentos/'+row['id_estabelecimento'])
         assert response.status_code==200,response.text
     with db.transaction() as conn:
-        assert conn.execute('SELECT count(*) AS n FROM schema_migrations').fetchone()['n']==6
+        assert conn.execute('SELECT count(*) AS n FROM schema_migrations').fetchone()['n']==7
         assert conn.execute('SELECT count(*) AS n FROM usuarios').fetchone()['n']==10
         assert conn.execute("SELECT count(*) AS n FROM usuarios WHERE senha_hash NOT LIKE '$argon2id$%'").fetchone()['n']==0
 
@@ -188,6 +188,34 @@ def test_pg_invite_activation_password_and_user_status(pg):
     assert client.post(f'/usuarios/{user}/inativacao').status_code==200
     assert client.get('/perfil',headers=headers).status_code==401
     assert client.post(f'/usuarios/{user}/reativacao').status_code==200
+    login = client.post('/auth/login', json={'email': 'nova@example.test', 'senha': 'senha-nova-123'})
+    headers = {'Authorization': 'Bearer ' + login.json()['access_token']}
+    assert client.delete(f'/usuarios/{user}', headers=headers).status_code == 403
+    assert client.delete(f'/usuarios/{user}').status_code == 204
+    assert client.get('/perfil', headers=headers).status_code == 401
+
+
+
+def test_pg_admin_deletes_account_and_preserves_audit(pg):
+    client, db = pg
+    admin = client.get('/perfil').json()
+    assert client.delete(f"/usuarios/{admin['id_usuario']}").status_code == 409
+    account = client.post('/usuarios', json={
+        'nome': 'Conta teste', 'email': 'excluir@example.test', 'perfil': 'GESTOR',
+    }).json()
+    account_id = account['id_usuario']
+    path = f'/usuarios/{account_id}'
+    assert client.post('/convites', json={'email': account['email']}).status_code == 201
+    assert client.delete(path).status_code == 204
+    assert client.delete(path).status_code == 404
+    assert client.post(path + '/reativacao').status_code == 404
+    assert all(user['id_usuario'] != account_id for user in client.get('/usuarios').json()['data'])
+    with db.transaction() as conn:
+        assert conn.execute('SELECT excluido_em FROM usuarios WHERE id=%s', (account_id,)).fetchone()['excluido_em']
+        assert conn.execute('SELECT estado FROM convites WHERE email_destinatario=%s',
+                            (account['email'],)).fetchone()['estado'] == 'CANCELADO'
+        assert conn.execute("SELECT 1 FROM auditoria_logs WHERE acao='USUARIO_EXCLUIDO' AND entidade_id=%s",
+                            (str(account_id),)).fetchone()
 
 
 def test_pg_recovery_single_use_and_revocation(pg):

@@ -109,7 +109,7 @@ class PostgresPortal:
         operations.fields(payload,{'nome','email'})
         if not payload: raise invalid_field('body','Altere pelo menos um campo.')
         with self.db.transaction() as conn:
-            previous = conn.execute('SELECT * FROM usuarios WHERE id=%s FOR UPDATE',(actor['id_usuario'],)).fetchone()
+            previous = conn.execute('SELECT * FROM usuarios WHERE id=%s AND excluido_em IS NULL FOR UPDATE',(actor['id_usuario'],)).fetchone()
             name = operations.text(payload['nome'],'nome') if 'nome' in payload else previous['nome']
             email = operations.email(payload['email']) if 'email' in payload else previous['email']
             if len(name)>200 or len(email)>254: raise invalid_field('body','Nome ou e-mail acima do limite.')
@@ -121,14 +121,14 @@ class PostgresPortal:
     def users(self, actor):
         require(actor,'ADMINISTRADOR')
         with self.db.transaction() as conn:
-            return {'data':[user_dto(row) | {'status':row['status']} for row in conn.execute('SELECT * FROM usuarios ORDER BY id').fetchall()]}
+            return {'data':[user_dto(row) | {'status':row['status']} for row in conn.execute('SELECT * FROM usuarios WHERE excluido_em IS NULL ORDER BY id').fetchall()]}
 
     def change_role(self, actor, user_id, payload):
         require(actor, 'ADMINISTRADOR')
         if user_id == actor['id_usuario']:
             fail(409, 'CONFLICT', 'Não é possível alterar o próprio perfil.')
         with self.db.transaction() as conn:
-            previous = conn.execute('SELECT * FROM usuarios WHERE id=%s FOR UPDATE', (user_id,)).fetchone()
+            previous = conn.execute('SELECT * FROM usuarios WHERE id=%s AND excluido_em IS NULL FOR UPDATE', (user_id,)).fetchone()
             if not previous:
                 fail(404, 'USER_NOT_FOUND', 'Conta não encontrada.')
             role, association = operations.role_change(payload, self.inventory)
@@ -186,6 +186,7 @@ class PostgresPortal:
         token = operations.text(payload['token'],'token')
         password = new_password(payload['senha'])
         with self.db.transaction() as conn:
+            conn.execute('SELECT pg_advisory_xact_lock(3700538)')
             row = conn.execute('SELECT * FROM convites WHERE id::text=%s AND token_hash=%s FOR UPDATE',(str(invitation_id),digest(token))).fetchone()
             if not row or row['expira_em']<=now(): fail(404,'INVITE_NOT_FOUND','Convite não encontrado ou expirado.')
             if row['estado']!='PENDENTE': fail(409,'INVITE_ALREADY_USED','Este convite não está mais disponível.')
@@ -216,7 +217,8 @@ class PostgresPortal:
         with self.db.transaction() as conn:
             row = conn.execute('SELECT * FROM recuperacao_senha WHERE token_hash=%s AND usado_em IS NULL AND expira_em>now() FOR UPDATE',(digest(token),)).fetchone()
             if not row: fail(400,'INVALID_TOKEN','Link inválido ou expirado.')
-            user = conn.execute('UPDATE usuarios SET senha_hash=%s WHERE id=%s RETURNING *',(password,row['id_usuario'])).fetchone()
+            user = conn.execute('UPDATE usuarios SET senha_hash=%s WHERE id=%s AND excluido_em IS NULL RETURNING *',(password,row['id_usuario'])).fetchone()
+            if not user: fail(400,'INVALID_TOKEN','Link inválido ou expirado.')
             conn.execute('UPDATE recuperacao_senha SET usado_em=now() WHERE id_usuario=%s AND usado_em IS NULL AND expira_em>now()',(row['id_usuario'],))
             conn.execute('UPDATE sessoes SET revogado_em=now() WHERE id_usuario=%s',(row['id_usuario'],))
             self.audit(user_dto(user),'SENHA_REDEFINIDA','USUARIO',user['id'])
@@ -226,19 +228,36 @@ class PostgresPortal:
         operations.fields(payload,{'senha_atual','senha'},('senha_atual','senha'))
         password = new_password(payload['senha'])
         with self.db.transaction() as conn:
-            row = conn.execute('SELECT * FROM usuarios WHERE id=%s FOR UPDATE',(actor['id_usuario'],)).fetchone()
-            if not isinstance(payload['senha_atual'],str) or not PASSWORDS.verify(payload['senha_atual'],row['senha_hash']): fail(403,'INVALID_PASSWORD','Senha atual inválida.')
+            row = conn.execute('SELECT * FROM usuarios WHERE id=%s AND excluido_em IS NULL FOR UPDATE',(actor['id_usuario'],)).fetchone()
+            if not row or not isinstance(payload['senha_atual'],str) or not PASSWORDS.verify(payload['senha_atual'],row['senha_hash']): fail(403,'INVALID_PASSWORD','Senha atual inválida.')
             conn.execute('UPDATE usuarios SET senha_hash=%s WHERE id=%s',(password,row['id']))
             conn.execute('UPDATE sessoes SET revogado_em=now() WHERE id_usuario=%s',(row['id'],))
             self.audit(actor,'SENHA_ALTERADA','USUARIO',row['id'])
         return {'message':'Senha alterada. Entre novamente.'}
+
+    def delete_user(self, actor, user_id):
+        require(actor, 'ADMINISTRADOR')
+        if user_id == actor['id_usuario']:
+            fail(409, 'CONFLICT', 'Não é possível excluir a própria conta.')
+        with self.db.transaction() as conn:
+            conn.execute('SELECT pg_advisory_xact_lock(3700538)')
+            row = conn.execute(
+                """UPDATE usuarios SET status='INATIVO', excluido_em=now()
+                   WHERE id=%s AND excluido_em IS NULL RETURNING email""", (user_id,)
+            ).fetchone()
+            if not row:
+                fail(404, 'USER_NOT_FOUND', 'Conta não encontrada.')
+            conn.execute('UPDATE sessoes SET revogado_em=now() WHERE id_usuario=%s AND revogado_em IS NULL', (user_id,))
+            conn.execute("""UPDATE convites SET estado='CANCELADO'
+                WHERE lower(email_destinatario)=%s AND estado='PENDENTE'""", (row['email'].lower(),))
+            self.audit(actor, 'USUARIO_EXCLUIDO', 'USUARIO', user_id)
 
     def user_status(self, actor, user_id, active):
         require(actor,'ADMINISTRADOR')
         with self.db.transaction() as conn:
             # Serializa alterações de administradores para preservar ao menos um ativo.
             conn.execute('SELECT pg_advisory_xact_lock(3700538)')
-            row = conn.execute('SELECT * FROM usuarios WHERE id=%s FOR UPDATE',(user_id,)).fetchone()
+            row = conn.execute('SELECT * FROM usuarios WHERE id=%s AND excluido_em IS NULL FOR UPDATE',(user_id,)).fetchone()
             if not row: fail(404,'USER_NOT_FOUND','Conta não encontrada.')
             target = 'ATIVO' if active else 'INATIVO'
             if row['status']==target or row['status']=='PENDENTE': fail(409,'CONFLICT','Transição não permitida para o estado da conta.')
