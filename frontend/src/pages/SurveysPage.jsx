@@ -1,3 +1,4 @@
+import ReportFilters from './ReportFilters.jsx'
 import React, { useState } from 'react'
 import Modal from '../components/Modal.jsx'
 import { Field } from '../components/FormFields.jsx'
@@ -182,14 +183,15 @@ function SurveyDialog({ api, survey, recipients, onClose, onSaved }) {
 export default function SurveysPage({ api, user, initialData = null }) {
   const resource = useResource(
       async (options) => {
-        const [surveys, recipients, history] = await Promise.all([
+        const [surveys, recipients, history, categories] = await Promise.all([
           api.surveys(options),
           loadRecipients(api, options),
           api.responseHistory(options),
+          api.preview && ['ADMINISTRADOR', 'GESTOR'].includes(user.perfil) ? api.categories(options) : { data: [] },
         ])
-        return { surveys: surveys.data, recipients, history: history.data }
+        return { surveys: surveys.data, recipients, history: history.data, categories: categories.data }
       },
-      [api],
+      [api, user.perfil],
       initialData,
     ),
     [editing, setEditing] = useState(undefined),
@@ -257,7 +259,7 @@ export default function SurveysPage({ api, user, initialData = null }) {
             ['CSV', 'PDF'].map((formato) => (
               <button
                 className="button button-small button-secondary"
-                disabled={operation.busy}
+                disabled={operation.busy || resource.loading || Boolean(resource.error)}
                 key={formato}
                 onClick={() =>
                   operation.run(
@@ -266,7 +268,7 @@ export default function SurveysPage({ api, user, initialData = null }) {
                         tipo: 'OCUPACAO',
                         formato,
                         id_pesquisa: row.id_pesquisa,
-                      }),
+                      }, row.responses.length),
                     () => operation.success('Download iniciado.'),
                   )
                 }
@@ -315,10 +317,10 @@ export default function SurveysPage({ api, user, initialData = null }) {
           {canReport && (
             <button
               className="button button-primary consolidated-report"
-              disabled={operation.busy || !data.surveys.length}
+              disabled={operation.busy || resource.loading || Boolean(resource.error)}
               onClick={() =>
                 operation.run(
-                  () => exportReport(api, { tipo: 'OCUPACAO', formato: 'PDF' }),
+                  () => exportReport(api, { tipo: 'OCUPACAO', formato: 'PDF' }, data.history.length),
                   () => operation.success('Download iniciado.'),
                 )
               }
@@ -326,6 +328,7 @@ export default function SurveysPage({ api, user, initialData = null }) {
               Exportar Relatório Consolidado (PDF)
             </button>
           )}
+          {canReport && api.preview && <ReportFilters api={api} categories={data.categories || []} />}
           <div className="survey-filters">
             <label>
               Filtrar por Período (Mês/Ano)

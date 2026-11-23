@@ -1,8 +1,8 @@
 import { inventoryDefaults, inventoryErrors, inventoryQuery } from '../domain/reading.js'
 import { hostingCategories } from '../domain/establishment.js'
-export function mockInventory(items, user, searchParams) {
+export function mockInventory(items, user, searchParams, preview = false) {
   const draft = { ...inventoryDefaults, ...Object.fromEntries(searchParams) }
-  const errors = inventoryErrors(draft)
+  const errors = inventoryErrors(draft, preview)
   if (Object.keys(errors).length) return { errors }
   const query = inventoryQuery(draft)
   let rows = items.filter(
@@ -24,6 +24,11 @@ export function mockInventory(items, user, searchParams) {
       rows = rows.filter(
         (row) => row[key] === (key === 'aceita_pesquisas' ? query[key] === 'true' : query[key]),
       )
+  if (query.leitos_min != null)
+    rows = rows.filter((row) => {
+      const beds = row.meio_hospedagem?.total_leitos
+      return Number.isInteger(beds) && beds >= query.leitos_min
+    })
   rows.sort((a, b) => a.id_estabelecimento.localeCompare(b.id_estabelecimento))
   rows.sort(
     (a, b) =>
@@ -53,6 +58,7 @@ export function mockDashboard(
   return {
     indicadores: {
       total_empresas: rows.length,
+      empresas_cadastradas_no_mes: rows.filter((row) => row.criado_em?.slice(0, 7) === today.slice(0, 7)).length,
       total_leitos: beds.reduce((sum, value) => sum + (value || 0), 0),
       leitos_nao_informados: beds.filter((value) => value == null).length,
       estabelecimentos_ativos: rows.filter((row) => row.status === 'ATIVO').length,

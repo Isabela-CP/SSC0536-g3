@@ -61,9 +61,9 @@ Exemplo de edição com o seed:
 `http://localhost:5173/#/estabelecimentos/11111111-1111-4111-8111-111111111111/editar`.
 
 `VITE_MOCK_ROLE` escolhe o perfil da conta de desenvolvimento em modo mock.
-Esse transporte cobre cadastro/manutenção/documentos, login e perfil. Contas,
-convites, pesquisas e relatórios exigem backend real e mostram indisponibilidade
-explícita no modo mock.
+O mock cobre cadastro, manutenção, documentos, login, perfil e os fluxos de QA
+descritos abaixo. Emissão de convites e gestão do estado de contas continuam
+dependendo da API real.
 
 ## API real e cliente compartilhado com SCRUM-96
 
@@ -253,9 +253,8 @@ mês/tipo, taxa de resposta calculada, histórico individual e exportação PDF/
 existente. Exportação consolidada inclui todas as pesquisas, independentemente do
 filtro visual; XLS não é oferecido porque o backend não o gera.
 
-No modo mock explícito, inventário, detalhe, dashboard e mapa reutilizam o seed;
-a auditoria começa vazia e as operações de pesquisa continuam exigindo o backend.
-O modo real nunca troca automaticamente para mock após 401/403.
+No modo mock explícito, inventário, detalhe, dashboard, mapa, pesquisas e auditoria
+reutilizam o seed. O modo real nunca troca automaticamente para mock após 401/403.
 
 A suíte adicional `src/reading.test.js` cobre parâmetros, busca, combinações,
 ordenação/paginação, mapa completo, cancelamento, dados ausentes, permissões,
@@ -289,3 +288,32 @@ O frontend trata 401 sem fallback; expiração/revogação também são verifica
 Avatar permanece por iniciais e preferências são locais por usuário: não há
 upload ou sincronização remota dessas duas funções no MVP. Backend e contrato
 detalham os schemas, regras de token e parâmetros SMTP.
+
+
+## SCRUM-51 e SCRUM-132 — pendências de integração com a API
+
+Para testar as telas com dados fictícios, rode `VITE_API_MODE=mock npm run dev`
+a partir de `frontend/`. O perfil padrão é Administrador. Use
+`VITE_MOCK_ROLE=HOTEL` para verificar a correção de respostas com a conta HOTEL.
+O mock guarda alterações em memória. Os controles que dependem dos contratos
+abaixo só aparecem no modo mock (o cartão mensal aparece quando a API retorna
+o indicador). A limpeza de filtros, o ajuste de layout e o aviso de relatório
+vazio também funcionam com a API atual.
+
+| Jira | Integração a implementar e validar no backend |
+| --- | --- |
+| SCRUM-100 | Publicar HOTEL, POUSADA, RESORT, HOTEL FAZENDA, HOSTEL, FLAT e ACAMPAMENTO TURÍSTICO em `GET /categorias-estabelecimento`. Definir IDs reais e migração da categoria genérica sem reclassificar pelo nome fantasia. Alinhar a migração do enum Cadastur, a edição da situação e sua relação com a data de vencimento. O mock usa `REGULAR`, `PROXIMO_VENCIMENTO`, `EM_ALERTA`, `VENCIDO` e `SEM_VALIDADE`, com faixas iniciais de 0–30 e 31–90 dias para os dados simulados. Conferir limites, registros sem data e compatibilidade com os dados antigos. |
+| SCRUM-134 | Permitir reenvio em `POST /pesquisas-ocupacao/{id_pesquisa}/respostas` somente para HOTEL vinculado e pesquisa aberta. Primeiro envio retorna 201, correção retorna 200 com o mesmo ID. Manter unicidade por pesquisa e estabelecimento, registrar antes/depois e testar fechamento concorrente e acesso de outro HOTEL. A UI usa a lista de pesquisas abertas permitidas junto do histórico. |
+| SCRUM-135 | Rejeitar no servidor relatório sem respostas. O mock usa 409 `REPORT_NO_DATA`, antes de gerar arquivo ou gravar relatório. Conferir pedido por pesquisa, relatório consolidado e filtros sem correspondência. |
+| SCRUM-136 | Adicionar `leitos_min` inclusivo, inteiro não negativo, a `GET /estabelecimentos`. Filtrar antes de contar e paginar, excluir fichas sem total quando o filtro estiver ativo e combinar categoria, status, texto e demais parâmetros. |
+| SCRUM-137 | Adicionar `id_entidade` a `GET /auditoria` para a empresa afetada. A busca deve combinar os filtros existentes e manter a restrição a Administrador. Definir quais eventos de entidades relacionadas, como documentos, deverão entrar no filtro. |
+| SCRUM-138 | Implementar `PATCH /usuarios/{id_usuario}` exclusivo de Administrador, com `perfil` e vínculo obrigatório para HOTEL. Remover o vínculo na troca para perfil interno, proteger a própria conta, auditar e revogar as sessões afetadas na mesma transação. Testar permissões, tentativas de usar tokens anteriores e convites pendentes. |
+| SCRUM-139 | Aceitar `periodo_inicio`, `periodo_fim` e `id_categoria` opcional no relatório de ocupação. O mock inclui pesquisas cujo intervalo cruza as datas pedidas e filtra pela categoria da hospedagem que respondeu. Validar datas, limites inclusivos, permissões, ausência de respostas e formatos PDF/CSV. |
+| SCRUM-140 | Incluir `indicadores.empresas_cadastradas_no_mes` no dashboard, contando pela data de criação. O mock inclui empresas inativas e usa o mês UTC. Confirmar o fuso de negócio e testar a virada do mês e registros sem data. |
+| SCRUM-141 | Implementar `POST /estabelecimentos/importacao` multipart (`arquivo`) exclusivo de Administrador. O protótipo aceita a primeira aba de um `.xlsx` de até 1 MB e 200 linhas, com os cabeçalhos `id_categoria,nome_fantasia,razao_social,cnpj,endereco`. Retorna `{ importados }` ou erros por linha. Validar CNPJ e duplicidade dentro do arquivo e no banco, limitar também o tamanho após descompactação e gravar o lote e a auditoria atomicamente. |
+| SCRUM-142 | Definir exportação PDF/XLSX do boletim no contrato de relatórios. O mock gera o arquivo no cliente com todos os resultados dos filtros aplicados, usando a coleção completa já carregada para o mapa. Na API real, preservar o escopo por perfil, documentar as colunas e validar exportações maiores que uma página. |
+
+Depois da entrega da API, atualizar o OpenAPI e substituir a ativação via
+modo mock pela capacidade correspondente no cliente real. Rodar os casos de QA
+da branch `qa/testes-funcionais` contra a API integrada e revisar os marcadores
+de falha esperada apenas onde o comportamento passar.

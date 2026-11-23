@@ -20,7 +20,7 @@ def test_create_minimal_and_read(write_env, create_payload):
     assert item["infraestrutura"] is None
     assert item["aceita_pesquisas"] is True
     assert item["possui_cadastur"] is False
-    assert item["cadastur_status"] == "OBRIGATORIO"
+    assert item["cadastur_status"] == "SEM_VALIDADE"
     assert env.client.get(ROOT + "/" + item["id_estabelecimento"]).json() == item
     assert env.client.get(ROOT, params={"busca": "Hotel Novo"}).json()["pagination"]["total"] == 1
     assert len(env.audit) == 1

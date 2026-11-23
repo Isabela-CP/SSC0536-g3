@@ -7,7 +7,7 @@ export function applicationRuntime() {
     const mock = import.meta.env.VITE_API_MODE === 'mock'
     const session = createSession(globalThis.sessionStorage)
     const options = {
-      baseUrl: import.meta.env.VITE_API_BASE_URL || '/api',
+      baseUrl: mock ? '' : import.meta.env.VITE_API_BASE_URL || '/api',
       getToken: () => session.token(),
       requireSession: !mock,
       onUnauthorized: () => {
@@ -19,9 +19,10 @@ export function applicationRuntime() {
       const { createMockFetch, mockUser } = await import('./mock.js')
       options.fetchImpl = createMockFetch(
         mockUser(import.meta.env.VITE_MOCK_ROLE || 'ADMINISTRADOR'),
+        { preview: true },
       )
     }
-    return { api: createInventoryApi(createHttpClient(options)), mock, session }
+    return { api: createInventoryApi(createHttpClient(options), { preview: mock }), mock, session }
   })()
   return runtime
 }

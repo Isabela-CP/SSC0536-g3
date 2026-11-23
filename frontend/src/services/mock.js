@@ -1,3 +1,6 @@
+import { mockOperations } from './mockOperations.js'
+import { readInventorySheet } from './inventoryFiles.js'
+import { lodgingNames, mockCadasturStatus } from '../domain/qaOptions.js'
 import { mockInventory, mockDashboard } from './mockReading.js'
 import seed from '../../../contratos_api_oto/mocks/seed-data.json'
 import {
@@ -20,8 +23,16 @@ export function mockUser(role = 'ADMINISTRADOR') {
     ...(role === 'HOTEL' ? { id_estabelecimento: account.id_estabelecimento } : {}),
   }
 }
-export function createMockFetch(user = mockUser()) {
+export function createMockFetch(user = mockUser(), { preview = false } = {}) {
+  const categories = preview
+    ? lodgingNames.map((nome_categoria, index) => ({ id_categoria: index === 0 ? 1 : 100 + index, nome_categoria }))
+    : seed.categorias_estabelecimento
   let items = structuredClone(seed.estabelecimentos)
+  if (preview) items = items.filter((item) => item.id_categoria === 1).map((item) => {
+    const name = item.nome_fantasia.toUpperCase()
+    const categoria = categories.find((category) => name.startsWith(category.nome_categoria)) || categories[0]
+    return { ...item, categoria, id_categoria: categoria.id_categoria, cadastur_status: mockCadasturStatus(item.vencimento_cadastur) }
+  })
   let nextDocumentId =
     Math.max(0, ...items.flatMap((item) => item.documentos.map((doc) => doc.id_documento))) + 1
   const files = new Map()
@@ -48,6 +59,33 @@ export function createMockFetch(user = mockUser()) {
           : value
     return result
   }
+  const auditRows = seed.audit_log.map((row) => ({
+    id: row.id_log, acao: row.operacao, entidade: row.tabela_afetada,
+    id_entidade: row.registro_id, usuario: row.usuario_identificador,
+    id_usuario: seed.usuarios_internos.find((entry) => entry.email === row.usuario_identificador)?.id_usuario,
+    criado_em: row.data_hora, antes: row.valores_anteriores, depois: row.valores_novos,
+  }))
+  const audit = (acao, entidade, id, antes, depois) => auditRows.unshift({
+    id: crypto.randomUUID(), acao, entidade, id_entidade: String(id), usuario: user.email,
+    id_usuario: user.id_usuario, criado_em: new Date().toISOString(),
+    antes: structuredClone(antes), depois: structuredClone(depois),
+  })
+  const operations = mockOperations(seed, user, () => items, audit, json, fail)
+  const createItem = (payload) => ({
+    aceita_pesquisas: true,
+    possui_cadastur: false,
+    cadastur_status: 'SEM_VALIDADE',
+    meio_hospedagem: null,
+    infraestrutura: null,
+    ...payload,
+    id_estabelecimento: crypto.randomUUID(),
+    status: 'ATIVO',
+    motivo_inativacao: null,
+    criado_em: new Date().toISOString(),
+    atualizado_em: new Date().toISOString(),
+    documentos: [],
+    categoria: categories.find((category) => category.id_categoria === payload.id_categoria),
+  })
   return async function mockFetch(url, options = {}) {
     if (options.signal?.aborted) throw new DOMException('Cancelado', 'AbortError')
     const requestUrl = new URL(url, 'http://mock.local')
@@ -80,6 +118,11 @@ export function createMockFetch(user = mockUser()) {
       Object.assign(user, data)
       return json(user)
     }
+    const payload = typeof options.body === 'string' ? JSON.parse(options.body) : options.body
+    if (preview) {
+      const response = await operations(path, method, payload)
+      if (response) return response
+    }
     if (
       [
         '/usuarios',
@@ -93,26 +136,61 @@ export function createMockFetch(user = mockUser()) {
       return fail(503, 'MOCK_NOT_AVAILABLE', 'Este módulo requer a conexão com o backend real.')
     if (path === '/perfil') return json(user)
     if (path === '/categorias-estabelecimento')
-      return json({ data: hostingCategories(seed.categorias_estabelecimento) })
+      return json({ data: hostingCategories(categories) })
     if (path === '/estabelecimentos' && method === 'GET') {
-      const result = mockInventory(items, user, requestUrl.searchParams)
+      const result = mockInventory(items, user, requestUrl.searchParams, preview)
       return result.errors ? invalid(result.errors) : json(result)
     }
     if (path === '/dashboard')
       return user.perfil === 'HOTEL'
         ? fail(403, 'FORBIDDEN', 'Seu perfil não pode acessar o dashboard.')
-        : json(mockDashboard(items, seed.categorias_estabelecimento))
+        : json(mockDashboard(items, categories))
     if (path === '/auditoria')
       return user.perfil === 'ADMINISTRADOR'
-        ? json({ data: [] })
+        ? json({ data: preview ? auditRows.filter((row) => {
+            const params = requestUrl.searchParams
+            const id = params.get('id_entidade')
+            const start = params.get('data_inicio')
+            const end = params.get('data_fim')
+            return (!id || (row.entidade === 'ESTABELECIMENTO' && row.id_entidade === id)) &&
+              (!params.has('acao') || row.acao === params.get('acao')) &&
+              (!params.has('id_usuario') || row.id_usuario === Number(params.get('id_usuario'))) &&
+              (!start || Date.parse(row.criado_em) >= Date.parse(start)) &&
+              (!end || Date.parse(row.criado_em) <= Date.parse(end))
+          }) : [] })
         : fail(403, 'FORBIDDEN', 'Auditoria exclusiva de administrador.')
-    const payload = typeof options.body === 'string' ? JSON.parse(options.body) : options.body
+    if (preview && path === '/estabelecimentos/importacao' && method === 'POST') {
+      if (!permissions(user).create) return fail(403, 'FORBIDDEN', 'Seu perfil não pode importar.')
+      let rows
+      try {
+        rows = await readInventorySheet(payload?.get('arquivo'))
+      } catch (error) {
+        return fail(422, 'VALIDATION_ERROR', error.message)
+      }
+      const seen = new Set(items.map((item) => normalizeCnpj(item.cnpj || '')))
+      const errors = {}
+      for (const { line, payload: entry } of rows) {
+        const invalidFields = validateEstablishment(entry, 'create', true)
+        if (!categories.some((category) => category.id_categoria === entry.id_categoria))
+          invalidFields.id_categoria = 'Categoria inválida.'
+        const cnpj = normalizeCnpj(entry.cnpj)
+        if (cnpj && seen.has(cnpj)) invalidFields.cnpj = 'CNPJ já cadastrado ou repetido na planilha.'
+        seen.add(cnpj)
+        for (const [field, issue] of Object.entries(invalidFields))
+          errors[`Linha ${line} · ${field}`] = issue
+      }
+      if (Object.keys(errors).length) return invalid(errors)
+      const created = rows.map(({ payload: entry }) => createItem({ ...entry, cnpj: normalizeCnpj(entry.cnpj) }))
+      items.push(...created)
+      for (const item of created) audit('IMPORTACAO', 'ESTABELECIMENTO', item.id_estabelecimento, null, item)
+      return json({ importados: created.length }, 201)
+    }
     if (path === '/estabelecimentos' && method === 'POST') {
       if (!permissions(user).create)
         return fail(403, 'FORBIDDEN', 'Seu perfil não pode cadastrar.')
-      const errors = validateEstablishment(payload)
+      const errors = validateEstablishment(payload, 'create', preview)
       if (
-        !hostingCategories(seed.categorias_estabelecimento).some(
+        !hostingCategories(categories).some(
           (category) => category.id_categoria === payload.id_categoria,
         )
       )
@@ -124,26 +202,9 @@ export function createMockFetch(user = mockUser()) {
         )
       )
         return fail(409, 'CONFLICT', 'Já existe uma hospedagem com este CNPJ.')
-      const item = {
-        aceita_pesquisas: true,
-        possui_cadastur: false,
-        cadastur_status: 'OBRIGATORIO',
-        meio_hospedagem: null,
-        infraestrutura: null,
-        ...payload,
-        id_estabelecimento: crypto.randomUUID(),
-        status: 'ATIVO',
-        motivo_inativacao: null,
-        criado_em: new Date().toISOString(),
-        atualizado_em: new Date().toISOString(),
-        documentos: [],
-        categoria: structuredClone(
-          seed.categorias_estabelecimento.find(
-            (category) => category.id_categoria === payload.id_categoria,
-          ),
-        ),
-      }
+      const item = createItem(payload)
       items.push(item)
+      if (preview) audit('CREATE', 'ESTABELECIMENTO', item.id_estabelecimento, null, item)
       return json(item, 201)
     }
     const match = path.match(
@@ -162,7 +223,7 @@ export function createMockFetch(user = mockUser()) {
       if (method === 'GET') return json(item)
       if (!access.protected && ('cnpj' in payload || 'razao_social' in payload))
         return fail(403, 'FORBIDDEN', 'Campo reservado ao administrador.')
-      const errors = validateEstablishment(payload, 'edit')
+      const errors = validateEstablishment(payload, 'edit', preview)
       if (Object.keys(errors).length) return invalid(errors)
       if (
         payload.cnpj &&
@@ -174,9 +235,14 @@ export function createMockFetch(user = mockUser()) {
         )
       )
         return fail(409, 'CONFLICT', 'Já existe uma hospedagem com este CNPJ.')
+      if ('id_categoria' in payload && !hostingCategories(categories).some((row) => row.id_categoria === payload.id_categoria))
+        return invalid({ id_categoria: 'Categoria inválida.' })
+      const before = item
       item = merge(item, payload)
       item.atualizado_em = new Date().toISOString()
+      item.categoria = categories.find((category) => category.id_categoria === item.id_categoria)
       items = items.map((entry) => (entry.id_estabelecimento === id ? item : entry))
+      if (preview) audit('UPDATE', 'ESTABELECIMENTO', id, before, item)
       return json(item)
     }
     if (['inativacao', 'reativacao'].includes(resource)) {
@@ -193,9 +259,11 @@ export function createMockFetch(user = mockUser()) {
           `ESTABELECIMENTO_JA_${target}`,
           `O estabelecimento já está ${target.toLowerCase()}.`,
         )
+      const before = { ...item }
       item.status = target
       item.motivo_inativacao = target === 'INATIVO' ? payload.motivo_inativacao : null
       item.atualizado_em = new Date().toISOString()
+      if (preview) audit(target === 'INATIVO' ? 'INACTIVATE' : 'REACTIVATE', 'ESTABELECIMENTO', id, before, item)
       return json(item)
     }
     if (!documentId && method === 'GET') return json({ data: item.documentos })

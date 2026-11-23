@@ -13,10 +13,11 @@ from typing import Annotated, Any, Literal
 from uuid import UUID, uuid4
 
 from fastapi import Path as APIPath
-from fastapi import APIRouter, Body, Depends, FastAPI, Header, HTTPException, Query, status
+from fastapi import APIRouter, Body, Depends, FastAPI, Header, HTTPException, Query, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 
+from app.cadastur import CadasturStatus
 from app.inventory import InventoryQuery, InventoryRepository, JsonInventoryRepository, query_establishments
 from app.inventory_http import InventoryRoute
 from app.inventory_repository import MemoryInventoryRepository
@@ -24,11 +25,12 @@ from app.inventory_writes import create_write_router
 from app.inventory_errors import InventoryError, invalid_field
 from app.inventory_models import contract_model
 from app import operations
+from app.login_attempts import MemoryAttempts, account_key, credentials
 from app.database import persistent, database
 from app.postgres_inventory import PostgresInventoryRepository
 from app.postgres_portal import PostgresPortal
 from app.read_views import dashboard_summary, audit_records
-from app.reporting import build_report
+from app.reporting import build_report, report_rows
 
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
@@ -94,6 +96,7 @@ DEMO_USERS = {
     },
 }
 TOKENS = {"admin-token": "marina.admin@example.test", "gestor-token": "rafael.consulta@example.test", "editor-token": "camila.editora@example.test"}
+LOGIN_ATTEMPTS = MemoryAttempts()
 INVITES: list[dict[str, Any]] = []
 SURVEYS: list[dict[str, Any]] = []
 OCCUPANCY_RESPONSES: list[dict[str, Any]] = []
@@ -114,13 +117,25 @@ async def operation_error(request, exc):
     return JSONResponse(status_code=exc.status_code, headers={"WWW-Authenticate":"Bearer"} if exc.status_code==401 else None, content={"error": exc.error})
 
 
+def hotel_establishment(actor):
+    repository = app.dependency_overrides.get(inventory_repository, inventory_repository)()
+    return repository.establishment(actor.get("id_estabelecimento", ""))
+
+
+def hotel_active(actor):
+    if actor["perfil"] != "HOTEL":
+        return True
+    item = hotel_establishment(actor)
+    return item is not None and item["status"] == "ATIVO"
+
+
 def current_user(authorization: str | None = Header(default=None)) -> dict:
     if persistent():
         return portal().current_user(authorization)
     scheme, _, token = (authorization or "").partition(" ")
     email = TOKENS.get(token) if scheme.casefold() == "bearer" else None
     user = DEMO_USERS.get(email) if email else None
-    if not user or not user.get("ativo"):
+    if not user or not user.get("ativo") or (user.get("id_estabelecimento") and not hotel_active(user)):
         raise HTTPException(status_code=401, detail="UNAUTHORIZED",
                             headers={"WWW-Authenticate": "Bearer"})
     return user
@@ -129,6 +144,11 @@ def current_user(authorization: str | None = Header(default=None)) -> dict:
 def audit(actor: dict, action: str, entity: str, entity_id: str, before: Any = None, after: Any = None) -> None:
     if persistent():
         return portal().audit(actor, action, entity, entity_id, before, after)
+    if action == "ESTABELECIMENTO_INATIVADO":
+        for token, email in list(TOKENS.items()):
+            account = DEMO_USERS.get(email, {})
+            if account.get("perfil") == "HOTEL" and account.get("id_estabelecimento") == entity_id:
+                TOKENS.pop(token, None)
     AUDIT_LOG.append({
         "id": str(uuid4()), "criado_em": datetime.now(timezone.utc).isoformat(),
         "id_usuario": actor["id_usuario"], "usuario": actor["email"], "acao": action,
@@ -213,8 +233,10 @@ def list_establishments(
     busca: Annotated[str | None, Query(max_length=120)] = None,
     status: Literal["ATIVO", "INATIVO"] | None = None,
     id_categoria: Annotated[int | None, Query(ge=1)] = None,
-    cadastur_status: Literal["OBRIGATORIO", "OPCIONAL", "NAO_CONSTA"] | None = None,
+    cadastur_status: CadasturStatus | None = None,
     aceita_pesquisas: bool | None = None,
+    somente_hospedagem: bool = False,
+    leitos_min: Annotated[int | None, Query(ge=0, le=2147483647)] = None,
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1, le=100)] = 20,
     ordenar_por: Literal["nome_fantasia", "criado_em", "atualizado_em"] = "nome_fantasia",
@@ -225,7 +247,7 @@ def list_establishments(
     query = InventoryQuery(
         busca=busca, status=status, id_categoria=id_categoria,
         cadastur_status=cadastur_status, aceita_pesquisas=aceita_pesquisas,
-        page=page, page_size=page_size, ordenar_por=ordenar_por, ordem=ordem,
+        leitos_min=leitos_min, somente_hospedagem=somente_hospedagem, page=page, page_size=page_size, ordenar_por=ordenar_por, ordem=ordem,
     )
     scope = user["id_estabelecimento"] if user["perfil"] == "HOTEL" else None
     if isinstance(repository, PostgresInventoryRepository):
@@ -248,12 +270,32 @@ app.include_router(create_write_router(inventory_repository, inventory_user, aud
 
 
 @app.post("/auth/login", tags=["Autenticação"])
-def login(payload: dict = Body(...)) -> Any:
+def login(request: Request, payload: dict = Body(...)) -> Any:
+    peer = request.client.host if request.client else "unknown"
     if persistent():
-        return portal().login(payload)
-    email = payload.get("email")
-    user = DEMO_USERS.get(email.strip().casefold()) if isinstance(email, str) else None
-    if not user or not isinstance(payload.get("senha"), str) or not payload["senha"] or user["senha"] != payload["senha"] or not user["ativo"]:
+        return portal().login(payload, peer)
+    from app.inventory_service import cnpj_digits
+    field, identifier, password = credentials(payload)
+    candidates, company_cnpj = [], None
+    if identifier and field == "cnpj":
+        for candidate in DEMO_USERS.values():
+            item = hotel_establishment(candidate) if candidate["perfil"] == "HOTEL" else None
+            if item and cnpj_digits(item.get("cnpj") or "") == identifier:
+                candidates.append(candidate)
+    elif identifier and (candidate := DEMO_USERS.get(identifier)):
+        candidates.append(candidate)
+        item = hotel_establishment(candidate) if candidate["perfil"] == "HOTEL" else None
+        company_cnpj = cnpj_digits(item.get("cnpj") or "") if item else None
+
+    def authenticate():
+        matches = [actor for actor in candidates if isinstance(password, str) and 0 < len(password) <= 128
+                   and actor["senha"] == password and actor["ativo"] and hotel_active(actor)]
+        return matches[0] if len(matches) == 1 else None
+
+    user, blocked = LOGIN_ATTEMPTS.check(account_key(field, identifier, company_cnpj), peer, authenticate)
+    if blocked:
+        return error_response(429, "LOGIN_RATE_LIMIT", "Muitas tentativas de login. Tente novamente mais tarde.")
+    if not user:
         return error_response(401, "INVALID_CREDENTIALS", "E-mail ou senha inválidos.")
     token = next((token for token, email in TOKENS.items() if email == user["email"]), None)
     if token is None:
@@ -322,6 +364,38 @@ def list_users(user: dict = Depends(current_user)) -> dict:
         return portal().users(user)
     ensure_role(user, "ADMINISTRADOR")
     return {"data": [public_user(item) for item in DEMO_USERS.values()]}
+
+
+@app.patch("/usuarios/{id_usuario}", tags=["Usuários"])
+def change_user_role(id_usuario: Annotated[int, APIPath(ge=1)], payload: dict = Body(...),
+                     user: dict = Depends(current_user),
+                     repository: InventoryRepository = Depends(inventory_repository)) -> dict:
+    if persistent():
+        return portal().change_role(user, id_usuario, payload)
+    ensure_role(user, "ADMINISTRADOR")
+    if id_usuario == user["id_usuario"]:
+        raise InventoryError(409, "CONFLICT", "Não é possível alterar o próprio perfil.")
+    target = next((row for row in DEMO_USERS.values() if row["id_usuario"] == id_usuario), None)
+    if not target:
+        raise InventoryError(404, "USER_NOT_FOUND", "Conta não encontrada.")
+    role, association = operations.role_change(payload, repository)
+    before = public_user(target)
+    if role == before["perfil"] and association == before.get("id_estabelecimento"):
+        return before
+    target["perfil"] = role
+    if association is None:
+        target.pop("id_estabelecimento", None)
+    else:
+        target["id_estabelecimento"] = association
+    for token, email in list(TOKENS.items()):
+        if email == target["email"]:
+            TOKENS.pop(token, None)
+    for invite in INVITES:
+        if invite["email"] == target["email"] and invite["status"] == "PENDENTE":
+            invite["status"] = "CANCELADO"
+    result = public_user(target)
+    audit(user, "USUARIO_PERFIL_ALTERADO", "USUARIO", str(id_usuario), before, result)
+    return result
 
 
 @app.post("/usuarios", status_code=status.HTTP_201_CREATED, tags=["Usuários"])
@@ -408,12 +482,20 @@ def list_surveys(user: dict = Depends(current_user)) -> dict:
     return {"data": SURVEYS}
 
 
+def check_survey_duplicate(data, exclude=None):
+    fields = ("tipo", "periodo_inicio", "periodo_fim")
+    if any(row["id_pesquisa"] != exclude and all(row[field] == data[field] for field in fields)
+           for row in SURVEYS):
+        raise InventoryError(409, "SURVEY_DUPLICATE", "Já existe uma pesquisa deste tipo e período.")
+
+
 @app.post("/pesquisas-ocupacao", status_code=status.HTTP_201_CREATED, tags=["Pesquisas de ocupação"])
 def create_survey(payload: dict = Body(...), user: dict = Depends(current_user)) -> Any:
     if persistent():
         return portal().save_survey(user, payload)
     ensure_role(user, "ADMINISTRADOR", "EDITOR")
     data = operations.survey(payload)
+    check_survey_duplicate(data)
     validate_survey_recipients(data["estabelecimentos"])
     survey = {"id_pesquisa": str(uuid4()), **data, "status": "ABERTA", "criada_por": user["id_usuario"]}
     SURVEYS.append(survey)
@@ -436,7 +518,11 @@ def update_survey(id_pesquisa: str, payload: dict = Body(...), user: dict = Depe
     if not payload:
         raise invalid_field("body", "Altere pelo menos um campo.")
     data = operations.survey({**{key: survey[key] for key in allowed}, **payload})
+    check_survey_duplicate(data, id_pesquisa)
     validate_survey_recipients(data["estabelecimentos"])
+    if any(row["id_pesquisa"] == id_pesquisa and row["id_estabelecimento"] not in data["estabelecimentos"]
+           for row in OCCUPANCY_RESPONSES):
+        raise InventoryError(409, "CONFLICT", "Uma hospedagem com resposta não pode ser removida.")
     before = deepcopy(survey)
     survey.update(data)
     audit(user, "PESQUISA_ATUALIZADA", "PESQUISA_OCUPACAO", id_pesquisa, before, survey)
@@ -472,9 +558,12 @@ def pending_surveys(user: dict = Depends(current_user)) -> dict:
 
 
 @app.post("/pesquisas-ocupacao/{id_pesquisa}/respostas", status_code=status.HTTP_201_CREATED, tags=["Respostas de ocupação"])
-def submit_occupancy_response(id_pesquisa: str, payload: dict = Body(...), user: dict = Depends(current_user)) -> Any:
+def submit_occupancy_response(id_pesquisa: str, http_response: Response, payload: dict = Body(...), user: dict = Depends(current_user)) -> Any:
     if persistent():
-        return portal().answer(user, id_pesquisa, payload)
+        result, corrected = portal().answer(user, id_pesquisa, payload)
+        if corrected:
+            http_response.status_code = 200
+        return result
     ensure_role(user, "HOTEL")
     association = user.get("id_estabelecimento")
     survey = next((item for item in SURVEYS if item["id_pesquisa"] == id_pesquisa), None)
@@ -488,11 +577,19 @@ def submit_occupancy_response(id_pesquisa: str, payload: dict = Body(...), user:
     rate = payload["taxa_ocupacao"]
     if isinstance(rate, bool) or not isinstance(rate, (float, int)) or not 0 <= rate <= 100:
         raise invalid_field("taxa_ocupacao", "Informe uma taxa entre 0 e 100%.")
-    if any(item["id_pesquisa"] == id_pesquisa and item.get("id_estabelecimento") == association for item in OCCUPANCY_RESPONSES):
-        return error_response(409, "RESPONSE_ALREADY_SENT", "A resposta desta pesquisa já foi enviada.")
-    response = {"id_resposta": str(uuid4()), "id_pesquisa": id_pesquisa, "id_usuario": user["id_usuario"], "id_estabelecimento": association, "dados": payload, "enviada_em": datetime.now(timezone.utc).isoformat()}
-    OCCUPANCY_RESPONSES.append(response)
-    audit(user, "RESPOSTA_OCUPACAO_ENVIADA", "RESPOSTA_OCUPACAO", response["id_resposta"], after=response)
+    previous = next((item for item in OCCUPANCY_RESPONSES if item["id_pesquisa"] == id_pesquisa
+                     and item.get("id_estabelecimento") == association), None)
+    response = {"id_resposta": previous["id_resposta"] if previous else str(uuid4()),
+                "id_pesquisa": id_pesquisa, "id_usuario": user["id_usuario"],
+                "id_estabelecimento": association, "dados": payload,
+                "enviada_em": datetime.now(timezone.utc).isoformat()}
+    if previous:
+        OCCUPANCY_RESPONSES[OCCUPANCY_RESPONSES.index(previous)] = response
+        http_response.status_code = 200
+    else:
+        OCCUPANCY_RESPONSES.append(response)
+    audit(user, "RESPOSTA_OCUPACAO_CORRIGIDA" if previous else "RESPOSTA_OCUPACAO_ENVIADA",
+          "RESPOSTA_OCUPACAO", response["id_resposta"], previous, response)
     return response
 
 
@@ -510,11 +607,11 @@ def occupancy_history(user: dict = Depends(current_user)) -> dict:
 
 
 @app.get("/auditoria", tags=["Auditoria"])
-def list_audit_log(acao: str | None = None, id_usuario: int | None = None, data_inicio: str | None = None, data_fim: str | None = None, user: dict = Depends(current_user)) -> dict:
+def list_audit_log(acao: str | None = None, id_usuario: int | None = None, data_inicio: str | None = None, data_fim: str | None = None, id_entidade: Annotated[str | None, Query(max_length=64)] = None, user: dict = Depends(current_user)) -> dict:
     if persistent():
-        return portal().audit_log(user, acao, id_usuario, data_inicio, data_fim)
+        return portal().audit_log(user, acao, id_usuario, data_inicio, data_fim, id_entidade)
     ensure_role(user, "ADMINISTRADOR")
-    return {"data": audit_records(AUDIT_LOG, acao, id_usuario, data_inicio, data_fim)}
+    return {"data": audit_records(AUDIT_LOG, acao, id_usuario, data_inicio, data_fim, id_entidade)}
 
 
 @app.get("/dashboard", tags=["Dashboard"])
@@ -526,25 +623,15 @@ def dashboard(user: dict = Depends(current_user), repository: InventoryRepositor
 
 
 @app.post("/relatorios", status_code=status.HTTP_202_ACCEPTED, tags=["Relatórios"])
-def generate_report(payload: dict = Body(...), user: dict = Depends(current_user)) -> Any:
+def generate_report(payload: dict = Body(...), user: dict = Depends(current_user),
+                    repository: InventoryRepository = Depends(inventory_repository)) -> Any:
     if persistent():
         return portal().generate_report(user, payload)
     ensure_role(user, "ADMINISTRADOR", "GESTOR")
-    report_type, report_format = payload.get("tipo"), payload.get("formato")
-    if report_type != "OCUPACAO" or report_format not in ("PDF", "CSV"):
-        return error_response(422, "VALIDATION_ERROR", "Informe tipo OCUPACAO e formato PDF ou CSV.")
-    survey_id = payload.get("id_pesquisa")
-    if survey_id and not any(item["id_pesquisa"] == survey_id for item in SURVEYS):
-        return error_response(404, "SURVEY_NOT_FOUND", "Pesquisa não encontrada.")
-    surveys = {item["id_pesquisa"]: item for item in SURVEYS}
-    rows = [["Pesquisa", "Hospedagem", "Período inicial", "Período final", "Ocupação (%)", "Enviada em"]]
-    for item in OCCUPANCY_RESPONSES:
-        if survey_id and item["id_pesquisa"] != survey_id:
-            continue
-        survey = surveys.get(item["id_pesquisa"], {})
-        establishment = inventory_repository().establishment(item.get("id_estabelecimento", "")) or {}
-        rows.append([survey.get("titulo", ""), establishment.get("nome_fantasia", ""), survey.get("periodo_inicio", ""), survey.get("periodo_fim", ""), item["dados"].get("taxa_ocupacao", ""), item["enviada_em"]])
-    content, mime = build_report(report_format, rows)
+    rows = report_rows(payload, repository, lambda: SURVEYS, lambda: OCCUPANCY_RESPONSES)
+    report_type, report_format = payload["tipo"], payload["formato"]
+    title = "Boletim do Inventário — OTO" if report_type == "INVENTARIO" else "Relatório de ocupação — OTO"
+    content, mime = build_report(report_format, rows, title)
     report_id = str(uuid4())
     report = {"id_relatorio": report_id, "tipo": report_type, "formato": report_format, "status": "CONCLUIDO", "criado_em": datetime.now(timezone.utc).isoformat(), "download_url": f"/relatorios/{report_id}/arquivo"}
     REPORT_FILES[report_id] = (content, mime)
@@ -589,6 +676,15 @@ def change_password(payload: contract_model('AlteracaoSenha'), user: dict = Depe
     if not persistent():
         raise InventoryError(503,'MOCK_NOT_AVAILABLE','Este fluxo exige PostgreSQL.')
     return portal().change_password(user,payload.model_dump())
+
+
+@app.delete('/usuarios/{id_usuario}', status_code=204, tags=['Usuários'])
+def delete_user(id_usuario: Annotated[int, APIPath(ge=1)], user: dict = Depends(current_user)):
+    ensure_role(user, 'ADMINISTRADOR')
+    if not persistent():
+        raise InventoryError(503, 'MOCK_NOT_AVAILABLE', 'Este fluxo exige PostgreSQL.')
+    portal().delete_user(user, id_usuario)
+    return Response(status_code=204)
 
 
 @app.post('/usuarios/{id_usuario}/inativacao', tags=['Usuários'])

@@ -7,6 +7,7 @@ from typing import BinaryIO, Callable
 from uuid import uuid4
 
 from app.document_storage import DocumentStorage
+from app.cadastur import cadastur_for
 from app.inventory_errors import InventoryError, invalid_field
 from app.inventory_repository import WritableInventoryRepository
 
@@ -80,9 +81,13 @@ class InventoryService:
             return
         if not valid_cnpj(value):
             raise invalid_field("cnpj", "CNPJ inválido.")
-        if any(item["id_estabelecimento"] != establishment_id and item.get("cnpj") and
-               cnpj_digits(item["cnpj"]) == cnpj_digits(value) for item in self.repository.establishments()):
-            raise InventoryError(409, "CONFLICT", "Já existe um estabelecimento cadastrado com esse CNPJ.")
+        duplicate = next((item for item in self.repository.establishments()
+                          if item["id_estabelecimento"] != establishment_id and item.get("cnpj")
+                          and cnpj_digits(item["cnpj"]) == cnpj_digits(value)), None)
+        if duplicate:
+            identifier = duplicate["id_estabelecimento"]
+            raise InventoryError(409, "CONFLICT", "Já existe um estabelecimento cadastrado com esse CNPJ.",
+                                 [{"field": "cnpj", "issue": f"Estabelecimento existente: {identifier}."}])
 
     def create(self, actor: dict, payload: dict) -> dict:
         authorize(actor, admin_only=True)
@@ -90,12 +95,16 @@ class InventoryService:
             for field in ("razao_social", "cnpj"):
                 if payload[field] is None:
                     raise invalid_field(field, "Campo obrigatório no cadastro.")
+            if hasattr(self.repository, "lock_cnpj"):
+                self.repository.lock_cnpj(cnpj_digits(payload["cnpj"]))
             self.check_cnpj(payload["cnpj"])
-            item = {"aceita_pesquisas": True, "cadastur_status": "OBRIGATORIO", "possui_cadastur": False,
+            item = {"aceita_pesquisas": True, "possui_cadastur": False,
                     "meio_hospedagem": None, "infraestrutura": None, **payload,
                     "id_estabelecimento": str(uuid4()), "status": "ATIVO", "motivo_inativacao": None,
                     "criado_em": now(), "atualizado_em": now(), "documentos": [],
                     "categoria": self.category(payload["id_categoria"])}
+            if "cadastur_status" not in payload:
+                item["cadastur_status"] = cadastur_for(item)
             self.repository.save(item)
             self.audit(actor, "ESTABELECIMENTO_CRIADO", "ESTABELECIMENTO", item["id_estabelecimento"], after=item)
             return item
@@ -106,10 +115,14 @@ class InventoryService:
         with self.repository.transaction():
             before = self.establishment(establishment_id)
             if "cnpj" in changes:
+                if changes["cnpj"] is not None and hasattr(self.repository, "lock_cnpj"):
+                    self.repository.lock_cnpj(cnpj_digits(changes["cnpj"]))
                 self.check_cnpj(changes["cnpj"], establishment_id)
             item = merge_changes(before, changes)
             if "id_categoria" in changes:
                 item["categoria"] = self.category(changes["id_categoria"])
+            if "cadastur_status" not in changes and {"possui_cadastur", "vencimento_cadastur"} & changes.keys():
+                item["cadastur_status"] = cadastur_for(item)
             item["atualizado_em"] = now()
             self.repository.save(item)
             self.audit(actor, "ESTABELECIMENTO_ATUALIZADO", "ESTABELECIMENTO", establishment_id, before, item)
@@ -117,6 +130,10 @@ class InventoryService:
 
     def change_status(self, actor: dict, establishment_id: str, active: bool, reason: str | None = None) -> dict:
         authorize(actor, admin_only=True)
+        if not active:
+            reason = (reason or "").strip()
+            if not 3 <= len(reason) <= 500:
+                raise invalid_field("motivo_inativacao", "Informe um motivo de 3 a 500 caracteres.")
         with self.repository.transaction():
             before = self.establishment(establishment_id)
             target = "ATIVO" if active else "INATIVO"
@@ -213,5 +230,5 @@ class InventoryService:
                 raise InventoryError(404, "NOT_FOUND", "Arquivo não encontrado.")
             try:
                 return self.storage.open(key), document["arquivo"]
-            except FileNotFoundError:
+            except (FileNotFoundError, ValueError):
                 raise InventoryError(404, "NOT_FOUND", "Arquivo não encontrado.") from None

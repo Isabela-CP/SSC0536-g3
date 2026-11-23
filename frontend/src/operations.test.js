@@ -262,7 +262,7 @@ test('painel de contas preserva equipe, hospedagens e histórico na inativação
   assert.match(result, /Equipe Interna/)
   assert.match(result, /Hospedagens/)
   assert.match(result, /Reenviar convite/)
-  assert.match(result, /As contas são inativadas para preservar o histórico/)
+  assert.match(result, /retira a conta do painel e preserva o histórico/)
 })
 test('GESTOR consulta pesquisas sem receber ações de gestão', () => {
   const survey = {
@@ -440,7 +440,7 @@ test('tela de redefinição oculta e-mail e senha fica protegida', () => {
 test('contas ativas e inativas oferecem transições, pendentes oferecem reenvio', () => {
   const result = render('AccountsPage', {
     api: {},
-    user: { id_usuario: 1 },
+    user: { id_usuario: 1, perfil: 'ADMINISTRADOR' },
     initialData: {
       recipients: [],
       users: [
@@ -453,7 +453,7 @@ test('contas ativas e inativas oferecem transições, pendentes oferecem reenvio
   assert.match(result, /disabled="">Inativar/)
   assert.match(result, />Reativar</)
   assert.match(result, /Reenviar convite/)
-  assert.doesNotMatch(result, />Remover</)
+  assert.equal((result.match(/>Excluir</g) || []).length, 2)
 })
 test('sessão sem expiração válida não é reutilizada', () => {
   const store = storage()

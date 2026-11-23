@@ -99,8 +99,7 @@ export function AccountDialog({
           ))}
         </div>
         <p className="file-hint">
-          O convite será colocado na fila de envio. Em desenvolvimento, consulte a caixa de
-          e-mail local (Mailpit).
+          O convite será colocado na fila de envio.
         </p>
         <div className="form-actions">
           <button
@@ -123,6 +122,42 @@ export function AccountDialog({
     </Modal>
   )
 }
+function RoleDialog({ api, account, recipients, onClose, onSaved }) {
+  const operation = useOperation()
+  const [profile, setProfile] = useState(account.perfil)
+  const [company, setCompany] = useState(account.id_estabelecimento || '')
+  return (
+    <Modal title={`Alterar perfil de ${account.nome}`} onClose={onClose} busy={operation.busy}>
+      <form onSubmit={(event) => {
+        event.preventDefault()
+        operation.run(() => api.changeRole(account.id_usuario, {
+          perfil: profile, ...(profile === 'HOTEL' && { id_estabelecimento: company }),
+        }), onSaved)
+      }}>
+        <OperationFeedback operation={operation} />
+        <fieldset className="field-grid" disabled={operation.busy}>
+          <label>Perfil
+            <select value={profile} onChange={(event) => setProfile(event.target.value)}>
+              {Object.entries(roles).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+            </select>
+          </label>
+          {profile === 'HOTEL' && (
+            <label>Hospedagem vinculada
+              <select required value={company} onChange={(event) => setCompany(event.target.value)}>
+                <option value="">Selecione</option>
+                {recipients.map((item) => <option key={item.id_estabelecimento} value={item.id_estabelecimento}>{item.nome_fantasia}</option>)}
+              </select>
+            </label>
+          )}
+        </fieldset>
+        <button className="button button-primary" disabled={operation.busy ||
+          (profile === account.perfil && (profile !== 'HOTEL' || company === account.id_estabelecimento))}>
+          {operation.busy ? 'Salvando…' : 'Confirmar alteração'}
+        </button>
+      </form>
+    </Modal>
+  )
+}
 export default function AccountsPage({ api, user: actor, initialData = null }) {
   const resource = useResource(
       async (options) => {
@@ -137,7 +172,10 @@ export default function AccountsPage({ api, user: actor, initialData = null }) {
     ),
     [dialog, setDialog] = useState(false),
     [changing, setChanging] = useState(null),
+    [deleting, setDeleting] = useState(null),
+    [editingRole, setEditingRole] = useState(null),
     operation = useOperation()
+  const canManage = !api.preview && actor?.perfil === 'ADMINISTRADOR'
   const columns = [
     { key: 'nome', label: 'Nome' },
     { key: 'email', label: 'E-mail' },
@@ -153,7 +191,11 @@ export default function AccountsPage({ api, user: actor, initialData = null }) {
       label: 'Ações',
       render: (user) => (
         <div className="document-actions">
-          {!user.ativo && user.status !== 'INATIVO' && (
+          {api.preview && actor?.perfil === 'ADMINISTRADOR' && user.id_usuario !== actor.id_usuario && (
+            <button type="button" className="button button-small button-secondary" disabled={operation.busy}
+              onClick={() => setEditingRole(user)}>Alterar perfil</button>
+          )}
+          {!api.preview && !user.ativo && user.status !== 'INATIVO' && (
             <button
               className="button button-small button-secondary"
               disabled={operation.busy}
@@ -167,13 +209,19 @@ export default function AccountsPage({ api, user: actor, initialData = null }) {
               Reenviar convite
             </button>
           )}
-          {(user.ativo || user.status === 'INATIVO') && (
+          {canManage && (user.ativo || user.status === 'INATIVO') && (
             <button
               className="button button-small button-secondary"
               disabled={operation.busy || user.id_usuario === actor?.id_usuario}
               onClick={() => setChanging(user)}
             >
               {user.ativo ? 'Inativar' : 'Reativar'}
+            </button>
+          )}
+          {canManage && user.id_usuario !== actor.id_usuario && (
+            <button type="button" className="button button-small button-secondary"
+              disabled={operation.busy} onClick={() => setDeleting(user)}>
+              Excluir
             </button>
           )}
         </div>
@@ -189,9 +237,11 @@ export default function AccountsPage({ api, user: actor, initialData = null }) {
       <OperationFeedback operation={operation} />
       {resource.data && (
         <>
-          <button className="button button-primary" onClick={() => setDialog(true)}>
-            Criar Nova Conta
-          </button>
+          {!api.preview && (
+            <button className="button button-primary" onClick={() => setDialog(true)}>
+              Criar Nova Conta
+            </button>
+          )}
           {[
             ['Equipe Interna', false],
             ['Hospedagens', true],
@@ -205,7 +255,31 @@ export default function AccountsPage({ api, user: actor, initialData = null }) {
               />
             </section>
           ))}
-          <p className="muted">As contas são inativadas para preservar o histórico.</p>
+          <p className="muted">Inativar suspende o acesso. Excluir também retira a conta do painel e preserva o histórico.</p>
+          {deleting && (
+            <ConfirmAction
+              title="Excluir conta"
+              label="Excluir"
+              onClose={() => setDeleting(null)}
+              action={() => api.deleteUser(deleting.id_usuario)}
+              onDone={() => {
+                resource.reload()
+                operation.success('Conta excluída.')
+              }}
+            >
+              <p>{deleting.nome} — {deleting.email}</p>
+              <p>A conta perderá acesso e sairá do painel. O e-mail poderá ser usado em uma nova conta.</p>
+            </ConfirmAction>
+          )}
+          {editingRole && (
+            <RoleDialog api={api} account={editingRole} recipients={resource.data.recipients}
+              onClose={() => setEditingRole(null)}
+              onSaved={() => {
+                setEditingRole(null)
+                resource.reload()
+                operation.success('Perfil atualizado.')
+              }} />
+          )}
           {changing && (
             <ConfirmAction
               title={changing.ativo ? 'Inativar conta' : 'Reativar conta'}
@@ -215,7 +289,10 @@ export default function AccountsPage({ api, user: actor, initialData = null }) {
                   ? api.inactivateUser(changing.id_usuario)
                   : api.reactivateUser(changing.id_usuario)
               }
-              onDone={resource.reload}
+              onDone={() => {
+                resource.reload()
+                operation.success(changing.ativo ? 'Conta inativada.' : 'Conta reativada.')
+              }}
               label={changing.ativo ? 'Inativar' : 'Reativar'}
             >
               <p>

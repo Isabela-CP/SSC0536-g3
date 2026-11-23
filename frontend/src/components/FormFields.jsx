@@ -257,6 +257,7 @@ export function RootFields({
   protectedDisabled = false,
   compact = false,
   categories = [],
+  cadasturOptions,
   mode = 'edit',
 }) {
   return (
@@ -275,7 +276,7 @@ export function RootFields({
           options={
             path === 'id_categoria'
               ? categories.map((item) => ({ value: item.id_categoria, label: item.nome_categoria }))
-              : undefined
+              : path === 'cadastur_status' ? cadasturOptions : undefined
           }
         />
       ))}

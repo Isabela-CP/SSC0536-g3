@@ -1,6 +1,7 @@
 import os
 os.environ["OTO_DATA_BACKEND"] = "memory"
 import json
+from copy import deepcopy
 from types import SimpleNamespace
 
 import pytest
@@ -20,6 +21,9 @@ def write_env(tmp_path, monkeypatch):
     monkeypatch.setitem(main.app.dependency_overrides, main.inventory_repository, lambda: repository)
     monkeypatch.setitem(main.app.dependency_overrides, document_storage, lambda: storage)
     monkeypatch.setattr(main, "AUDIT_LOG", [])
+    monkeypatch.setattr(main, "DEMO_USERS", deepcopy(main.DEMO_USERS))
+    monkeypatch.setattr(main, "TOKENS", main.TOKENS.copy())
+    monkeypatch.setattr(main, "LOGIN_ATTEMPTS", main.MemoryAttempts())
     seed_bytes = main.SEED_FILE.read_bytes()
     contract = json.loads(main.OPENAPI_FILE.read_text(encoding="utf-8"))
 

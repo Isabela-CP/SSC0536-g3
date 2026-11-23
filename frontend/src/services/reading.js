@@ -1,4 +1,5 @@
 import { allEstablishments, inventoryQuery } from '../domain/reading.js'
+import { lodgingNames } from '../domain/qaOptions.js'
 import { hostingCategories } from '../domain/establishment.js'
 export async function loadInventory(api, draft, options = {}) {
   const categories = hostingCategories((await api.categories(options)).data)
@@ -9,9 +10,11 @@ export async function loadInventory(api, draft, options = {}) {
       markers: [],
       pagination: { page: 1, page_size: 20, total: 0, total_pages: 1 },
     }
-  const params = {
-    ...inventoryQuery(draft),
-    id_categoria: Number(draft.id_categoria || categories[0].id_categoria),
+  const params = inventoryQuery(draft)
+  if (!api.preview && !params.id_categoria) {
+    if (categories.some((row) => lodgingNames.includes(row.nome_categoria)))
+      params.somente_hospedagem = true
+    else params.id_categoria = Number(categories[0].id_categoria)
   }
   const [result, markers] = await Promise.all([
     api.establishments(params, options),

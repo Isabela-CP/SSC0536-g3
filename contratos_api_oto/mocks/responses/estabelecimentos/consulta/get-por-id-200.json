@@ -17,7 +17,7 @@
   "telefone_pesquisas": "+55 16 99999-1000",
   "email_pesquisas": "pesquisas@serra-azul.example",
   "aceita_pesquisas": true,
-  "cadastur_status": "OBRIGATORIO",
+  "cadastur_status": "REGULAR",
   "possui_cadastur": true,
   "numero_cadastur": "CAD-OTO-000123",
   "vencimento_cadastur": "2027-08-31",

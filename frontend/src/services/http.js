@@ -58,10 +58,18 @@ export function createHttpClient({
   }
 }
 
-export function createInventoryApi(request) {
+export function createInventoryApi(request, { preview = false } = {}) {
   const itemPath = (id) => `/estabelecimentos/${encodeURIComponent(id)}`
   const documentPath = (id, doc) => `${itemPath(id)}/documentos/${encodeURIComponent(doc)}`
   return {
+    preview,
+    changeRole: (id, body) =>
+      request(`/usuarios/${encodeURIComponent(id)}`, { method: 'PATCH', body }),
+    importInventory: (file) => {
+      const body = new FormData()
+      body.append('arquivo', file, file.name)
+      return request('/estabelecimentos/importacao', { method: 'POST', body })
+    },
     dashboard: (options) => request('/dashboard', options),
     audit: (params = {}, options = {}) =>
       request(`/auditoria?${new URLSearchParams(params)}`, options),
@@ -77,6 +85,7 @@ export function createInventoryApi(request) {
     resetPassword: (payload) =>
       request('/auth/redefinicao-senha', { method: 'POST', body: payload }),
     changePassword: (payload) => request('/perfil/senha', { method: 'PUT', body: payload }),
+    deleteUser: (id) => request(`/usuarios/${encodeURIComponent(id)}`, { method: 'DELETE' }),
     inactivateUser: (id) =>
       request(`/usuarios/${encodeURIComponent(id)}/inativacao`, { method: 'POST' }),
     reactivateUser: (id) =>
