@@ -1,7 +1,7 @@
 """UC00 — Autenticar no sistema (RF-06, RNF-01) e controle de sessão."""
 import pytest
 
-from apoio_api import CONTAS, SENHAS, defeito, erro
+from apoio_api import CONTAS, SENHAS, erro
 
 pytestmark = pytest.mark.uc("UC00")
 
@@ -75,10 +75,10 @@ def test_ft_aut_08_sessao_expirada(api):
     assert cliente.get("/estabelecimentos").status_code == 401
 
 
-@defeito("DF-01", "Não há limitação de tentativas: após 5 senhas erradas, a credencial correta ainda autentica (UC11 3c).")
 def test_ft_aut_09_bloqueio_apos_tentativas_invalidas(api):
     """EX 3c — várias tentativas inválidas devem bloquear temporariamente o acesso."""
-    for _ in range(5):
+    for _ in range(4):
         assert api.anon.post("/auth/login", json={"email": CONTAS["HOTEL"], "senha": "errada!!"}).status_code == 401
+    assert api.anon.post("/auth/login", json={"email": CONTAS["HOTEL"], "senha": "errada!!"}).status_code in (423, 429)
     durante_bloqueio = api.anon.post("/auth/login", json={"email": CONTAS["HOTEL"], "senha": SENHAS["HOTEL"]})
     assert durante_bloqueio.status_code in (423, 429)

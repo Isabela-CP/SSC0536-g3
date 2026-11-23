@@ -12,7 +12,7 @@ from types import SimpleNamespace
 import pytest
 
 from app.postgres_portal import PostgresPortal
-from apoio import PDF_MINIMO, SERRA_AZUL, defeito, enviar_documento
+from apoio import PDF_MINIMO, SERRA_AZUL, enviar_documento
 from conftest import limpar_caches
 
 CSV_INICIO = "Pesquisa"
@@ -129,8 +129,6 @@ def test_int_arq_05_arquivo_ausente_no_storage(sistema, storage):
 
 
 @pytest.mark.integracao("api", "postgresql", "storage")
-@defeito("DF-11", "Documento do seed tem caminho_storage fora do formato UUID: o storage lança ValueError e o "
-                  "download responde 500, e não 404 como documenta o backend/README.md.")
 def test_int_arq_06_documento_do_seed_sem_binario(sistema, storage):
     """EX — metadados do seed sem binário: download 404 (o sistema não fabrica arquivos)."""
     admin = sistema.como("ADMINISTRADOR")

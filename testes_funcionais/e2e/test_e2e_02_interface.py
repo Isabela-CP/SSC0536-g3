@@ -6,7 +6,7 @@ import pytest
 
 expect = pytest.importorskip("playwright.sync_api", reason="Playwright não instalado; use a imagem de testes_funcionais/e2e/Dockerfile.").expect
 
-from apoio import CONTAS, SERRA_AZUL, cnpj_unico, defeito, escolher_opcao, ir, unico
+from apoio import CONTAS, SERRA_AZUL, cnpj_unico, escolher_opcao, ir, unico
 
 PROIBIDO = "Seu perfil não pode acessar esta área."
 
@@ -172,7 +172,6 @@ def test_ft_ui_10_busca_e_sem_resultados(abrir):
 
 
 @pytest.mark.uc("UC05")
-@defeito("DF-10", "Sem resultados, a tela só informa; não sugere limpar os filtros (o único 'Limpar' fica oculto no painel recolhido) (UC05 3a).")
 def test_ft_ui_11_sem_resultados_sugere_limpar_filtros(abrir):
     """EX 3a — além de informar, o sistema sugere limpar os filtros."""
     pagina = abrir("EDITOR")

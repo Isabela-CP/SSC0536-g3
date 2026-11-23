@@ -13,7 +13,6 @@ from uuid import uuid4
 
 import pytest
 
-from apoio import defeito
 from apoio_stack import PDF, SERRA_AZUL, Stack, cnpj_unico
 
 pytestmark = pytest.mark.skipif(not os.getenv("OTO_STACK_URL"), reason="defina OTO_STACK_URL (stack Docker descartável)")
@@ -97,8 +96,6 @@ def test_int_stk_03_worker_parado_e_fila_preservada(stack):
 
 
 @pytest.mark.integracao("worker", "smtp", "outbox")
-@defeito("DF-12", "O worker repete a cada 1 s sem intervalo crescente: uma queda de ~10 s do SMTP/Brevo esgota as 10 "
-                  "tentativas e o convite/recuperação nunca é entregue, mesmo com o servidor de volta.")
 def test_int_stk_04_queda_curta_do_servidor_de_email(stack):
     """EX — o servidor de e-mail fica 15 s fora do ar: ao voltar, a mensagem pendente deve ser entregue."""
     email = f"queda.{uuid4().hex[:6]}@example.test"

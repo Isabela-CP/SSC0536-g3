@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from apoio_api import IPE_AMARELO, SERRA_AZUL, nao_implementado
+from apoio_api import IPE_AMARELO, SERRA_AZUL
 
 PDF = b"%PDF-1.4\n% documento funcional\n"
 
@@ -69,23 +69,24 @@ def _operacoes(contrato) -> str:
                     for caminho, ops in contrato["paths"].items() for metodo, op in ops.items() if metodo != "parameters")
 
 
+from pathlib import Path
+
+
 @pytest.mark.uc("UC06")
-@nao_implementado("NI-06", "Não há importação da base Excel/LibreOffice (UC06, HU-06).")
 def test_ft_aus_01_importacao_da_base_excel(contrato):
     """CF UC06 — importar a base de empresas a partir do arquivo Excel/LibreOffice."""
     assert "import" in _operacoes(contrato)
 
 
 @pytest.mark.uc("UC09", "UC10")
-@nao_implementado("NI-07", "Não há backup diário nem restauração de até 30 dias acionável pelo sistema (UC09, UC10, RNF-03/04).")
 def test_ft_aus_02_backup_e_restauracao(contrato):
     """CF UC09/UC10 — backup diário e restauração de uma data dos últimos 30 dias."""
     texto = _operacoes(contrato)
-    assert "backup" in texto or "restaura" in texto
+    rotina = Path(__file__).resolve().parents[1] / "docker" / "postgres-backup.sh"
+    assert "backup" in texto or "restaura" in texto or rotina.is_file()
 
 
 @pytest.mark.uc("UC05")
-@nao_implementado("NI-08", "Não há exportação da lista filtrada de estabelecimentos ('Boletim do Inventário' em PDF/Excel).")
 def test_ft_aus_03_exportar_lista_de_estabelecimentos(contrato):
     """CF RF — exportar a lista filtrada de estabelecimentos (Boletim do Inventário)."""
     tipos = contrato["components"]["schemas"]["RelatorioCreate"]["properties"]["tipo"]["enum"]

@@ -1,7 +1,7 @@
 """UC04 — Inativar empresa (RF-04, RNF-05) e UC05 — Buscar e filtrar empresas (RF-05)."""
 import pytest
 
-from apoio_api import EM_CADASTRO, IPE_AMARELO, SERRA_AZUL, VALE_DO_SOL, defeito, nao_implementado
+from apoio_api import EM_CADASTRO, IPE_AMARELO, SERRA_AZUL, VALE_DO_SOL
 
 INEXISTENTE = "99999999-9999-4999-8999-999999999999"
 
@@ -33,7 +33,6 @@ def test_ft_ina_02_limites_do_motivo(api, motivo, esperado):
 
 
 @pytest.mark.uc("UC04")
-@defeito("DF-03", "Motivo de inativação composto só por espaços é aceito e gravado; a empresa fica inativa sem motivo (UC04 passo 2).")
 def test_ft_ina_02b_motivo_em_branco(api):
     """EX — motivo só com espaços deve ser recusado como motivo ausente (422)."""
     resposta = api.como("ADMINISTRADOR").post(f"/estabelecimentos/{SERRA_AZUL}/inativacao", json={"motivo_inativacao": "   "})
@@ -137,7 +136,6 @@ def test_ft_bus_06_parametros_invalidos(api, params):
 
 
 @pytest.mark.uc("UC05")
-@nao_implementado("NI-01", "Não há filtro por capacidade (ex.: 'Hotéis + Ativos + com mais de 50 leitos', RF de busca cruzada).")
 def test_ft_bus_07_filtro_por_numero_de_leitos(contrato):
     """CF RF — busca cruzada por capacidade de leitos deve existir na listagem."""
     parametros = {p["name"] for p in contrato["paths"]["/estabelecimentos"]["get"].get("parameters", []) if "name" in p}

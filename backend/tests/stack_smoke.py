@@ -64,7 +64,9 @@ if __name__=='__main__':
     report=request('/relatorios',{'tipo':'OCUPACAO','formato':'PDF'},token)
     content=request('/relatorios/'+report['id_relatorio']+'/arquivo',token=token)
     assert content.startswith(b'%PDF-')
-    subprocess.run(['docker','compose','restart','api','worker'],check=True)
+    project = os.getenv('OTO_STACK_PROJECT') or os.getenv('COMPOSE_PROJECT_NAME')
+    cmd = ['docker','compose'] + (['-p', project] if project else []) + ['restart','api','worker']
+    subprocess.run(cmd,check=True)
     ready()
     # Reutiliza a sessão emitida antes do reinício: o token e os dados vivem no SQL.
     restored=request('/estabelecimentos/'+item['id_estabelecimento'],token=token)

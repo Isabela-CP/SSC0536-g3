@@ -2,7 +2,7 @@
 import pytest
 
 from apoio_api import (EM_CADASTRO, IPE_AMARELO, PESQUISA_CONSOLIDADO_ABERTA, PESQUISA_ENCERRADA,
-                      PESQUISA_EXPECTATIVA_ABERTA, SERRA_AZUL, VALE_DO_SOL, defeito, nova_pesquisa)
+                      PESQUISA_EXPECTATIVA_ABERTA, SERRA_AZUL, VALE_DO_SOL, nova_pesquisa)
 
 INEXISTENTE = "99999999-9999-4999-8999-999999999999"
 
@@ -47,7 +47,6 @@ def test_ft_pes_04_perfis_sem_permissao(api, perfil):
 
 
 @pytest.mark.uc("UC13")
-@defeito("DF-06", "É possível criar duas pesquisas do mesmo tipo e período (UC13 2a exige impedir a duplicidade).")
 def test_ft_pes_05_pesquisa_duplicada(api):
     """EX 2a — mesma combinação tipo + período deve ser recusada."""
     editor = api.como("EDITOR")
@@ -102,7 +101,6 @@ def test_ft_res_02_limites_da_taxa(api, taxa, esperado):
 
 
 @pytest.mark.uc("UC14")
-@defeito("DF-07", "Resposta já enviada não pode ser corrigida com a pesquisa aberta: retorna 409 (UC14 3a e Persona 03).")
 def test_ft_res_03_corrigir_resposta_com_pesquisa_aberta(api):
     """EX 3a — empresário já respondeu: o sistema permite corrigir enquanto a pesquisa estiver aberta."""
     hotel = api.como("HOTEL")   # Serra Azul já respondeu a pesquisa 3 (72,92%)

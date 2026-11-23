@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 
 from app import main
 from app.postgres_portal import PostgresPortal
-from apoio_api import CONTAS, SERRA_AZUL, nao_implementado, novo_estabelecimento
+from apoio_api import CONTAS, SERRA_AZUL, novo_estabelecimento
 
 
 def _registro(api, acao, id_entidade):
@@ -81,7 +81,6 @@ def test_ft_aud_06_periodo_invertido(api):
 
 
 @pytest.mark.uc("UC08")
-@nao_implementado("NI-02", "GET /auditoria não aceita filtro por empresa (id_entidade), exigido pelo UC08 passo 2.")
 def test_ft_aud_07_filtro_por_empresa(api):
     """CF UC08 — filtrar o histórico por estabelecimento."""
     api.como("EDITOR").patch(f"/estabelecimentos/{SERRA_AZUL}", json={"telefone_comercial": "+55 17 1"})

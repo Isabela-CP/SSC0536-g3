@@ -6,7 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app import main
-from apoio_api import CONTAS, SERRA_AZUL, erro, nao_implementado
+from apoio_api import CONTAS, SERRA_AZUL, erro
 
 pytestmark = pytest.mark.uc("UC07")
 
@@ -140,7 +140,6 @@ def test_ft_usr_10_nao_admin_nao_gerencia_contas(api, perfil):
     assert cliente.post("/usuarios/2/inativacao").status_code == 403
 
 
-@nao_implementado("NI-03", "Não há operação para alterar o perfil de uma conta existente (UC07 passo 3); o contrato não define PATCH /usuarios/{id}.")
 def test_ft_usr_11_alterar_perfil_de_conta_existente(contrato):
     """CF UC07 — ADMIN atribui novo perfil a usuário existente."""
     assert "patch" in contrato["paths"].get("/usuarios/{id_usuario}", {})

@@ -4,7 +4,7 @@ Na build avaliada o empresário é a conta de perfil HOTEL, vinculada a um únic
 """
 import pytest
 
-from apoio_api import CNPJ_LIVRE, CNPJ_SERRA_AZUL, CONTAS, IPE_AMARELO, SERRA_AZUL, defeito
+from apoio_api import CNPJ_LIVRE, CNPJ_SERRA_AZUL, CONTAS, IPE_AMARELO, SERRA_AZUL
 
 pytestmark = pytest.mark.uc("UC11")
 
@@ -63,7 +63,6 @@ def test_ft_emp_05_sem_acesso_a_areas_internas(api, rota):
     assert api.como("HOTEL").get(rota).status_code == 403
 
 
-@defeito("DF-04", "O empresário não entra com CNPJ e senha (UC11 passo 2 e Persona 03); o login aceita apenas e-mail.")
 def test_ft_emp_06_login_com_cnpj_e_senha(api):
     """CF UC11 — autenticação do empresário por CNPJ e senha."""
     resposta = api.anon.post("/auth/login", json={"cnpj": CNPJ_SERRA_AZUL, "senha": "hotel-demo"})
@@ -71,14 +70,12 @@ def test_ft_emp_06_login_com_cnpj_e_senha(api):
     assert resposta.json()["usuario"]["id_estabelecimento"] == SERRA_AZUL
 
 
-@defeito("DF-05", "Conta HOTEL de empresa INATIVA (Hotel Vale do Sol) autentica normalmente (UC11 3b).")
 def test_ft_emp_07_empresa_inativa_nao_autentica(api):
     """EX UC11 3b — empresa inativa: o sistema nega o acesso."""
     resposta = api.anon.post("/auth/login", json={"email": CONTAS["HOTEL_INATIVO"], "senha": "hotel-demo"})
     assert resposta.status_code in (401, 403)
 
 
-@defeito("DF-05", "Após a inativação da empresa, a sessão do empresário continua aceita e ele ainda edita a ficha (UC11 3b).")
 def test_ft_emp_08_inativacao_encerra_acesso_do_empresario(api):
     """EX UC11 3b — inativar a empresa deve encerrar o acesso de quem já estava logado."""
     hotel = api.como("HOTEL")

@@ -5,7 +5,7 @@ EDITOR edita a ficha, exceto CNPJ e razão social; HOTEL edita apenas a própria
 """
 import pytest
 
-from apoio_api import CNPJ_LIVRE, CNPJ_SERRA_AZUL, SERRA_AZUL, defeito, erro, novo_estabelecimento
+from apoio_api import CNPJ_LIVRE, CNPJ_SERRA_AZUL, SERRA_AZUL, erro, novo_estabelecimento
 
 pytestmark = pytest.mark.uc("UC01")
 
@@ -60,7 +60,6 @@ def test_ft_cad_04_cnpj_duplicado(api, cnpj):
     assert admin.get("/estabelecimentos").json()["pagination"]["total"] == 4
 
 
-@defeito("DF-02", "A resposta 409 de CNPJ duplicado não identifica o registro existente para abri-lo (UC01 5b).")
 def test_ft_cad_05_duplicidade_oferece_registro_existente(api):
     """EX 5b — o sistema deve oferecer abrir o registro existente (resposta referencia o id)."""
     resposta = api.como("ADMINISTRADOR").post("/estabelecimentos", json=novo_estabelecimento(cnpj=CNPJ_SERRA_AZUL))

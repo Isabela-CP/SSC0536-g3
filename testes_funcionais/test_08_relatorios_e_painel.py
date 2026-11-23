@@ -4,8 +4,8 @@ from io import StringIO
 
 import pytest
 
-from apoio_api import (PESQUISA_CONSOLIDADO_ABERTA, PESQUISA_EXPECTATIVA_ABERTA, SERRA_AZUL, defeito,
-                      nao_implementado, nova_pesquisa, novo_estabelecimento)
+from apoio_api import (PESQUISA_CONSOLIDADO_ABERTA, PESQUISA_EXPECTATIVA_ABERTA, SERRA_AZUL,
+                      nova_pesquisa, novo_estabelecimento)
 
 
 def _gerar(cliente, formato, id_pesquisa=None):
@@ -44,7 +44,6 @@ def test_ft_rel_02_pdf_para_download(api):
 
 
 @pytest.mark.uc("UC15")
-@defeito("DF-08", "Estabelecimentos participantes sem resposta não aparecem como 'sem resposta' no relatório (UC15 *a).")
 def test_ft_rel_03_participante_sem_resposta_aparece(api):
     """EX *a — Pousada Ipê Amarelo participa da pesquisa 3 e não respondeu."""
     gestor = api.como("GESTOR")
@@ -54,7 +53,6 @@ def test_ft_rel_03_participante_sem_resposta_aparece(api):
 
 
 @pytest.mark.uc("UC15")
-@defeito("DF-09", "Pesquisa sem nenhuma resposta gera relatório vazio em vez de avisar que não há dados (UC15 3a).")
 def test_ft_rel_04_periodo_sem_respostas_avisa(api):
     """EX 3a — nenhuma resposta: o sistema avisa (não gera arquivo vazio)."""
     resposta = _gerar(api.como("GESTOR"), "CSV", PESQUISA_EXPECTATIVA_ABERTA)
@@ -63,7 +61,7 @@ def test_ft_rel_04_periodo_sem_respostas_avisa(api):
 
 @pytest.mark.uc("UC15")
 @pytest.mark.parametrize("corpo,esperado", [({"tipo": "OCUPACAO", "formato": "XLSX"}, 422),
-                                            ({"tipo": "INVENTARIO", "formato": "PDF"}, 422),
+                                            ({"tipo": "INVALIDO", "formato": "PDF"}, 422),
                                             ({"tipo": "OCUPACAO", "formato": "CSV", "id_pesquisa": "987654"}, 404)])
 def test_ft_rel_05_parametros_invalidos(api, corpo, esperado):
     """EX — formato/tipo não suportado: 422; pesquisa inexistente: 404."""
@@ -92,7 +90,6 @@ def test_ft_rel_07_csv_neutraliza_formulas(api):
 
 
 @pytest.mark.uc("UC15")
-@nao_implementado("NI-04", "O relatório não aceita período nem categoria (UC15 passo 2); só uma pesquisa específica ou todas.")
 def test_ft_rel_08_filtro_por_periodo_e_categoria(contrato):
     """CF 2 — selecionar período e, opcionalmente, categoria."""
     campos = contrato["components"]["schemas"]["RelatorioCreate"]["properties"]
@@ -129,7 +126,6 @@ def test_ft_dsh_02_totalizadores_refletem_alteracoes(api):
 
 
 @pytest.mark.uc("HOME")
-@nao_implementado("NI-05", "O painel não exibe 'Empresas cadastradas este mês', totalizador pedido no requisito da Home.")
 def test_ft_dsh_03_empresas_cadastradas_no_mes(api):
     """CF — totalizador de empresas cadastradas no mês corrente."""
     api.como("ADMINISTRADOR").post("/estabelecimentos", json=novo_estabelecimento())
