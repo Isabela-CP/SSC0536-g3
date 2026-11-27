@@ -17,6 +17,7 @@ from fastapi import APIRouter, Body, Depends, FastAPI, Header, HTTPException, Qu
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 
+from app.cadastur import cadastur_for
 from app.cadastur import CadasturStatus
 from app.inventory import InventoryQuery, InventoryRepository, JsonInventoryRepository, query_establishments
 from app.inventory_http import InventoryRoute
@@ -257,7 +258,7 @@ def list_establishments(
 
 @inventory_router.get("/estabelecimentos/{id_estabelecimento}", tags=["Estabelecimentos"])
 def get_establishment(establishment: dict = Depends(authorized_establishment)) -> dict:
-    return establishment
+    return {**establishment, "cadastur_status": cadastur_for(establishment)}
 
 
 @inventory_router.get("/estabelecimentos/{id_estabelecimento}/documentos", tags=["Documentos"])

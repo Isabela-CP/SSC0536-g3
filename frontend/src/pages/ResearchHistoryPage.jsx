@@ -1,3 +1,4 @@
+import CadasturBanner from '../components/CadasturBanner.jsx'
 import React from 'react'
 import { useResource } from '../hooks/operations.js'
 import { ResourceState } from '../components/OperationsUI.jsx'
@@ -35,6 +36,7 @@ export default function ResearchHistoryPage({
     )
   return (
     <>
+      {establishmentId && <CadasturBanner establishment={data?.subject} user={user} />}
       <header className="page-heading">
         <h1>
           {establishmentId

@@ -1,3 +1,4 @@
+import CadasturBanner from './components/CadasturBanner.jsx'
 import { AccountDialog } from './pages/AccountsPage.jsx'
 import Application from './pages/Application.jsx'
 import React, { useEffect, useRef, useState } from 'react'
@@ -138,6 +139,7 @@ export function EstablishmentWorkspace({
       ) : (
         <>
           <div inert={dialog || inviteDraft ? true : undefined}>
+            <CadasturBanner establishment={item} user={user} />
             <header className="page-heading">
               <h1>
                 {mode === 'create'

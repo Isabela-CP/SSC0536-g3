@@ -237,3 +237,26 @@ def test_write_unauthorized(write_env, create_payload):
         assert response.status_code == 401
         assert response.json()["error"]["code"] == "UNAUTHORIZED"
     assert env.audit == []
+
+
+def test_cadastur_detail_refreshes_stale_status_and_returns_saved_expiry(write_env, create_payload):
+    client = write_env.client
+    item = client.post(ROOT, json=create_payload).json()
+    path = ROOT + "/" + item["id_estabelecimento"]
+
+    expired = client.patch(path, json={
+        "possui_cadastur": True, "vencimento_cadastur": "2000-01-01",
+    })
+    assert expired.json()["cadastur_status"] == "VENCIDO"
+
+    # Uma classificação gravada anteriormente não altera a situação exibida na ficha.
+    assert client.patch(path, json={"cadastur_status": "REGULAR"}).status_code == 200
+    detail = client.get(path).json()
+    assert detail["cadastur_status"] == "VENCIDO"
+    assert detail["vencimento_cadastur"] == "2000-01-01"
+
+    renewed = client.patch(path, json={
+        "vencimento_cadastur": "2099-01-01", "cadastur_status": "VENCIDO",
+    })
+    assert renewed.json()["cadastur_status"] == "REGULAR"
+    assert client.get(path).json()["vencimento_cadastur"] == "2099-01-01"

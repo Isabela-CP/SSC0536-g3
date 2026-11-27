@@ -121,7 +121,7 @@ class InventoryService:
             item = merge_changes(before, changes)
             if "id_categoria" in changes:
                 item["categoria"] = self.category(changes["id_categoria"])
-            if "cadastur_status" not in changes and {"possui_cadastur", "vencimento_cadastur"} & changes.keys():
+            if {"possui_cadastur", "vencimento_cadastur"} & changes.keys():
                 item["cadastur_status"] = cadastur_for(item)
             item["atualizado_em"] = now()
             self.repository.save(item)

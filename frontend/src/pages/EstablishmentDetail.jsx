@@ -1,3 +1,4 @@
+import CadasturBanner from '../components/CadasturBanner.jsx'
 import React from 'react'
 import { useResource } from '../hooks/operations.js'
 import { ResourceState } from '../components/OperationsUI.jsx'
@@ -31,6 +32,7 @@ export default function EstablishmentDetail({ api, user, id, initialData = null 
     )
   return (
     <>
+      <CadasturBanner establishment={item} user={user} />
       <header className="page-heading">
         <h1>{item?.nome_fantasia || 'Dados da hospedagem'}</h1>
         <div className="document-actions">

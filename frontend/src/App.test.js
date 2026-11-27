@@ -286,3 +286,49 @@ test('resumo de validação identifica cada campo obrigatório pelo nome', () =>
   assert.match(result, /href="#field-senha"/)
   assert.match(result, /href="#field-meio_hospedagem-total_leitos"/)
 })
+
+test('banner Cadastur cobre os limites de validade e os três perfis internos', async () => {
+  const { default: Banner } = await server.ssrLoadModule('/src/components/CadasturBanner.jsx')
+  const today = '2026-11-27'
+  const renderBanner = (date, perfil, possui_cadastur = true) => html(Banner, {
+    establishment: { possui_cadastur, vencimento_cadastur: date },
+    user: { perfil },
+    today,
+  })
+
+  for (const perfil of ['ADMINISTRADOR', 'GESTOR', 'EDITOR']) {
+    assert.match(renderBanner('2026-11-26', perfil), /cadastur-banner-expired.*CADASTUR vencido — regularização pendente\./)
+    for (const [date, remaining] of [
+      ['2026-11-27', 'vence hoje'],
+      ['2026-11-28', 'falta 1 dia'],
+      ['2026-12-27', 'faltam 30 dias'],
+      ['2026-12-28', 'faltam 31 dias'],
+      ['2027-02-25', 'faltam 90 dias'],
+    ]) {
+      const banner = renderBanner(date, perfil)
+      assert.match(banner, new RegExp(`CADASTUR próximo do vencimento — ${remaining}\\.`))
+      assert.doesNotMatch(banner, /cadastur-banner-expired/)
+    }
+    assert.equal(renderBanner('2027-02-26', perfil), '')
+    assert.equal(renderBanner(null, perfil), '')
+    assert.equal(renderBanner('2026-11-26', perfil, false), '')
+  }
+  assert.equal(renderBanner('2026-11-26', 'HOTEL'), '')
+})
+
+test('banner Cadastur precede o cabeçalho nas três telas da hospedagem', async () => {
+  const { default: Detail } = await server.ssrLoadModule('/src/pages/EstablishmentDetail.jsx')
+  const { default: History } = await server.ssrLoadModule('/src/pages/ResearchHistoryPage.jsx')
+  const item = { ...seed.estabelecimentos[0], possui_cadastur: true, vencimento_cadastur: '2000-01-01' }
+  const id = item.id_estabelecimento
+  for (const perfil of ['ADMINISTRADOR', 'GESTOR', 'EDITOR']) {
+    const user = { perfil }
+    for (const markup of [
+      html(App, { initialMode: 'edit', initialUser: user, initialEstablishment: item }),
+      html(Detail, { api: {}, user, id, initialData: item }),
+      html(History, { api: {}, user, establishmentId: id, initialData: { subject: item, surveys: [], history: [] } }),
+    ]) {
+      assert.match(markup, /cadastur-banner-expired.*CADASTUR vencido.*<header class="page-heading">/)
+    }
+  }
+})
